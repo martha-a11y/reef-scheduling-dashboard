@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>REEF Campus Daily Capacity Dashboard</title>
+    <title>REEF Campus Scheduling & Availability Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
@@ -42,13 +42,19 @@
             gap: 20px;
         }
 
-        .reef-logo {
-            width: 40px;
-            height: 40px;
-            border-radius: 4px;
-            background: white;
-            padding: 4px;
-            object-fit: contain;
+        .reef-logo-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            background: #FFDD00;
+            color: #24408E;
+            font-size: 22px;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            letter-spacing: -1px;
         }
 
         .header-title {
@@ -57,9 +63,10 @@
         }
 
         .header-title h1 {
-            font-size: 28px;
+            font-size: 20px;
             font-weight: 700;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
+            white-space: nowrap;
         }
 
         .header-title p {
@@ -1288,6 +1295,116 @@
             width: fit-content;
         }
 
+        /* === PHASE 1: Collapse/expand OEC shift details (#9) === */
+        .shift-cell .shift-staff { display: none; }
+        .shift-cell .shift-time { display: none; }
+        .shift-cell.expanded .shift-staff { display: flex; }
+        .shift-cell.expanded .shift-time { display: block; }
+        .shift-cell { min-height: 36px; cursor: pointer; transition: min-height 0.15s ease; }
+        .shift-cell.expanded { min-height: 80px; }
+
+        /* Compact collapsed shift cell: show status + type inline */
+        .shift-cell .shift-collapsed-summary {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: #666;
+        }
+        .shift-cell.expanded .shift-collapsed-summary { display: none; }
+
+        /* Hide + button until hover (#9) */
+        .shift-cell .cell-add-btn { opacity: 0; transition: opacity 0.15s ease; }
+        .shift-cell:hover .cell-add-btn,
+        .shift-cell.expanded .cell-add-btn { opacity: 1; }
+        .event-cell .cell-add-btn { opacity: 0; transition: opacity 0.15s ease; }
+        .event-cell:hover .cell-add-btn { opacity: 1; }
+
+        /* Smaller OPEN badge (#9) */
+        .shift-status-badge {
+            font-size: 8px !important;
+            padding: 1px 4px !important;
+        }
+
+        /* === Section separation (#10) === */
+        .section-divider-row td {
+            padding: 0 !important;
+            border: none !important;
+            height: 12px;
+            background: transparent !important;
+        }
+        .scheduler-group-header.section-header {
+            background: #24408E !important;
+            color: white !important;
+            font-size: 12px;
+            padding: 8px 15px !important;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 2px solid #1a2d5f;
+        }
+
+        /* === Compact sidebar (#13) === */
+        .staff-summary-item {
+            padding: 5px 0 !important;
+            font-size: 11px !important;
+        }
+        .staff-name-col { font-size: 11px; }
+        .staff-hours { font-size: 10px; }
+        .staff-unassigned { font-size: 9px; padding: 1px 5px; }
+        .staff-out-badge { font-size: 9px; padding: 1px 5px; }
+
+        /* === Sticky headers (#15) === */
+        .scheduler-grid thead {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+        }
+
+        /* === Compact Who's Out (#16) === */
+        .timeaway-col { padding: 8px; gap: 3px; }
+        .timeaway-person { font-size: 10px; padding: 2px 6px; }
+        .timeaway-section-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .timeaway-section-label .toggle-icon {
+            font-size: 10px;
+            transition: transform 0.2s ease;
+        }
+        .timeaway-section-label .toggle-icon.collapsed {
+            transform: rotate(-90deg);
+        }
+        .timeaway-row.collapsed { display: none; }
+
+        /* === Status colors (#17) === */
+        .shift-cell.empty { background: #ffebee; border-left: 3px solid #AD1D22; }
+        .shift-cell.partial { background: #fff8e1; border-left: 3px solid #f9a825; }
+        .shift-cell.filled { background: #e8f5e9; border-left: 3px solid #8CC63E; }
+        .event-cell { border-left: 3px solid #00B1E3; }
+
+        /* === Program/Event KPI bar (#12) === */
+        .programs-kpi-bar {
+            display: flex;
+            gap: 20px;
+            padding: 8px 15px;
+            background: #f0f7ff;
+            border-bottom: 1px solid #d0d9ed;
+            font-size: 11px;
+            color: #555;
+        }
+        .programs-kpi-bar .kpi-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .programs-kpi-bar .kpi-value {
+            font-weight: 700;
+            color: #24408E;
+        }
+
         @media (max-width: 1200px) {
             .scheduler-grid-wrapper {
                 flex-direction: column;
@@ -1552,9 +1669,9 @@
     <div class="header">
         <div class="header-content">
             <div class="header-left">
-                <img src="https://www.reef.org/sites/all/themes/custom/zen_reef/logo.png" alt="REEF Logo" class="reef-logo">
+                <div class="reef-logo-icon" title="REEF">R</div>
                 <div class="header-title">
-                    <h1>REEF Campus Daily Capacity</h1>
+                    <h1>REEF Campus Scheduling & Availability</h1>
                     <p>Real-time team availability & scheduling</p>
                 </div>
             </div>
@@ -1801,7 +1918,7 @@
                         <div class="summary-value" id="summaryFilled">0 / 0</div>
                     </div>
                     <div class="summary-item">
-                        <div class="summary-label">Staff Assigned</div>
+                        <div class="summary-label">Team Members Assigned</div>
                         <div class="summary-value" id="summaryStaffCount">0</div>
                     </div>
                     <div class="summary-item">
@@ -1833,7 +1950,7 @@
                     <!-- Right Sidebar -->
                     <div class="scheduler-sidebar">
                         <div class="sidebar-section">
-                            <div class="sidebar-title">Weekly Staff Summary</div>
+                            <div class="sidebar-title">Weekly Team Summary</div>
                             <div id="staffSummaryList"></div>
                         </div>
                     </div>
@@ -1841,7 +1958,9 @@
 
                 <!-- Time Away Row -->
                 <div>
-                    <div class="timeaway-section-label">Who's Out This Week</div>
+                    <div class="timeaway-section-label" onclick="toggleTimeAway()">
+                        <span class="toggle-icon">▼</span> Who's Out This Week
+                    </div>
                     <div class="timeaway-row" id="schedulerTimeAwayRow"></div>
                 </div>
             </div>
@@ -1853,7 +1972,7 @@
 
     <!-- Footer -->
     <div class="footer">
-        REEF Campus Daily Capacity Dashboard | Data synced from Airtable
+        REEF Campus Scheduling & Availability Dashboard | Data synced from Airtable
     </div>
 
     <script>
@@ -3504,10 +3623,16 @@
             // Show shift type label if it's not a standard AM/PM
             const typeLabel = getShiftTypeLabel(shift);
 
-            let html = `<div class="shift-cell ${status}" data-shift-id="${shift.id}" data-day-index="${dayIndex}" data-type="oec">`;
+            const target = parseInt(shift.fields[FIELDS.OEC_SHIFTS.targetHeadcount]) || 2;
+            const staffCount = confirmed.length;
+
+            let html = `<div class="shift-cell ${status}" data-shift-id="${shift.id}" data-day-index="${dayIndex}" data-type="oec" onclick="toggleShiftExpand(event, this)">`;
             if (badge) {
                 html += `<div class="shift-status-badge">${badge}</div>`;
             }
+            // Collapsed summary line
+            const summaryType = typeLabel || slot;
+            html += `<div class="shift-collapsed-summary"><strong>${summaryType}</strong> <span>${staffCount}/${target}</span></div>`;
             if (typeLabel) {
                 html += `<div class="shift-type-label">${typeLabel}</div>`;
             }
@@ -3715,11 +3840,20 @@
             const tbody = document.getElementById('schedulerGridBody');
             tbody.innerHTML = '';
 
+            // === OEC SHIFTS section header (#10) ===
+            const oecHeaderRow = document.createElement('tr');
+            const oecHeaderTd = document.createElement('td');
+            oecHeaderTd.className = 'scheduler-group-header section-header';
+            oecHeaderTd.colSpan = 7;
+            oecHeaderTd.textContent = 'OEC Shifts';
+            oecHeaderRow.appendChild(oecHeaderTd);
+            tbody.appendChild(oecHeaderRow);
+
             // === OEC AM ROW ===
             const amRow = document.createElement('tr');
             const amLabel = document.createElement('td');
             amLabel.className = 'scheduler-group-header';
-            amLabel.textContent = 'OEC AM';
+            amLabel.textContent = 'AM';
             amRow.appendChild(amLabel);
 
             for (let i = 0; i < 6; i++) {
@@ -3740,7 +3874,7 @@
             const pmRow = document.createElement('tr');
             const pmLabel = document.createElement('td');
             pmLabel.className = 'scheduler-group-header';
-            pmLabel.textContent = 'OEC PM';
+            pmLabel.textContent = 'PM';
             pmRow.appendChild(pmLabel);
 
             for (let i = 0; i < 6; i++) {
@@ -3801,12 +3935,37 @@
             });
 
             if (allWeekEvents.length > 0) {
-                // Programs header
+                // Section divider (#10)
+                const dividerRow = document.createElement('tr');
+                const dividerTd = document.createElement('td');
+                dividerTd.colSpan = 7;
+                dividerTd.className = 'section-divider-row';
+                dividerRow.appendChild(dividerTd);
+                tbody.appendChild(dividerRow);
+
+                // Programs section header (#10)
                 const headerRow = document.createElement('tr');
                 const headerTd = document.createElement('td');
-                headerTd.className = 'scheduler-group-header';
+                headerTd.className = 'scheduler-group-header section-header';
                 headerTd.colSpan = 7;
-                headerTd.textContent = `Programs & Events (${allWeekEvents.length})`;
+
+                // Compute KPI metrics (#12)
+                let totalAssigned = 0;
+                let totalGaps = 0;
+                allWeekEvents.forEach(evt => {
+                    let eventAssigns = [];
+                    if (evt._isProgram) {
+                        const matchId = findMatchingEventsRecordId(evt);
+                        if (matchId) eventAssigns = allData.eventAssignments.filter(a => linkedHas(a.fields[FIELDS.EVENT_ASSIGNMENTS.event], matchId));
+                    } else {
+                        eventAssigns = allData.eventAssignments.filter(a => linkedHas(a.fields[FIELDS.EVENT_ASSIGNMENTS.event], evt.id));
+                    }
+                    const conf = eventAssigns.filter(a => isAssignedOrConfirmed(a.fields[FIELDS.EVENT_ASSIGNMENTS.assignmentStatus]));
+                    totalAssigned += conf.length;
+                    if (conf.length === 0) totalGaps++;
+                });
+
+                headerTd.innerHTML = `Programs & Events (${allWeekEvents.length}) <span style="font-weight:400;font-size:10px;letter-spacing:0;text-transform:none;margin-left:12px;opacity:0.85;">${totalAssigned} team members assigned · ${totalGaps} unstaffed</span>`;
                 headerRow.appendChild(headerTd);
                 tbody.appendChild(headerRow);
 
@@ -3974,6 +4133,21 @@
                 }
                 row.appendChild(col);
             }
+        }
+
+        // Toggle expand/collapse for OEC shift cells (#9)
+        function toggleShiftExpand(e, el) {
+            // Don't toggle if clicking on a staff pill or add button
+            if (e.target.closest('.staff-pill-interactive') || e.target.closest('.cell-add-btn')) return;
+            el.classList.toggle('expanded');
+        }
+
+        // Toggle Who's Out section collapse (#16)
+        function toggleTimeAway() {
+            const row = document.getElementById('schedulerTimeAwayRow');
+            const icon = document.querySelector('.timeaway-section-label .toggle-icon');
+            row.classList.toggle('collapsed');
+            if (icon) icon.classList.toggle('collapsed');
         }
 
         function updateSchedulerSummary() {
