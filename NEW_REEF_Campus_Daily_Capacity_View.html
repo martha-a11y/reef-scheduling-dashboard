@@ -3012,7 +3012,7 @@
                 if (!isDateInRange(selectedDate.toISOString(), ta.fields[FIELDS.TIME_AWAY.startDateTime], ta.fields[FIELDS.TIME_AWAY.endDateTime])) return;
                 members.forEach(m => {
                     const mid = (typeof m === 'string') ? m : (m && m.id);
-                    if (mid && allData.teamMembers.some(tm => tm.id === mid && !outSet.has(mid)) {
+                    if (mid && allData.teamMembers.some(tm => tm.id === mid) && !outSet.has(mid)) {
                         outSet.add(mid);
                         outPeople.push({
                             id: mid,
@@ -3087,7 +3087,7 @@
                 const needed = event.fields[FIELDS.EVENTS.staffingRequired] || 0;
                 const assigned = allData.eventAssignments.filter(ea =>
                    n linkedHas(ea.fields[FIELDS.EVENT_ASSIGNMENTS.event], event.id) &&
-                    isAssignedOrConfirmed(ea.fields[FIELDS.EVENT_ASSIGNMENTS.assignmentStatus]
+                    isAssignedOrConfirmed(ea.fields[FIELDS.EVENT_ASSIGNMENTS.assignmentStatus])
                 ).length;
                 if (assigned < needed) {
                     eventGaps.push({ name: event.fields[FIELDS.EVENTS.eventName] || 'Event', assigned, needed });
