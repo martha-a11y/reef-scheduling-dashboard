@@ -359,6 +359,100 @@
             color: #AD1D22;
         }
 
+        /* ===== TODAY STATUS BANNER ===== */
+        .today-status-banner {
+            background: white;
+            border-radius: 10px;
+            padding: 20px 28px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .today-status-banner .status-icon {
+            width: 56px; height: 56px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 28px; flex-shrink: 0;
+        }
+        .today-status-banner .status-icon.green { background: #DEF7EC; }
+        .today-status-banner .status-icon.yellow { background: #FEF3CD; }
+        .today-status-banner .status-icon.red { background: #FDE8E8; }
+        .today-status-banner .status-text { flex: 1; }
+        .today-status-banner .status-headline {
+            font-size: 20px; font-weight: 700; margin-bottom: 4px;
+        }
+        .today-status-banner .status-headline.green { color: #059669; }
+        .today-status-banner .status-headline.yellow { color: #D97706; }
+        .today-status-banner .status-headline.red { color: #AD1D22; }
+        .today-status-banner .status-details {
+            font-size: 13px; color: #666; display: flex; flex-wrap: wrap; gap: 6px 16px;
+        }
+        .today-status-banner .status-details span { white-space: nowrap; }
+
+        /* ===== ISSUES PANEL ===== */
+        .issues-panel {
+            background: white; border-radius: 10px; padding: 18px 24px;
+            margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-left: 4px solid #D97706;
+        }
+        .issues-panel.clear { border-left-color: #059669; }
+        .issues-panel h3 {
+            font-size: 14px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.5px; margin-bottom: 10px; color: #333;
+        }
+        .issues-panel .issue-item {
+            display: flex; align-items: center; gap: 8px;
+            padding: 6px 0; font-size: 13px; color: #555;
+        }
+        .issues-panel .issue-icon { flex-shrink: 0; }
+        .issues-panel .issue-icon.warn { color: #D97706; }
+        .issues-panel .issue-icon.critical { color: #AD1D22; }
+        .issues-panel .issue-icon.info { color: #24408E; }
+        .issues-panel .clear-msg { font-size: 13px; color: #059669; font-weight: 500; }
+
+        /* ===== WHO'S WHERE CARDS ===== */
+        .whos-where-section {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px; margin-bottom: 20px;
+        }
+        .whos-where-card {
+            background: white; border-radius: 10px; padding: 16px 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .whos-where-card .card-header {
+            display: flex; align-items: center; gap: 8px;
+            margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #eee;
+        }
+        .whos-where-card .card-header .card-dot {
+            width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+        }
+        .whos-where-card .card-header h4 {
+            font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;
+            font-weight: 700; color: #555; margin: 0;
+        }
+        .whos-where-card .card-header .card-count {
+            margin-left: auto; background: #f0f0f0; border-radius: 10px;
+            padding: 1px 8px; font-size: 11px; font-weight: 700; color: #666;
+        }
+        .whos-where-card .person-chip {
+            display: inline-block; padding: 4px 10px; margin: 2px 3px;
+            border-radius: 14px; font-size: 12px; font-weight: 500;
+            background: #f5f5f5; color: #444;
+        }
+        .whos-where-card.oec-shifts .card-header { border-bottom-color: #00B1E3; }
+        .whos-where-card.oec-shifts .card-dot { background: #00B1E3; }
+        .whos-where-card.oec-shifts .person-chip { background: #E0F5FC; color: #0077A8; }
+        .whos-where-card.programs .card-header { border-bottom-color: #8B5CF6; }
+        .whos-where-card.programs .card-dot { background: #8B5CF6; }
+        .whos-where-card.programs .person-chip { background: #EDE9FE; color: #6D28D9; }
+        .whos-where-card.available-card .card-header { border-bottom-color: #8CC63E; }
+        .whos-where-card.available-card .card-dot { background: #8CC63E; }
+        .whos-where-card.available-card .person-chip { background: #ECFCCB; color: #4D7C0F; }
+        .whos-where-card.out-card .card-header { border-bottom-color: #AD1D22; }
+        .whos-where-card.out-card .card-dot { background: #AD1D22; }
+        .whos-where-card.out-card .person-chip { background: #FEE2E2; color: #991B1B; }
+
         /* ===== MAIN CONTENT ===== */
         .main-content {
             display: grid;
@@ -1991,118 +2085,62 @@
     <!-- Main Content -->
     <div id="dailyViewContent" class="tab-content active">
         <div id="mainContent" class="container hidden">
-            <!-- KPI Cards -->
+            <!--Today Status Banner -->
+            <div class="today-status-banner" id="todayStatusBanner"></div>
+
+            <!-- KPI Cards (simplified)  -->
             <div class="kpi-row">
-                <div class="kpi-card">
-                    <div class="kpi-label">Total Campus Team</div>
-                    <div class="kpi-value" id="kpiTotal">—</div>
+                <div class="kpi-car available">
+                    <div class="kpi-label">Available Todaym</div>
+                    <div class="kpi-value" id="kpAvailablel">—</div>
                 </div>
                 <div class="kpi-card out">
-                    <div class="kpi-label">Out Today</div>
+                    <div class="kpi-label"Team Members Outy</div>
                     <div class="kpi-value" id="kpiOut">—</div>
                 </div>
                 <div class="kpi-card committed">
-                    <div class="kpi-label">Committed to Shifts & Events</div>
-                    <div class="kpi-value" id="kpiCommitted">—</div>
+                    <div class="kpi-label"Programs & Events Todays</div>
+                    <div class="kpi-value" id="kpEventsd">—</div>
                 </div>
-                <div class="kpi-card available">
-                    <div class="kpi-label">Available / Unallocated</div>
-                    <div class="kpi-value" id="kpiAvailable">—</div>
-                </div>
-            </div>
-
-            <!-- Main Content: Capacity + Details -->
-            <div class="main-content">
-                <!-- Capacity Breakdown -->
-                <div class="capacity-section">
-                    <h2 class="section-title">
-                        Daily Capacity Breakdown
-                        <span class="section-badge" id="capacityBadge">0</span>
-                    </h2>
-                    <div class="capacity-bar" id="capacityBar"></div>
-                    <div class="capacity-legend">
-                        <div class="legend-item">
-                            <div class="legend-color segment-out"></div>
-                            <span>Out</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-color segment-oec"></div>
-                            <span>Committed (OEC/Programs)</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-color segment-tbd"></div>
-                            <span>TBD Slots</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-color segment-available"></div>
-                            <span>Available</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Details Panel -->
-                <div class="details-panel">
-                    <!-- Out Today -->
-                    <div class="collapsible-section expanded">
-                        <div class="collapsible-header">
-                            <div class="collapsible-header-left">
-                                <span class="collapsible-icon">▶</span>
-                                <span>Out Today</span>
-                                <span class="section-badge" id="outBadge">0</span>
-                            </div>
-                        </div>
-                        <div class="collapsible-content" id="outContent">
-                            <div class="empty-state">No one out today</div>
-                        </div>
-                    </div>
-
-                    <!-- OEC Shifts -->
-                    <div class="collapsible-section expanded">
-                        <div class="collapsible-header">
-                            <div class="collapsible-header-left">
-                                <span class="collapsible-icon">▶</span>
-                                <span>OEC Shifts</span>
-                                <span class="section-badge" id="oecBadge">0</span>
-                            </div>
-                        </div>
-                        <div class="collapsible-content" id="oecContent">
-                            <div class="empty-state">No shifts scheduled</div>
-                        </div>
-                    </div>
-
-                    <!-- Programs & Events -->
-                    <div class="collapsible-section expanded">
-                        <div class="collapsible-header">
-                            <div class="collapsible-header-left">
-                                <span class="collapsible-icon">▶</span>
-                                <span>Programs & Events</span>
-                                <span class="section-badge" id="eventBadge">0</span>
-                            </div>
-                        </div>
-                        <div class="collapsible-content" id="eventContent">
-                            <div class="empty-state">No events scheduled</div>
-                        </div>
-                    </div>
+                <div class="kpi-car">
+                    <div class="kpi-label">Open Shift Gapsd</div>
+                    <div class="kpi-value" id="kpGapse">—</div>
                 </div>
             </div>
 
-            <!-- Team Roster -->
-            <div class="roster-section">
-                <h2 class="section-title">Campus Team Roster</h2>
-                <table class="roster-table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Status</th>
-                            <th>Details</th>
-                        </tr>
-                    </thead>
-                    <tbody id="rosterBody">
-                        <tr>
-                            <td colspan="3" style="text-align: center; color: #999;">Loading roster...</td>
-                        </tr>
-                    </tbody>
-                </table>
+            <!--Today's Issues -->
+            <div class="issues-panel" id="issuesPanel"></div>
+
+            <!-- Who's Where -->
+            <div class="whos-where-section" id="whosWhereSection"></div>
+
+            <!-- Collapsible Details (OEC Shifts + Events) -->
+            <div style="background:white;border-radius:10px;padding:18px 24px;box-shadow:0 2px 8px rgba(0,0,0,0.08);margin-bottom:20px;">
+                <div class="collapsible-section expanded">
+                    <div class="collapsible-header">
+                        <div class="collapsible-header-left">
+                            <span class="collapsible-icon">▶</span>
+                            <span>OEC Shift Details</span>
+    
+                        <span class="section-badge" id=oecBadge">0</span>
+                        </div>
+                    </div>
+                    <div class="collapsible-content" id="oecContent">
+                        <div class="empty-state">No shifts scheduled</div>
+                    </div>
+                </div>
+                <div class="collapsible-section expanded" style="margin-top:12px;">
+                    <div class="collapsible-header">
+                        <div class="collapsible-header-left">
+                             <span class="collapsible-icon">▶</span>
+                           <span>Program & Event Details</span>
+                            <span class="section-badge" id="eventBadge">0</span>
+                        </div>
+                    </div>
+                    <div class="collapsible-content" id="eventContent">
+                         <div class="empty-state">Noevents scheduled</div>
+                    </div>
+                </dive>
             </div>
         </div>
 
@@ -2963,8 +3001,10 @@
             const todayStr = selectedDate.toISOString().split('T')[0];
             const totalTeam = allData.teamMembers.length;
 
-            // Count unique people who are fully out (Blocks Scheduling Completely only)
+            //--- Compute core data ---
+            // Out today (blocks scheduling completely)
             const outSet = new Set();
+            const outPeople = []; // {id, name, reason};
             allData.timeAway.forEach(ta => {
                 const members = ta.fields[FIELDS.TIME_AWAY.teamMember];
                 if (!members || !Array.isArray(members)) return;
@@ -2972,181 +3012,252 @@
                 if (!isDateInRange(selectedDate.toISOString(), ta.fields[FIELDS.TIME_AWAY.startDateTime], ta.fields[FIELDS.TIME_AWAY.endDateTime])) return;
                 members.forEach(m => {
                     const mid = (typeof m === 'string') ? m : (m && m.id);
-                    if (mid && allData.teamMembers.some(tm => tm.id === mid)) outSet.add(mid);
+                    if (mid && allData.teamMembers.some(tm => tm.id === mid && !outSet.has(mid)) {
+                        outSet.add(mid);
+                        outPeople.push({
+                            id: mid,
+                            name: getTeamMemberName(mid),
+                            reason: selectVal(ta.fields[FIELDS.TIME_AWAY.category]) || 'Out',
+                        });
+                    }
                 });
             });
-            const outToday = outSet.size;
 
-            const committedSet = new Set();
-
-            // Add OEC assigned people
-            allData.oecAssignments.forEach(oa => {
-                if (!isAssignedOrConfirmed(oa.fields[FIELDS.OEC_ASSIGNMENTS.assignmentStatus])) return;
-                const memberRecId = linkedId(oa.fields[FIELDS.OEC_ASSIGNMENTS.teamMember]);
-                if (!memberRecId) return;
-                const shiftRecId = linkedId(oa.fields[FIELDS.OEC_ASSIGNMENTS.shiftInstance]);
-                if (!shiftRecId) return;
-                const shift = allData.oecShifts.find(s => s.id === shiftRecId);
-                if (shift && shift.fields[FIELDS.OEC_SHIFTS.shiftDate] === todayStr) {
-                    committedSet.add(memberRecId);
-                }
-            });
-
-            // Add event assigned people
-            allData.eventAssignments.forEach(ea => {
-                if (!isAssignedOrConfirmed(ea.fields[FIELDS.EVENT_ASSIGNMENTS.assignmentStatus])) return;
-                const memberRecId = linkedId(ea.fields[FIELDS.EVENT_ASSIGNMENTS.teamMember]);
-                if (!memberRecId) return;
-                const eventRecId = linkedId(ea.fields[FIELDS.EVENT_ASSIGNMENTS.event]);
-                if (!eventRecId) return;
-                const event = allData.events.find(e => e.id === eventRecId);
-                if (event && isDateInRange(selectedDate.toISOString(), event.fields[FIELDS.EVENTS.startDateTime], event.fields[FIELDS.EVENTS.endDateTime])) {
-                    committedSet.add(memberRecId);
-                }
-            });
-
-            const committed = committedSet.size;
-
-            // Calculate projected demand from unfilled shift/event slots
-            let projectedOecDemand = 0;
-            let projectedEventDemand = 0;
-
+            // OEC shifts today + assignments
+            const oecOnShift = new Map(); // memberId -> [shiftLabels]
+            const shiftGaps = []; // {label, assigned, min, target}
             allData.oecShifts.forEach(shift => {
-                if (shift.fields[FIELDS.OEC_SHIFTS.shiftDate] === todayStr) {
-                    const target = shift.fields[FIELDS.OEC_SHIFTS.targetHeadcount] || 0;
-                    const assigned = allData.oecAssignments.filter(oa => {
-                        return linkedHas(oa.fields[FIELDS.OEC_ASSIGNMENTS.shiftInstance], shift.id) &&
-                               isAssignedOrConfirmed(oa.fields[FIELDS.OEC_ASSIGNMENTS.assignmentStatus]);
-                    }).length;
-                    projectedOecDemand += Math.max(0, target - assigned);
-                }
+                if (shift.fields[FIELDS.OEC_SHIFTS.shiftDate] !== todayStr) return;
+                const slot = selectVal(shift.fields[FIELDS.OEC_SHIFTS.shiftSlot]) || '';
+                const label = slot || (shift.fields[FIELDS.OEC_SHIFTS.shiftLabel] || 'Shift');
+                const minH = shift.fields[FIELDS.OEC_SHIFTS.minHeadcount] || 0;
+                const targetH = shift.fields[FIELDS.OEC_SHIFTS.targetHeadcount] || 0;
+
+                const assignments = allData.oecAssignments.filter(oa =>
+                    linkedHas(oa.fields[FIELDS.OEC_ASSIGNMENTS.shiftInstance], shift.id) &&
+                    isAssignedOrConfirmed(oa.fields[FIELDS.OEC_ASSIGNMENTS.assignmentStatus])
+                );
+                assignments.forEach(a => {
+                    const mid = linkedId(a.fields[FIELDS.OEC_ASSIGNMENTS.teamMember]);
+                    if (mid) {
+                        if (!oecOnShift.has(mid)) oecOnShift.set(mid, []);
+                        oecOnShift.get(mid).push(label);
+                    }
+                });
+                shiftGaps.push({ label, assigned: assignments.length, min: minH, target: targetH });
             });
 
-            allData.events.filter(event => isDateInRange(
+            // Events today + assignments
+            const eventsToday = allData.events.filter(e => isDateInRange(
                 selectedDate.toISOString(),
-                event.fields[FIELDS.EVENTS.startDateTime],
-                event.fields[FIELDS.EVENTS.endDateTime]
-            )).forEach(event => {
-                const needed = event.fields[FIELDS.EVENTS.staffingRequired] || 0;
-                const assigned = allData.eventAssignments.filter(ea => {
-                    return linkedHas(ea.fields[FIELDS.EVENT_ASSIGNMENTS.event], event.id) &&
-                           isAssignedOrConfirmed(ea.fields[FIELDS.EVENT_ASSIGNMENTS.assignmentStatus]);
-                }).length;
-                projectedEventDemand += Math.max(0, needed - assigned);
+                e.fields[FIELDS.EVENTS.startDateTime],
+                e.fields[FIELDS.EVENTS.endDateTime]
+            ));
+            // Also count REEF Database programs
+            const reefProgsToday = (allData.reefPrograms || []).filter(p => isDateInRange(
+                selectedDate.toISOString(),
+                p.fields[FIELDS.EVENTS_DB.startDateTime],
+                p.fields[FIELDS.EVENTS_DB.endDateTime]
+            ));
+            const totalEventsToday = eventsToday.length + reefProgsToday.length;
+
+            const atPrograms = new Map(); // memberId -> [eventNames]
+            eventsToday.forEach(event => {
+                const eventName = event.fields[FIELDS.EVENTS.eventName] || 'Event';
+                allData.eventAssignments.filter(ea =>
+                    linkedHas(ea.fields[FIELDS.EVENT_ASSIGNMENTS.event], event.id) &&
+                    isAssignedOrConfirmed(ea.fields[FIELDS.EVENT_ASSIGNMENTS.assignmentStatus])
+                ).forEach(ea => {
+                    const mid = linkedId(ea.fields[FIELDS.EVENT_ASSIGNMENTS.teamMember]);
+                    if (mid) {
+                        if (!atPrograms.has(mid)) atPrograms.set(mid, []);
+                        atPrograms.get(mid).push(eventName);
+                    }
+                });
             });
 
-            // Also check REEF Database programs
-            (allData.reefPrograms || []).forEach(prog => {
-                if (isDateInRange(
-                    selectedDate.toISOString(),
-                    prog.fields[FIELDS.EVENTS_DB.startDateTime],
-                    prog.fields[FIELDS.EVENTS_DB.endDateTime]
-                )) {
-                    const stillNeeded = prog.fields[FIELDS.EVENTS_DB.staffStillNeeded] || 0;
-                    projectedEventDemand += Math.max(0, stillNeeded);
+            // Compute open shift gaps
+            const belowMinShifts = shiftGaps.filter(g => g.assigned < g.min);
+            const belowTargetShifts = shiftGaps.filter(g => g.assigned >= g.min && g.assigned < g.target);
+            const totalOpenGaps = shiftGaps.reduce((sum, g) => sum + Math.max(0, g.target - g.assigned), 0);
+
+            // Event staffing gaps
+            const eventGaps = [];
+            eventsToday.forEach(event => {
+                const needed = event.fields[FIELDS.EVENTS.staffingRequired] || 0;
+                const assigned = allData.eventAssignments.filter(ea =>
+                   n linkedHas(ea.fields[FIELDS.EVENT_ASSIGNMENTS.event], event.id) &&
+                    isAssignedOrConfirmed(ea.fields[FIELDS.EVENT_ASSIGNMENTS.assignmentStatus]
+                ).length;
+                if (assigned < needed) {
+                    eventGaps.push({ name: event.fields[FIELDS.EVENTS.eventName] || 'Event', assigned, needed });
                 }
             });
 
-            const unfilled = projectedOecDemand + projectedEventDemand;
-            const totalDemand = committed + unfilled;
-            const available = totalTeam - outToday - totalDemand;
+            // Who's available (not out, not on shift, not at event)
+            const committedSet = new Set([...oecOnShift.keys(), ...atPrograms.keys()]);
+            const availablePeople = allData.teamMembers.filter(m =>
+                !outSet.has(m.id) && !committedSet.has(m.id)
+            );
 
-            // Update KPI Cards
-            document.getElementById('kpiTotal').textContent = totalTeam;
-            document.getElementById('kpiOut').textContent = outToday;
+            // Check for no-lead shifts
+            const noLeadShifts = [];
+            allData.oecShifts.forEach(shift => {
+                if (shift.fields[FIELDS.OEC_SHIFTS.shiftDate] !== todayStr) return;
+                const slot = selectVal(shift.fields[FIELDS.OEC_SHIFTS.shiftSlot]) || '';
+                const assignments = allData.oecAssignments.filter(oa =>
+                    linkedHas(oa.fields[FIELDS.OEC_ASSIGNMENTS.shiftInstance], shift.id) &&
+                    isAssignedOrConfirmed(oa.fields[FIELDS.OEC_ASSIGNMENTS.assignmentStatus])
+                );
+                const hasLead = assignments.some(a =>
+                    selectVal(a.fields[FIELDS.OEC_ASSIGNMENTS.assignmentRole]) === 'Lead'
+                );
+                if (assignments.length > 0 && !hasLead) {
+                    noLeadShifts.push(slot || 'Shift');
+                }
+            });
 
-            if (unfilled > 0) {
-                document.getElementById('kpiCommitted').innerHTML =
-                    `${committed} <span style="font-size:14px;color:#888;">+ ${unfilled} TBD</span>`;
-            } else {
-                document.getElementById('kpiCommitted').textContent = committed;
+            const available = availablePeople.length;
+
+            // --- 1. TODAY STATUS BANNER ---
+            const banner = document.getElementById('todayStatusBanner');
+            let statusLevel = 'green';
+            let statusHeadline = 'Adequately Staffed';
+            let statusIcon = '✓';
+
+            if (belowMinShifts.length > 0 || (available < 0)) {
+                statusLevel = 'red';
+                statusHeadline = 'Understaffed Today';
+                statusIcon = '⚠';
+            } else if (belowTargetShifts.length > 0 || totalOpenGaps > 0 || eventGaps.length > 0 || noLeadShifts.length > 0) {
+                statusLevel = 'yellow';
+                statusHeadline = 'Needs Attention';
+                statusIcon = '⚡';
             }
 
-            document.getElementById('kpiAvailable').textContent = available;
+            const isToday = todayStr === new Date().toISOString().split('T')[0];
+            const dateLabel = isToday ? 'Today' : selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 
+            banner.innerHTML = `
+                <div class="status-icon ${statusLevel}">${statusIcon}</div>
+                <div class="status-text">
+                    <div class="status-headline ${statusLevel}">${dateLabel}: ${statusHeadline}</div>
+                    <div class="status-details">
+                        <span>${available} available</span>
+                        <span>${outSet.size} out</span>
+                        <span>${committedSet.size} assigned</span>
+                        <span>${totalEventsToday} program${totalEventsToday !== 1 ? 's' : ''}/event${totalEventsToday !== 1 ? 's' : ''}</span>
+                        ${totalOpenGaps > 0 ? `<span style="color:#D97706;font-weight:600;">${totalOpenGaps} open gap${totalOpenGaps !== 1 ? 's' : ''}</span>` : ''}
+                    </div>
+                </div>
+            `;
+
+            // --- 2. SIMPLIFIED KPI CARDS ---
+            document.getElementById('kpiAvailable').textContent = available;
+            document.getElementById('kpiOut').textContent = outSet.size;
+            document.getElementById('kpiEvents').textContent = totalEventsToday;
+            document.getElementById('kpiGaps').textContent = totalOpenGaps;
+
+            // Color the available card
             const availableCard = document.querySelector('.kpi-card.available');
             availableCard.classList.remove('warning', 'critical');
-            if (available < 0) {
-                availableCard.classList.add('critical');
-            } else if (available <= 2) {
-                availableCard.classList.add('warning');
+            if (available < 0) availableCard.classList.add('critical');
+            else if (available <= 2) availableCard.classList.add('warning');
+
+            // Color the gaps card
+            const gapsCard = document.getElementById('kpiGaps').closest('.kpi-card');
+            gapsCard.style.borderLeftColor = totalOpenGaps > 0 ? '#D97706' : '#8CC63E';
+            document.getElementById('kpiGaps').style.color = totalOpenGaps > 0 ? '#D97706' : '#8CC63E';
+
+            // --- 3. TODAY'S ISSUES ---
+            const issues = [];
+            belowMinShifts.forEach(g => {
+                issues.push({ icon: 'critical', text: `OEC ${g.label} below minimum staffing (${g.assigned}/${g.min})` });
+            });
+            noLeadShifts.forEach(s => {
+                issues.push({ icon: 'warn', text: `No lead assigned to ${s} shift` });
+            });
+            belowTargetShifts.forEach(g => {
+                issues.push({ icon: 'warn', text: `OEC ${g.label} below target (${g.assigned}/${g.target})` });
+            });
+            eventGaps.forEach(g => {
+                issues.push({ icon: 'warn', text: `${g.name} understaffed (${g.assigned}/${g.needed})` });
+            });
+            if (outSet.size >= Math.ceil(totalTeam * 0.3)) {
+                issues.push({ icon: 'warn', text: `Heavy PTO overlap — ${outSet.size} of ${totalTeam} team members out` });
             }
 
-            renderCapacityBar(totalTeam, outToday, committed, unfilled, available);
-            renderOutTodayPanel();
-            renderOecShiftsPanel();
-            renderEventsPanel();
-            renderRoster();
-        }
-
-        function renderCapacityBar(total, out, committed, unfilled, available) {
-            const bar = document.getElementById('capacityBar');
-            bar.innerHTML = '';
-
-            if (total === 0) return;
-
-            const segments = [
-                { count: out, class: 'segment-out', label: 'Out' },
-                { count: committed, class: 'segment-oec', label: 'Assigned' },
-                { count: unfilled, class: 'segment-tbd', label: 'TBD Slots' },
-                { count: Math.max(0, available), class: 'segment-available', label: 'Available' },
-            ];
-
-            segments.forEach(seg => {
-                if (seg.count > 0) {
-                    const percent = (seg.count / total) * 100;
-                    const segment = document.createElement('div');
-                    segment.className = `capacity-segment ${seg.class}`;
-                    segment.style.width = percent + '%';
-                    segment.innerHTML = `${seg.count}`;
-                    segment.title = `${seg.label}: ${seg.count} people`;
-                    bar.appendChild(segment);
-                }
-            });
-
-            document.getElementById('capacityBadge').textContent = total;
-        }
-
-        function renderOutTodayPanel() {
-            const content = document.getElementById('outContent');
-            const badge = document.getElementById('outBadge');
-
-            const outPeople = [];
-            allData.timeAway.forEach(ta => {
-                const members = ta.fields[FIELDS.TIME_AWAY.teamMember];
-                if (members && Array.isArray(members) &&
-                    selectVal(ta.fields[FIELDS.TIME_AWAY.schedulingImpact]) === 'Blocks Scheduling Completely' &&
-                    isDateInRange(
-                        selectedDate.toISOString(),
-                        ta.fields[FIELDS.TIME_AWAY.startDateTime],
-                        ta.fields[FIELDS.TIME_AWAY.endDateTime]
-                    )) {
-                    members.forEach(m => {
-                        const mid = (typeof m === 'string') ? m : (m && m.id);
-                        if (mid && allData.teamMembers.some(tm => tm.id === mid)) {
-                            outPeople.push({
-                                name: getTeamMemberName(mid),
-                                category: selectVal(ta.fields[FIELDS.TIME_AWAY.category]) || 'Out',
-                            });
-                        }
-                    });
-                }
-            });
-
-            badge.textContent = outPeople.length;
-
-            if (outPeople.length === 0) {
-                content.innerHTML = '<div class="empty-state">No one out today</div>';
+            const issuesPanel = document.getElementById('issuesPanel');
+            if (issues.length === 0) {
+                issuesPanel.className = 'issues-panel clear';
+                issuesPanel.innerHTML = `
+                    <h3>Today's Priorities</h3>
+                    <div class="clear-msg">✓ No issues — all shifts and events are adequately staffed</div>
+                `;
             } else {
-                content.innerHTML = outPeople.map(person =>
-                    `<div class="detail-item">
-                        <div class="detail-person">${person.name}</div>
-                        <div class="detail-meta">
-                            <span class="detail-badge">${person.category}</span>
+                issuesPanel.className = 'issues-panel';
+                issuesPanel.innerHTML = `
+                    <h3>Today's Priorities (${issues.length})</h3>
+                    ${issues.map(i => `
+                        <div class="issue-item">
+                            <span class="issue-icon ${i.icon}">${i.icon === 'critical' ? '🔴' : i.icon === 'warn' ? '🟡' : 'ℹ️'}</span>
+                            <span>${i.text}</span>
                         </div>
-                    </div>`
-                ).join('');
+                    `).join('')}
+                `;
             }
+
+            // --- 4. WHO'S WHERE CARDS ---
+            const whosWhere = document.getElementById('whosWhereSection');
+
+            // Build person lists
+            const oecPeople = [];
+            oecOnShift.forEach((shifts, mid) => {
+                oecPeople.push({ name: getTeamMemberName(mid), detail: shifts.join(', ') });
+            });
+
+            const programPeople = [];
+            atPrograms.forEach((events, mid) => {
+                if (!oecOnShift.has(mid)) { // avoid double-listing
+                    programPeople.push({ name: getTeamMemberName(mid), detail: events.join(', ') });
+                }
+            });
+
+            const availList = availablePeople.map(m => {
+                const fn = m.fields[FIELDS.TEAM_MEMBERS.firstName] || '';
+                const ln = m.fields[FIELDS.TEAM_MEMBERS.lastName] || '';
+                return { name: `${fn} ${ln}`.trim() };
+            });
+
+            const outList = outPeople.map(p => ({ name: p.name, detail: p.reason }));
+
+            function renderCard(title, cssClass, people, showDetail) {
+                if (people.length === 0) return '';
+                return `
+                    <div class="whos-where-card ${cssClass}">
+                        <div class="card-header">
+                            <div class="card-dot"></div>
+                            <h4>${title}</h4>
+                            <span class="card-count">${people.length}</span>
+                        </div>
+                        <div>
+                            ${people.map(p =>
+                                `<span class="person-chip" ${showDetail && p.detail ? `title="${p.detail}"` : ''}>${p.name}</span>`
+                            ).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            whosWhere.innerHTML =
+                renderCard('On OEC Shifts', 'oec-shifts', oecPeople, true) +
+                renderCard('At Programs / Events', 'programs', programPeople, true) +
+                renderCard('Available', 'available-card', availList, false) +
+                renderCard('Out Today', 'out-card', outList, true);
+
+            // --- Render detail panels (kept for drill-down) ---
+            renderOecShiftsPanel();
+            renderEventsPanel();}
         }
 
         function renderOecShiftsPanel() {
@@ -3252,43 +3363,7 @@
                 content.innerHTML = '<div class="empty-state">No events scheduled</div>';
             } else {
                 content.innerHTML = html;
-            }
-        }
-
-        function renderRoster() {
-            const tbody = document.getElementById('rosterBody');
-            tbody.innerHTML = '';
-
-            allData.teamMembers.forEach(member => {
-                const memberId = member.id;
-                const firstName = member.fields[FIELDS.TEAM_MEMBERS.firstName] || '';
-                const lastName = member.fields[FIELDS.TEAM_MEMBERS.lastName] || '';
-                const fullName = `${firstName} ${lastName}`.trim();
-
-                const status = getPersonStatus(memberId);
-                let statusBadge = '';
-                let details = '';
-
-                if (status.status === 'out') {
-                    statusBadge = `<span class="status-badge badge-out">Out - ${status.reason}</span>`;
-                    details = status.label || status.reason;
-                } else if (status.status === 'committed') {
-                    const allItems = [...(status.shifts || []), ...(status.events || [])];
-                    statusBadge = `<span class="status-badge badge-oec">Assigned (${allItems.length})</span>`;
-                    details = allItems.join(', ');
-                } else {
-                    statusBadge = `<span class="status-badge badge-available">Available</span>`;
-                    details = 'Unallocated';
-                }
-
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td><strong>${fullName}</strong></td>
-                    <td>${statusBadge}</td>
-                    <td style="font-size: 12px; color: #999;">${details}</td>
-                `;
-                tbody.appendChild(row);
-            });
+            ;
         }
 
         // ===== 12-WEEK PLANNING VIEW =====
