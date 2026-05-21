@@ -2085,30 +2085,30 @@
     <!-- Main Content -->
     <div id="dailyViewContent" class="tab-content active">
         <div id="mainContent" class="container hidden">
-            <!--Today Status Banner -->
+            <!-- Today Status Banner -->
             <div class="today-status-banner" id="todayStatusBanner"></div>
 
-            <!-- KPI Cards (simplified)  -->
+            <!-- KPI Cards (simplified) -->
             <div class="kpi-row">
-                <div class="kpi-car available">
-                    <div class="kpi-label">Available Todaym</div>
-                    <div class="kpi-value" id="kpAvailablel">—</div>
+                <div class="kpi-card available">
+                    <div class="kpi-label">Available Today</div>
+                    <div class="kpi-value" id="kpiAvailable">—</div>
                 </div>
                 <div class="kpi-card out">
-                    <div class="kpi-label"Team Members Outy</div>
+                    <div class="kpi-label">Team Members Out</div>
                     <div class="kpi-value" id="kpiOut">—</div>
                 </div>
                 <div class="kpi-card committed">
-                    <div class="kpi-label"Programs & Events Todays</div>
-                    <div class="kpi-value" id="kpEventsd">—</div>
+                    <div class="kpi-label">Programs & Events Today</div>
+                    <div class="kpi-value" id="kpiEvents">—</div>
                 </div>
-                <div class="kpi-car">
-                    <div class="kpi-label">Open Shift Gapsd</div>
-                    <div class="kpi-value" id="kpGapse">—</div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Open Shift Gaps</div>
+                    <div class="kpi-value" id="kpiGaps">—</div>
                 </div>
             </div>
 
-            <!--Today's Issues -->
+            <!-- Today's Issues -->
             <div class="issues-panel" id="issuesPanel"></div>
 
             <!-- Who's Where -->
@@ -2121,8 +2121,7 @@
                         <div class="collapsible-header-left">
                             <span class="collapsible-icon">▶</span>
                             <span>OEC Shift Details</span>
-    
-                        <span class="section-badge" id=oecBadge">0</span>
+                            <span class="section-badge" id="oecBadge">0</span>
                         </div>
                     </div>
                     <div class="collapsible-content" id="oecContent">
@@ -2132,15 +2131,15 @@
                 <div class="collapsible-section expanded" style="margin-top:12px;">
                     <div class="collapsible-header">
                         <div class="collapsible-header-left">
-                             <span class="collapsible-icon">▶</span>
-                           <span>Program & Event Details</span>
+                            <span class="collapsible-icon">▶</span>
+                            <span>Program & Event Details</span>
                             <span class="section-badge" id="eventBadge">0</span>
                         </div>
                     </div>
                     <div class="collapsible-content" id="eventContent">
-                         <div class="empty-state">Noevents scheduled</div>
+                        <div class="empty-state">No events scheduled</div>
                     </div>
-                </dive>
+                </div>
             </div>
         </div>
 
@@ -3001,10 +3000,10 @@
             const todayStr = selectedDate.toISOString().split('T')[0];
             const totalTeam = allData.teamMembers.length;
 
-            //--- Compute core data ---
+            // --- Compute core data ---
             // Out today (blocks scheduling completely)
             const outSet = new Set();
-            const outPeople = []; // {id, name, reason};
+            const outPeople = []; // {id, name, reason}
             allData.timeAway.forEach(ta => {
                 const members = ta.fields[FIELDS.TIME_AWAY.teamMember];
                 if (!members || !Array.isArray(members)) return;
@@ -3086,7 +3085,7 @@
             eventsToday.forEach(event => {
                 const needed = event.fields[FIELDS.EVENTS.staffingRequired] || 0;
                 const assigned = allData.eventAssignments.filter(ea =>
-                   linkedHas(ea.fields[FIELDS.EVENT_ASSIGNMENTS.event], event.id) &&
+                    linkedHas(ea.fields[FIELDS.EVENT_ASSIGNMENTS.event], event.id) &&
                     isAssignedOrConfirmed(ea.fields[FIELDS.EVENT_ASSIGNMENTS.assignmentStatus])
                 ).length;
                 if (assigned < needed) {
@@ -3257,7 +3256,7 @@
 
             // --- Render detail panels (kept for drill-down) ---
             renderOecShiftsPanel();
-            renderEventsPanel();}
+            renderEventsPanel();
         }
 
         function renderOecShiftsPanel() {
@@ -3363,7 +3362,7 @@
                 content.innerHTML = '<div class="empty-state">No events scheduled</div>';
             } else {
                 content.innerHTML = html;
-            ;
+            }
         }
 
         // ===== 12-WEEK PLANNING VIEW =====
