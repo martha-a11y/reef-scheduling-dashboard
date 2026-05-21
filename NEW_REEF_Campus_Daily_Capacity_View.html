@@ -1001,6 +1001,7 @@
 
         .scheduler-grid {
             width: 100%;
+            table-layout: fixed;
             border-collapse: collapse;
             background: white;
             border-radius: 6px;
@@ -1020,13 +1021,14 @@
             color: #333;
             text-align: center;
             border-right: 1px solid #eee;
+            overflow: hidden;
         }
 
         .scheduler-grid th:last-child { border-right: none; }
 
         .scheduler-grid th.time-col {
             text-align: left;
-            min-width: 120px;
+            width: 110px;
             border-right: 2px solid #ddd;
         }
 
@@ -1046,27 +1048,30 @@
             padding: 0;
             border: 1px solid #eee;
             vertical-align: top;
-            min-height: 80px;
             position: relative;
+            overflow: hidden;
+            word-break: break-word;
         }
 
         .scheduler-grid td.time-col {
             background: #fafafa;
             border-right: 2px solid #ddd;
             padding: 10px;
-            min-width: 120px;
+            width: 110px;
             font-size: 12px;
             font-weight: 600;
             color: #666;
         }
 
         .shift-cell {
-            padding: 8px;
+            padding: 6px;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 4px;
             position: relative;
             min-height: 80px;
+            overflow: hidden;
+            box-sizing: border-box;
         }
 
         .shift-cell.empty { background: #ffebee; }
@@ -1267,12 +1272,14 @@
         }
 
         .event-cell {
-            padding: 8px;
+            padding: 6px;
             display: flex;
             flex-direction: column;
             gap: 4px;
             min-height: 60px;
             background: #e3f2fd;
+            overflow: hidden;
+            box-sizing: border-box;
         }
 
         .event-name {
@@ -2029,6 +2036,10 @@
                 <div class="scheduler-grid-wrapper">
                     <div class="scheduler-grid-main">
                         <table class="scheduler-grid">
+                            <colgroup>
+                                <col style="width: 110px;">
+                                <col span="6" style="width: calc((100% - 110px) / 6);">
+                            </colgroup>
                             <thead>
                                 <tr>
                                     <th class="time-col">Area</th>
@@ -4096,7 +4107,7 @@
                     const eName = evt._isProgram
                         ? (evt.fields[FIELDS.EVENTS_DB.eventName] || 'Program')
                         : (evt.fields[FIELDS.EVENTS.eventName] || 'Event');
-                    labelTd.innerHTML = `<span style="font-weight:600;color:#333;">${eName}</span>`;
+                    labelTd.innerHTML = `<span style="font-weight:600;color:#333;display:block;overflow:hidden;text-overflow:ellipsis;word-break:break-word;line-height:1.3;font-size:11px;">${eName}</span>`;
                     tr.appendChild(labelTd);
 
                     for (let i = 0; i < 6; i++) {
