@@ -1279,9 +1279,9 @@
             font-size: 11px;
             font-weight: 700;
             color: #24408E;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            white-space: normal;
+            word-break: break-word;
+            line-height: 1.3;
         }
 
         .event-type-badge {
@@ -1313,12 +1313,32 @@
         }
         .shift-cell.expanded .shift-collapsed-summary { display: none; }
 
+        /* Collapse/expand for event cells (matching OEC pattern) */
+        .event-cell .shift-staff { display: none; }
+        .event-cell .shift-time { display: none; }
+        .event-cell > .event-type-badge { display: none; }
+        .event-cell.expanded .shift-staff { display: flex; }
+        .event-cell.expanded .shift-time { display: block; }
+        .event-cell.expanded > .event-type-badge { display: inline-block; }
+        .event-cell { min-height: 36px; cursor: pointer; transition: min-height 0.15s ease; }
+        .event-cell.expanded { min-height: 60px; }
+        .event-cell .event-collapsed-summary {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 10px;
+            color: #555;
+            margin-top: 2px;
+        }
+        .event-cell.expanded .event-collapsed-summary { display: none; }
+
         /* Hide + button until hover (#9) */
         .shift-cell .cell-add-btn { opacity: 0; transition: opacity 0.15s ease; }
         .shift-cell:hover .cell-add-btn,
         .shift-cell.expanded .cell-add-btn { opacity: 1; }
         .event-cell .cell-add-btn { opacity: 0; transition: opacity 0.15s ease; }
-        .event-cell:hover .cell-add-btn { opacity: 1; }
+        .event-cell:hover .cell-add-btn,
+        .event-cell.expanded .cell-add-btn { opacity: 1; }
 
         /* Smaller OPEN badge (#9) */
         .shift-status-badge {
@@ -1403,6 +1423,86 @@
         .programs-kpi-bar .kpi-value {
             font-weight: 700;
             color: #24408E;
+        }
+
+        /* === Phase 2: Operational Intelligence Sidebar === */
+        .sidebar-section { max-height: none; }
+        .scheduler-sidebar { width: 280px; gap: 10px; }
+
+        .risk-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+            padding: 6px 0;
+            border-bottom: 1px solid #f5f5f5;
+            font-size: 11px;
+            color: #333;
+            line-height: 1.4;
+        }
+        .risk-item:last-child { border-bottom: none; }
+        .risk-icon { flex-shrink: 0; font-size: 12px; }
+        .risk-critical { color: #AD1D22; }
+        .risk-warning { color: #f9a825; }
+        .risk-info { color: #00B1E3; }
+
+        .util-bar-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+        .util-label { font-size: 11px; color: #666; min-width: 80px; }
+        .util-bar {
+            flex: 1;
+            height: 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .util-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        .util-value { font-size: 11px; font-weight: 600; min-width: 36px; text-align: right; }
+
+        .util-stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 11px;
+            border-bottom: 1px solid #f5f5f5;
+        }
+        .util-stat-row:last-child { border-bottom: none; }
+        .util-stat-label { color: #666; }
+        .util-stat-value { font-weight: 600; color: #333; }
+
+        .search-result-item {
+            padding: 6px 8px;
+            border-bottom: 1px solid #f5f5f5;
+            font-size: 11px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .search-result-item:hover { background: #f5f7fa; }
+        .search-result-item:last-child { border-bottom: none; }
+        .search-type-badge {
+            font-size: 9px;
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        .search-type-staff { background: #e8f5e9; color: #2e7d32; }
+        .search-type-shift { background: #fff8e1; color: #f57f17; }
+        .search-type-event { background: #e3f2fd; color: #1565c0; }
+
+        .search-highlight {
+            outline: 2px solid #FFDD00 !important;
+            outline-offset: -1px;
+            box-shadow: 0 0 8px rgba(255, 221, 0, 0.5) !important;
         }
 
         @media (max-width: 1200px) {
@@ -1494,15 +1594,13 @@
         }
 
         .staff-picker-container {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
+            position: fixed;
             background: white;
             border-radius: 6px;
             box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-            z-index: 200;
+            z-index: 10001;
             min-width: 250px;
+            max-width: 300px;
             max-height: 300px;
             overflow-y: auto;
             border: 1px solid #e0e0e0;
@@ -1947,11 +2045,29 @@
                         </table>
                     </div>
 
-                    <!-- Right Sidebar -->
+                    <!-- Right Sidebar: Operational Intelligence Panel -->
                     <div class="scheduler-sidebar">
+                        <!-- Search -->
+                        <div class="sidebar-section" style="padding:10px 12px;">
+                            <input type="text" id="dashboardSearch" placeholder="Search staff, programs, shifts…" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;outline:none;box-sizing:border-box;" oninput="handleDashboardSearch(this.value)">
+                            <div id="searchResults" style="display:none;margin-top:8px;max-height:200px;overflow-y:auto;"></div>
+                        </div>
+                        <!-- Utilization Metrics -->
+                        <div class="sidebar-section" style="padding:10px 12px;">
+                            <div class="sidebar-title" style="margin-bottom:8px;">Team Utilization</div>
+                            <div id="utilizationMetrics"></div>
+                        </div>
+                        <!-- Risk Warnings -->
+                        <div class="sidebar-section" style="padding:10px 12px;">
+                            <div class="sidebar-title" style="margin-bottom:8px;color:#AD1D22;">⚠ Staffing Alerts</div>
+                            <div id="riskWarnings"></div>
+                        </div>
+                        <!-- Team Summary (collapsed by default) -->
                         <div class="sidebar-section">
-                            <div class="sidebar-title">Weekly Team Summary</div>
-                            <div id="staffSummaryList"></div>
+                            <div class="sidebar-title" style="cursor:pointer;" onclick="toggleSidebarSection('staffSummaryList', this)">
+                                <span class="toggle-icon">▶</span> Weekly Team Summary
+                            </div>
+                            <div id="staffSummaryList" style="display:none;"></div>
                         </div>
                     </div>
                 </div>
@@ -3679,8 +3795,9 @@
                 isAssignedOrConfirmed(a.fields[FIELDS.EVENT_ASSIGNMENTS.assignmentStatus])
             );
 
-            let html = `<div class="event-cell" data-event-id="${evt.id}" data-day-index="${dayIndex}" data-type="event">`;
+            let html = `<div class="event-cell" data-event-id="${evt.id}" data-day-index="${dayIndex}" data-type="event" onclick="toggleShiftExpand(event, this)">`;
             html += `<div class="event-name" title="${eventName}">${eventName}</div>`;
+            html += `<div class="event-collapsed-summary"><span class="event-type-badge" style="font-size:8px;padding:1px 4px;">${eventType}</span> <span>${confirmed.length} assigned</span></div>`;
             html += `<div class="event-type-badge">${eventType}</div>`;
             if (timeStr) html += `<div class="shift-time">${timeStr}</div>`;
             html += `<div class="shift-staff">`;
@@ -3778,8 +3895,9 @@
 
             // Use the matching Events table ID for assignment creation; if none found, disable + button
             const assignableId = matchingEventId || '';
-            let html = `<div class="event-cell" data-event-id="${assignableId}" data-day-index="${dayIndex}" data-type="event">`;
+            let html = `<div class="event-cell" data-event-id="${assignableId}" data-day-index="${dayIndex}" data-type="event" onclick="toggleShiftExpand(event, this)">`;
             html += `<div class="event-name" title="${eventName}">${eventName}</div>`;
+            html += `<div class="event-collapsed-summary"><span class="event-type-badge" style="font-size:8px;padding:1px 4px;">${eventType}</span> <span>${confirmed.length} assigned</span></div>`;
             html += `<div class="event-type-badge">${eventType}</div>`;
             if (timeStr) html += `<div class="shift-time">${timeStr}</div>`;
             html += `<div class="shift-staff">`;
@@ -3833,6 +3951,8 @@
             renderSchedulerTimeAway();
             updateSchedulerSummary();
             renderSchedulerConflicts();
+            renderRiskWarnings();
+            renderUtilizationMetrics();
             setTimeout(() => initInteractiveCells(), 0);
         }
 
@@ -4148,6 +4268,327 @@
             const icon = document.querySelector('.timeaway-section-label .toggle-icon');
             row.classList.toggle('collapsed');
             if (icon) icon.classList.toggle('collapsed');
+        }
+
+        // Toggle collapsible sidebar sections
+        function toggleSidebarSection(targetId, headerEl) {
+            const target = document.getElementById(targetId);
+            if (!target) return;
+            const icon = headerEl.querySelector('.toggle-icon');
+            if (target.style.display === 'none') {
+                target.style.display = '';
+                if (icon) icon.textContent = '▼';
+            } else {
+                target.style.display = 'none';
+                if (icon) icon.textContent = '▶';
+            }
+        }
+
+        // ===== STAFFING RISK WARNINGS (#19) =====
+        function computeStaffingRisks() {
+            const risks = [];
+            const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+            for (let i = 0; i < 6; i++) {
+                const dayDate = new Date(schedulerWeekStart);
+                dayDate.setDate(schedulerWeekStart.getDate() + i);
+                const shifts = getSchedulerDayShifts(i);
+
+                shifts.forEach(shift => {
+                    const assignments = getSchedulerShiftAssignments(shift.id);
+                    const confirmed = assignments.filter(a =>
+                        isAssignedOrConfirmed(a.fields[FIELDS.OEC_ASSIGNMENTS.assignmentStatus])
+                    );
+                    const target = parseInt(shift.fields[FIELDS.OEC_SHIFTS.targetHeadcount]) || 2;
+                    const minimum = parseInt(shift.fields[FIELDS.OEC_SHIFTS.minHeadcount]) || 1;
+                    const slot = selectVal(shift.fields[FIELDS.OEC_SHIFTS.shiftSlot]) || '?';
+                    const typeLabel = getShiftTypeLabel(shift) || slot;
+
+                    // Critical: below minimum headcount
+                    if (confirmed.length < minimum) {
+                        risks.push({
+                            level: 'critical',
+                            text: `${dayNames[i]} ${typeLabel}: ${confirmed.length}/${minimum} min staffing`,
+                            day: i
+                        });
+                    }
+                    // Warning: below target but at or above minimum
+                    else if (confirmed.length < target) {
+                        risks.push({
+                            level: 'warning',
+                            text: `${dayNames[i]} ${typeLabel}: ${confirmed.length}/${target} target`,
+                            day: i
+                        });
+                    }
+
+                    // Check if any shift has a lead assigned
+                    const hasLead = confirmed.some(a => {
+                        const role = selectVal(a.fields[FIELDS.OEC_ASSIGNMENTS.assignmentRole]) || '';
+                        return role.toLowerCase().includes('lead');
+                    });
+                    if (confirmed.length > 0 && !hasLead) {
+                        risks.push({
+                            level: 'warning',
+                            text: `${dayNames[i]} ${typeLabel}: No lead assigned`,
+                            day: i
+                        });
+                    }
+                });
+            }
+
+            // Check for unassigned team members who are available
+            const unassignedMembers = [];
+            allData.teamMembers.forEach(member => {
+                let hasAnyAssignment = false;
+                for (let i = 0; i < 6; i++) {
+                    const dayDate = new Date(schedulerWeekStart);
+                    dayDate.setDate(schedulerWeekStart.getDate() + i);
+                    if (isPersonUnavailableOnDate(member.id, dayDate)) continue;
+                    const dayShifts = getSchedulerDayShifts(i);
+                    dayShifts.forEach(shift => {
+                        const assignments = getSchedulerShiftAssignments(shift.id);
+                        if (assignments.some(a => linkedHas(a.fields[FIELDS.OEC_ASSIGNMENTS.teamMember], member.id) &&
+                            isAssignedOrConfirmed(a.fields[FIELDS.OEC_ASSIGNMENTS.assignmentStatus]))) {
+                            hasAnyAssignment = true;
+                        }
+                    });
+                }
+                if (!hasAnyAssignment) {
+                    const name = getDisplayName(member, allData.teamMembers);
+                    // Check if they have any available days this week
+                    let availDays = 0;
+                    for (let i = 0; i < 6; i++) {
+                        const dd = new Date(schedulerWeekStart);
+                        dd.setDate(schedulerWeekStart.getDate() + i);
+                        if (!isPersonUnavailableOnDate(member.id, dd)) availDays++;
+                    }
+                    if (availDays > 0) {
+                        unassignedMembers.push(name);
+                    }
+                }
+            });
+
+            if (unassignedMembers.length > 0) {
+                risks.push({
+                    level: 'info',
+                    text: `${unassignedMembers.length} team member${unassignedMembers.length > 1 ? 's' : ''} unassigned: ${unassignedMembers.slice(0, 4).join(', ')}${unassignedMembers.length > 4 ? '…' : ''}`,
+                    day: -1
+                });
+            }
+
+            // Sort: critical first, then warning, then info
+            const order = { critical: 0, warning: 1, info: 2 };
+            risks.sort((a, b) => order[a.level] - order[b.level] || a.day - b.day);
+            return risks;
+        }
+
+        function renderRiskWarnings() {
+            const container = document.getElementById('riskWarnings');
+            if (!container) return;
+            const risks = computeStaffingRisks();
+
+            if (risks.length === 0) {
+                container.innerHTML = '<div style="font-size:11px;color:#8CC63E;font-weight:600;padding:4px 0;">✓ All shifts fully staffed</div>';
+                return;
+            }
+
+            container.innerHTML = risks.map(r => {
+                const icon = r.level === 'critical' ? '🔴' : r.level === 'warning' ? '🟡' : '🔵';
+                return `<div class="risk-item"><span class="risk-icon">${icon}</span><span>${r.text}</span></div>`;
+            }).join('');
+        }
+
+        // ===== UTILIZATION METRICS (#22) =====
+        function renderUtilizationMetrics() {
+            const container = document.getElementById('utilizationMetrics');
+            if (!container) return;
+
+            let totalShiftSlots = 0;  // total target headcount across all shifts
+            let totalFilled = 0;
+            let totalAvailableDays = 0;
+            let totalAssignedDays = 0;
+            const memberShiftCounts = {};
+
+            for (let i = 0; i < 6; i++) {
+                const shifts = getSchedulerDayShifts(i);
+                shifts.forEach(shift => {
+                    const target = parseInt(shift.fields[FIELDS.OEC_SHIFTS.targetHeadcount]) || 2;
+                    totalShiftSlots += target;
+                    const assignments = getSchedulerShiftAssignments(shift.id);
+                    const confirmed = assignments.filter(a =>
+                        isAssignedOrConfirmed(a.fields[FIELDS.OEC_ASSIGNMENTS.assignmentStatus])
+                    );
+                    totalFilled += confirmed.length;
+                    confirmed.forEach(a => {
+                        const link = a.fields[FIELDS.OEC_ASSIGNMENTS.teamMember];
+                        if (Array.isArray(link) && link.length > 0) {
+                            const id = typeof link[0] === 'object' ? link[0].id : link[0];
+                            memberShiftCounts[id] = (memberShiftCounts[id] || 0) + 1;
+                        }
+                    });
+                });
+            }
+
+            // Calculate available capacity
+            allData.teamMembers.forEach(member => {
+                for (let i = 0; i < 6; i++) {
+                    const dd = new Date(schedulerWeekStart);
+                    dd.setDate(schedulerWeekStart.getDate() + i);
+                    if (!isPersonUnavailableOnDate(member.id, dd)) totalAvailableDays++;
+                }
+                totalAssignedDays += (memberShiftCounts[member.id] || 0);
+            });
+
+            const coveragePct = totalShiftSlots > 0 ? Math.round((totalFilled / totalShiftSlots) * 100) : 0;
+            const utilizationPct = totalAvailableDays > 0 ? Math.round((totalAssignedDays / totalAvailableDays) * 100) : 0;
+
+            // Find overloaded staff (>6 shifts/week)
+            const overloaded = [];
+            Object.entries(memberShiftCounts).forEach(([id, count]) => {
+                if (count > 6) {
+                    const member = allData.teamMembers.find(m => m.id === id);
+                    if (member) overloaded.push({ name: getDisplayName(member, allData.teamMembers), count });
+                }
+            });
+
+            const coverageColor = coveragePct >= 90 ? '#8CC63E' : coveragePct >= 70 ? '#f9a825' : '#AD1D22';
+            const utilColor = utilizationPct >= 80 ? '#f9a825' : utilizationPct >= 50 ? '#8CC63E' : '#00B1E3';
+
+            let html = '';
+            html += `<div class="util-bar-wrapper">
+                <span class="util-label">Coverage</span>
+                <div class="util-bar"><div class="util-bar-fill" style="width:${coveragePct}%;background:${coverageColor};"></div></div>
+                <span class="util-value" style="color:${coverageColor}">${coveragePct}%</span>
+            </div>`;
+            html += `<div class="util-bar-wrapper">
+                <span class="util-label">Utilization</span>
+                <div class="util-bar"><div class="util-bar-fill" style="width:${Math.min(utilizationPct, 100)}%;background:${utilColor};"></div></div>
+                <span class="util-value" style="color:${utilColor}">${utilizationPct}%</span>
+            </div>`;
+            html += `<div style="margin-top:6px;">`;
+            html += `<div class="util-stat-row"><span class="util-stat-label">Shift slots</span><span class="util-stat-value">${totalFilled} / ${totalShiftSlots}</span></div>`;
+            html += `<div class="util-stat-row"><span class="util-stat-label">Team available</span><span class="util-stat-value">${totalAvailableDays} person-days</span></div>`;
+            html += `<div class="util-stat-row"><span class="util-stat-label">Assigned</span><span class="util-stat-value">${totalAssignedDays} person-shifts</span></div>`;
+            if (overloaded.length > 0) {
+                html += `<div class="util-stat-row" style="color:#AD1D22;"><span class="util-stat-label">⚠ Heavy load</span><span class="util-stat-value">${overloaded.map(o => `${o.name} (${o.count})`).join(', ')}</span></div>`;
+            }
+            html += `</div>`;
+            container.innerHTML = html;
+        }
+
+        // ===== SEARCH + QUICK FIND (#21) =====
+        function handleDashboardSearch(query) {
+            const resultsDiv = document.getElementById('searchResults');
+            if (!query || query.trim().length < 2) {
+                resultsDiv.style.display = 'none';
+                resultsDiv.innerHTML = '';
+                // Clear highlights
+                document.querySelectorAll('.search-highlight').forEach(el => el.classList.remove('search-highlight'));
+                return;
+            }
+            const q = query.toLowerCase().trim();
+            const results = [];
+            const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+            // Search team members
+            allData.teamMembers.forEach(member => {
+                const name = getDisplayName(member, allData.teamMembers);
+                if (name.toLowerCase().includes(q)) {
+                    let shiftCount = 0;
+                    for (let i = 0; i < 6; i++) {
+                        getSchedulerDayShifts(i).forEach(shift => {
+                            const assignments = getSchedulerShiftAssignments(shift.id);
+                            if (assignments.some(a => linkedHas(a.fields[FIELDS.OEC_ASSIGNMENTS.teamMember], member.id) &&
+                                isAssignedOrConfirmed(a.fields[FIELDS.OEC_ASSIGNMENTS.assignmentStatus]))) {
+                                shiftCount++;
+                            }
+                        });
+                    }
+                    results.push({ type: 'staff', name, detail: `${shiftCount} shifts this week`, memberId: member.id });
+                }
+            });
+
+            // Search OEC shifts
+            for (let i = 0; i < 6; i++) {
+                getSchedulerDayShifts(i).forEach(shift => {
+                    const label = shift.fields[FIELDS.OEC_SHIFTS.shiftLabel] || '';
+                    const tmplName = getShiftTemplateName(shift);
+                    const slot = selectVal(shift.fields[FIELDS.OEC_SHIFTS.shiftSlot]) || '';
+                    const searchStr = `${label} ${tmplName} ${slot} ${dayNames[i]}`.toLowerCase();
+                    if (searchStr.includes(q)) {
+                        const typeLabel = getShiftTypeLabel(shift) || slot;
+                        results.push({ type: 'shift', name: `${dayNames[i]} ${typeLabel}`, detail: label, shiftId: shift.id, day: i });
+                    }
+                });
+            }
+
+            // Search events/programs
+            const weekEnd = new Date(schedulerWeekStart);
+            weekEnd.setDate(weekEnd.getDate() + 6);
+            allData.events.forEach(evt => {
+                const eName = evt.fields[FIELDS.EVENTS.eventName] || '';
+                const eType = selectVal(evt.fields[FIELDS.EVENTS.eventType]) || '';
+                if ((eName + ' ' + eType).toLowerCase().includes(q)) {
+                    results.push({ type: 'event', name: eName, detail: eType, eventId: evt.id });
+                }
+            });
+            (allData.reefPrograms || []).forEach(prog => {
+                const pName = prog.fields[FIELDS.EVENTS_DB.eventName] || '';
+                const pType = selectVal(prog.fields[FIELDS.EVENTS_DB.eventType]) || '';
+                if ((pName + ' ' + pType).toLowerCase().includes(q)) {
+                    results.push({ type: 'event', name: pName, detail: pType });
+                }
+            });
+
+            if (results.length === 0) {
+                resultsDiv.innerHTML = '<div style="font-size:11px;color:#999;padding:4px;">No results</div>';
+            } else {
+                resultsDiv.innerHTML = results.slice(0, 10).map(r => {
+                    const badgeClass = r.type === 'staff' ? 'search-type-staff' : r.type === 'shift' ? 'search-type-shift' : 'search-type-event';
+                    const typeLabel = r.type === 'staff' ? 'Team' : r.type === 'shift' ? 'Shift' : 'Event';
+                    return `<div class="search-result-item" onclick="searchResultClick('${r.type}', '${r.memberId || r.shiftId || r.eventId || ''}')">
+                        <span class="search-type-badge ${badgeClass}">${typeLabel}</span>
+                        <span style="font-weight:600;">${r.name}</span>
+                        <span style="color:#999;font-size:10px;margin-left:auto;">${r.detail}</span>
+                    </div>`;
+                }).join('');
+            }
+            resultsDiv.style.display = 'block';
+        }
+
+        function searchResultClick(type, id) {
+            // Clear previous highlights
+            document.querySelectorAll('.search-highlight').forEach(el => el.classList.remove('search-highlight'));
+
+            if (type === 'staff' && id) {
+                // Highlight all cells containing this staff member
+                document.querySelectorAll('.staff-pill-interactive').forEach(pill => {
+                    const assignId = pill.dataset.assignmentId;
+                    // Check OEC assignments
+                    const oecMatch = allData.oecAssignments.some(a => a.id === assignId && linkedHas(a.fields[FIELDS.OEC_ASSIGNMENTS.teamMember], id));
+                    const evtMatch = allData.eventAssignments.some(a => a.id === assignId && linkedHas(a.fields[FIELDS.EVENT_ASSIGNMENTS.teamMember], id));
+                    if (oecMatch || evtMatch) {
+                        pill.classList.add('search-highlight');
+                        const cell = pill.closest('.shift-cell, .event-cell');
+                        if (cell && !cell.classList.contains('expanded')) cell.classList.add('expanded');
+                    }
+                });
+                // Scroll to first highlighted
+                const first = document.querySelector('.search-highlight');
+                if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else if (type === 'shift' && id) {
+                const cell = document.querySelector(`.shift-cell[data-shift-id="${id}"]`);
+                if (cell) {
+                    cell.classList.add('expanded', 'search-highlight');
+                    cell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            } else if (type === 'event' && id) {
+                const cell = document.querySelector(`.event-cell[data-event-id="${id}"]`);
+                if (cell) {
+                    cell.classList.add('expanded', 'search-highlight');
+                    cell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
         }
 
         function updateSchedulerSummary() {
@@ -4724,9 +5165,16 @@
                 });
             }
 
-            // Position: inside the cell so it flows naturally
-            cell.style.position = 'relative';
-            cell.appendChild(picker);
+            // Position: fixed to viewport so it's never clipped by table overflow
+            const cellRect = cell.getBoundingClientRect();
+            picker.style.left = cellRect.left + 'px';
+            picker.style.top = (cellRect.bottom + 4) + 'px';
+            // If it would go below viewport, show above instead
+            const viewH = window.innerHeight;
+            if (cellRect.bottom + 310 > viewH) {
+                picker.style.top = Math.max(8, cellRect.top - 310) + 'px';
+            }
+            document.body.appendChild(picker);
         }
 
         // --- Confirmation tooltip for removing staff ---
