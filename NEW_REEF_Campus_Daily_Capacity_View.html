@@ -4486,11 +4486,27 @@
         function computeStaffingRisks() {
             const risks = [];
             const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
 
             for (let i = 0; i < 6; i++) {
                 const dayDate = new Date(schedulerWeekStart);
                 dayDate.setDate(schedulerWeekStart.getDate() + i);
+                dayDate.setHours(0, 0, 0, 0);
+
+                // Skip past days — no point alerting about yesterday
+                if (dayDate < today) continue;
+
                 const shifts = getSchedulerDayShifts(i);
+                const isToday = dayDate.getTime() === today.getTime();
+                const dayLabel = isToday ? 'Today' : dayNames[i];
+
+                // Gather per-day stats
+                let belowMin = 0;
+                let belowTarget = 0;
+                let noLead = 0;
+                let belowMinDetails = [];
+                let noLeadDetails = [];
 
                 shifts.forEach(shift => {
                     const assignments = getSchedulerShiftAssignments(shift.id);
@@ -4499,48 +4515,64 @@
                     );
                     const target = parseInt(shift.fields[FIELDS.OEC_SHIFTS.targetHeadcount]) || 2;
                     const minimum = parseInt(shift.fields[FIELDS.OEC_SHIFTS.minHeadcount]) || 1;
-                    const slot = selectVal(shift.fields[FIELDS.OEC_SHIFTS.shiftSlot]) || '?';
+                    const slot = selectVal(shift.fields[FIELDS.OEC_SHIFTS.shiftSlot]) || 'Shift';
                     const typeLabel = getShiftTypeLabel(shift) || slot;
 
-                    // Critical: below minimum headcount
                     if (confirmed.length < minimum) {
-                        risks.push({
-                            level: 'critical',
-                            text: `${dayNames[i]} ${typeLabel}: ${confirmed.length}/${minimum} min staffing`,
-                            day: i
-                        });
-                    }
-                    // Warning: below target but at or above minimum
-                    else if (confirmed.length < target) {
-                        risks.push({
-                            level: 'warning',
-                            text: `${dayNames[i]} ${typeLabel}: ${confirmed.length}/${target} target`,
-                            day: i
-                        });
+                        belowMin++;
+                        belowMinDetails.push(`${typeLabel} (${confirmed.length}/${minimum})`);
+                    } else if (confirmed.length < target) {
+                        belowTarget++;
                     }
 
-                    // Check if any shift has a lead assigned
+                    // Only flag "no lead" for shifts that have SOME staff assigned
                     const hasLead = confirmed.some(a => {
                         const role = selectVal(a.fields[FIELDS.OEC_ASSIGNMENTS.assignmentRole]) || '';
                         return role.toLowerCase().includes('lead');
                     });
                     if (confirmed.length > 0 && !hasLead) {
-                        risks.push({
-                            level: 'warning',
-                            text: `${dayNames[i]} ${typeLabel}: No lead assigned`,
-                            day: i
-                        });
+                        noLead++;
+                        noLeadDetails.push(typeLabel);
                     }
                 });
+
+                // Critical: shifts below minimum staffing
+                if (belowMin > 0) {
+                    risks.push({
+                        level: 'critical',
+                        text: `${dayLabel}: ${belowMin} shift${belowMin > 1 ? 's' : ''} below minimum — ${belowMinDetails.join(', ')}`,
+                        day: i
+                    });
+                }
+
+                // Warning: shifts below target (but at/above minimum)
+                if (belowTarget > 0) {
+                    risks.push({
+                        level: 'warning',
+                        text: `${dayLabel}: ${belowTarget} shift${belowTarget > 1 ? 's' : ''} below target staffing`,
+                        day: i
+                    });
+                }
+
+                // Warning: shifts with staff but no lead
+                if (noLead > 0) {
+                    risks.push({
+                        level: 'warning',
+                        text: `${dayLabel}: No lead assigned — ${noLeadDetails.join(', ')}`,
+                        day: i
+                    });
+                }
             }
 
-            // Check for unassigned team members who are available
+            // Info: unassigned team members (only from today forward)
             const unassignedMembers = [];
             allData.teamMembers.forEach(member => {
                 let hasAnyAssignment = false;
                 for (let i = 0; i < 6; i++) {
                     const dayDate = new Date(schedulerWeekStart);
                     dayDate.setDate(schedulerWeekStart.getDate() + i);
+                    dayDate.setHours(0, 0, 0, 0);
+                    if (dayDate < today) continue;
                     if (isPersonUnavailableOnDate(member.id, dayDate)) continue;
                     const dayShifts = getSchedulerDayShifts(i);
                     dayShifts.forEach(shift => {
@@ -4553,11 +4585,12 @@
                 }
                 if (!hasAnyAssignment) {
                     const name = getDisplayName(member, allData.teamMembers);
-                    // Check if they have any available days this week
                     let availDays = 0;
                     for (let i = 0; i < 6; i++) {
                         const dd = new Date(schedulerWeekStart);
                         dd.setDate(schedulerWeekStart.getDate() + i);
+                        dd.setHours(0, 0, 0, 0);
+                        if (dd < today) continue;
                         if (!isPersonUnavailableOnDate(member.id, dd)) availDays++;
                     }
                     if (availDays > 0) {
@@ -4569,7 +4602,7 @@
             if (unassignedMembers.length > 0) {
                 risks.push({
                     level: 'info',
-                    text: `${unassignedMembers.length} team member${unassignedMembers.length > 1 ? 's' : ''} unassigned: ${unassignedMembers.slice(0, 4).join(', ')}${unassignedMembers.length > 4 ? '…' : ''}`,
+                    text: `${unassignedMembers.length} team member${unassignedMembers.length > 1 ? 's' : ''} available but unassigned: ${unassignedMembers.slice(0, 4).join(', ')}${unassignedMembers.length > 4 ? '…' : ''}`,
                     day: -1
                 });
             }
