@@ -3086,7 +3086,7 @@
             eventsToday.forEach(event => {
                 const needed = event.fields[FIELDS.EVENTS.staffingRequired] || 0;
                 const assigned = allData.eventAssignments.filter(ea =>
-                   n linkedHas(ea.fields[FIELDS.EVENT_ASSIGNMENTS.event], event.id) &&
+                   linkedHas(ea.fields[FIELDS.EVENT_ASSIGNMENTS.event], event.id) &&
                     isAssignedOrConfirmed(ea.fields[FIELDS.EVENT_ASSIGNMENTS.assignmentStatus])
                 ).length;
                 if (assigned < needed) {
