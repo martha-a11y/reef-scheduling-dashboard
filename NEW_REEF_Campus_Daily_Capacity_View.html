@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>REEF Campus Scheduling & Availability Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
     <style>
         * {
             margin: 0;
@@ -779,6 +780,101 @@
             margin-bottom: 20px;
         }
 
+        /* --- High-Risk Weeks Alert Panel --- */
+        .risk-weeks-panel {
+            background: white;
+            border-radius: 10px;
+            padding: 18px 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-left: 4px solid #8CC63E;
+        }
+        .risk-weeks-panel.has-warnings { border-left-color: #F7931D; }
+        .risk-weeks-panel.has-critical { border-left-color: #AD1D22; }
+        .risk-weeks-panel h3 {
+            font-size: 14px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.5px; margin-bottom: 10px; color: #333;
+        }
+        .risk-weeks-panel .risk-week-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 0; border-bottom: 1px solid #f5f5f5; font-size: 13px;
+        }
+        .risk-weeks-panel .risk-week-item:last-child { border-bottom: none; }
+        .risk-week-badge {
+            display: inline-block; padding: 3px 10px; border-radius: 12px;
+            font-size: 11px; font-weight: 700; min-width: 60px; text-align: center;
+        }
+        .risk-week-badge.green { background: #DEF7EC; color: #059669; }
+        .risk-week-badge.yellow { background: #FEF3CD; color: #D97706; }
+        .risk-week-badge.red { background: #FDE8E8; color: #AD1D22; }
+        .risk-week-detail { color: #666; flex: 1; }
+        .risk-week-who { font-size: 12px; color: #999; }
+
+        /* --- Weekly Capacity Breakdown --- */
+        .capacity-breakdown {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+        }
+        .capacity-week-row {
+            display: grid;
+            grid-template-columns: 140px 100px 1fr 200px;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+            gap: 12px;
+        }
+        .capacity-week-row:last-child { border-bottom: none; }
+        .capacity-week-row.header {
+            font-size: 11px; font-weight: 700; color: #999;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            padding-bottom: 8px; border-bottom: 2px solid #e0e0e0;
+        }
+        .capacity-week-label { font-weight: 600; font-size: 13px; color: #333; }
+        .capacity-week-label .week-dates { font-weight: 400; font-size: 11px; color: #999; display: block; }
+        .capacity-week-count { font-size: 14px; font-weight: 700; text-align: center; }
+        .capacity-week-bar-wrap {
+            background: #f0f0f0; border-radius: 6px; height: 24px;
+            position: relative; overflow: hidden;
+        }
+        .capacity-week-bar {
+            height: 100%; border-radius: 6px; transition: width 0.3s ease;
+            display: flex; align-items: center; padding-left: 8px;
+            font-size: 11px; font-weight: 600; color: white;
+        }
+        .capacity-week-bar.green { background: #8CC63E; }
+        .capacity-week-bar.yellow { background: #F7931D; }
+        .capacity-week-bar.red { background: #AD1D22; }
+        .capacity-week-who-out {
+            font-size: 11px; color: #888; white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis;
+        }
+        .capacity-week-row.current-week {
+            background: #f0f7ff; border-radius: 6px; padding: 12px 8px;
+        }
+        .capacity-week-expand {
+            cursor: pointer; user-select: none;
+        }
+        .capacity-week-expand:hover .capacity-week-label { color: #24408E; }
+        .capacity-week-detail {
+            display: none; grid-column: 1 / -1; padding: 8px 0 4px 12px;
+        }
+        .capacity-week-detail.open { display: block; }
+        .capacity-detail-list {
+            display: flex; flex-wrap: wrap; gap: 6px;
+        }
+        .capacity-detail-chip {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 500;
+        }
+        .capacity-detail-chip.leave { background: #f0f0f0; color: #666; }
+        .capacity-detail-chip.field-survey { background: #FDE8E8; color: #AD1D22; }
+        .capacity-detail-chip.conference { background: #FEF3CD; color: #D97706; }
+        .capacity-detail-chip.program { background: #E0F3FC; color: #0077A8; }
+
+        /* --- Keep old grid/timeline for fallback but restyle --- */
         .grid-section {
             background: white;
             border-radius: 8px;
@@ -2162,62 +2258,89 @@
     <!-- 12-Week Planning Tab -->
     <div id="planningViewContent" class="tab-content">
         <div id="planningContent" class="container">
-            <!-- Summary KPI Cards -->
+            <!-- Capacity Forecast KPI Cards -->
             <div class="kpi-row">
                 <div class="kpi-card">
-                    <div class="kpi-label">Total Active Staff</div>
+                    <div class="kpi-label">Total Team</div>
                     <div class="kpi-value" id="planningKpiTotal">—</div>
                 </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Campus Staff</div>
-                    <div class="kpi-value" id="planningKpiCampus">—</div>
+                <div class="kpi-card available">
+                    <div class="kpi-label">Available This Week</div>
+                    <div class="kpi-value" id="planningKpiAvailNow">—</div>
                 </div>
                 <div class="kpi-card out">
-                    <div class="kpi-label">Away This Week</div>
-                    <div class="kpi-value" id="planningKpiAwayThisWeek">—</div>
+                    <div class="kpi-label">Lowest Week (Next 12)</div>
+                    <div class="kpi-value" id="planningKpiLowest">—</div>
+                    <div style="font-size:11px;color:#999;margin-top:4px;" id="planningKpiLowestLabel"></div>
                 </div>
                 <div class="kpi-card out">
-                    <div class="kpi-label">Away Next Week</div>
-                    <div class="kpi-value" id="planningKpiAwayNextWeek">—</div>
+                    <div class="kpi-label">Weeks At Risk</div>
+                    <div class="kpi-value" id="planningKpiRiskWeeks">—</div>
+                    <div style="font-size:11px;color:#999;margin-top:4px;">below 70% capacity</div>
                 </div>
             </div>
 
-            <!-- Filter Bar -->
-            <div class="filter-bar">
-                <select id="departmentFilter" class="filter-select">
-                    <option value="">All Departments</option>
-                    <option value="REEF Campus">REEF Campus</option>
-                    <option value="Remote">Remote</option>
-                </select>
+            <!-- High-Risk Weeks Alert Panel -->
+            <div class="risk-weeks-panel" id="riskWeeksPanel">
+                <h3 id="riskWeeksPanelTitle">Staffing Risk Summary</h3>
+                <div id="riskWeeksPanelBody"></div>
             </div>
 
             <!-- 12-Week Capacity Chart -->
             <div class="chart-section">
-                <h2 class="section-title">12-Week Staffing Capacity</h2>
+                <h2 class="section-title">12-Week Capacity Forecast</h2>
+                <div style="display:flex;gap:16px;margin-bottom:12px;font-size:12px;color:#666;">
+                    <span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:12px;border-radius:2px;background:#8CC63E;display:inline-block;"></span> 80%+ staffed</span>
+                    <span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:12px;border-radius:2px;background:#F7931D;display:inline-block;"></span> 60-79% staffed</span>
+                    <span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:12px;border-radius:2px;background:#AD1D22;display:inline-block;"></span> Below 60%</span>
+                </div>
                 <div class="chart-container">
                     <canvas id="capacityChart"></canvas>
                 </div>
             </div>
 
-            <!-- Weekly Staff Availability Grid -->
+            <!-- Weekly Capacity Breakdown -->
+            <div class="capacity-breakdown">
+                <h2 class="section-title">Weekly Capacity Breakdown</h2>
+                <div class="capacity-week-row header">
+                    <div>Week</div>
+                    <div style="text-align:center;">Available</div>
+                    <div>Capacity</div>
+                    <div>Who's Out</div>
+                </div>
+                <div id="capacityBreakdownBody"></div>
+            </div>
+
+            <!-- Person-Level Grid (collapsed by default) -->
             <div class="grid-section">
-                <h2 class="section-title">Weekly Staff Availability (8 Weeks)</h2>
-                <table class="availability-grid" id="availabilityGrid">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Department</th>
-                            <th colspan="8">Week</th>
-                        </tr>
-                    </thead>
-                    <tbody id="availabilityBody">
-                    </tbody>
-                </table>
+                <h2 class="section-title" style="cursor:pointer;" onclick="togglePersonGrid()">
+                    <span id="personGridToggle">&#9654;</span> Individual Availability (8 Weeks)
+                </h2>
+                <div id="personGridWrap" style="display:none;">
+                    <div class="filter-bar" style="margin-bottom:15px;">
+                        <select id="departmentFilter" class="filter-select">
+                            <option value="">All Departments</option>
+                            <option value="REEF Campus">REEF Campus</option>
+                            <option value="Remote">Remote</option>
+                        </select>
+                    </div>
+                    <table class="availability-grid" id="availabilityGrid">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Department</th>
+                                <th colspan="8">Week</th>
+                            </tr>
+                        </thead>
+                        <tbody id="availabilityBody">
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- Upcoming Events Timeline -->
             <div class="timeline-section">
-                <h2 class="section-title">Upcoming Events (12 Weeks)</h2>
+                <h2 class="section-title">Upcoming Events &amp; Staffing Impact (12 Weeks)</h2>
                 <div class="timeline-container" id="timelineContainer">
                 </div>
             </div>
@@ -3366,73 +3489,35 @@
         }
 
         // ===== 12-WEEK PLANNING VIEW =====
+        // Cached weekly capacity data shared across render functions
+        let weeklyCapacityData = [];
+
         function render12WeekView() {
+            computeWeeklyCapacity();
             render12WeekKpis();
+            renderRiskWeeksPanel();
             render12WeekCapacityChart();
+            renderCapacityBreakdown();
             render12WeekAvailabilityGrid();
             renderTimelineEvents();
         }
 
-        function render12WeekKpis() {
-            const totalActive = allData.allTeamMembers.length;
-            const campusStaff = allData.teamMembers.length;
-
-            // Away this week (Blocks Scheduling Completely)
-            const weekStart = getWeekStartDate(0);
-            const weekEnd = new Date(weekStart);
-            weekEnd.setDate(weekEnd.getDate() + 6);
-
-            const awayThisWeek = new Set();
-            allData.timeAway.forEach(ta => {
-                const members = ta.fields[FIELDS.TIME_AWAY.teamMember];
-                if (!members || !Array.isArray(members)) return;
-                if (selectVal(ta.fields[FIELDS.TIME_AWAY.schedulingImpact]) !== 'Blocks Scheduling Completely') return;
-                if (!isDateInWeekRange(weekStart, ta.fields[FIELDS.TIME_AWAY.startDateTime], ta.fields[FIELDS.TIME_AWAY.endDateTime])) return;
-                members.forEach(m => {
-                    const mid = (typeof m === 'string') ? m : (m && m.id);
-                    if (mid && allData.allTeamMembers.some(tm => tm.id === mid)) awayThisWeek.add(mid);
-                });
-            });
-
-            // Away next week
-            const nextWeekStart = getWeekStartDate(1);
-            const nextWeekEnd = new Date(nextWeekStart);
-            nextWeekEnd.setDate(nextWeekEnd.getDate() + 6);
-
-            const awayNextWeek = new Set();
-            allData.timeAway.forEach(ta => {
-                const members = ta.fields[FIELDS.TIME_AWAY.teamMember];
-                if (!members || !Array.isArray(members)) return;
-                if (selectVal(ta.fields[FIELDS.TIME_AWAY.schedulingImpact]) !== 'Blocks Scheduling Completely') return;
-                if (!isDateInWeekRange(nextWeekStart, ta.fields[FIELDS.TIME_AWAY.startDateTime], ta.fields[FIELDS.TIME_AWAY.endDateTime])) return;
-                members.forEach(m => {
-                    const mid = (typeof m === 'string') ? m : (m && m.id);
-                    if (mid && allData.allTeamMembers.some(tm => tm.id === mid)) awayNextWeek.add(mid);
-                });
-            });
-
-            document.getElementById('planningKpiTotal').textContent = totalActive;
-            document.getElementById('planningKpiCampus').textContent = campusStaff;
-            document.getElementById('planningKpiAwayThisWeek').textContent = awayThisWeek.size;
-            document.getElementById('planningKpiAwayNextWeek').textContent = awayNextWeek.size;
-        }
-
-        function render12WeekCapacityChart() {
-            const ctx = document.getElementById('capacityChart').getContext('2d');
-            const weeks = [];
-            const availableCounts = [];
-            const labels = [];
+        // Core computation: build capacity data for each of 12 weeks
+        function computeWeeklyCapacity() {
+            weeklyCapacityData = [];
+            const totalStaff = allData.allTeamMembers.length;
 
             for (let i = 0; i < 12; i++) {
                 const weekStart = getWeekStartDate(i);
-                weeks.push(weekStart);
-
                 const monthStr = String(weekStart.getMonth() + 1).padStart(2, '0');
                 const dayStr = String(weekStart.getDate()).padStart(2, '0');
-                labels.push(`Week ${i + 1}\n${monthStr}/${dayStr}`);
+                const weekEnd = new Date(weekStart);
+                weekEnd.setDate(weekEnd.getDate() + 6);
+                const endMonthStr = String(weekEnd.getMonth() + 1).padStart(2, '0');
+                const endDayStr = String(weekEnd.getDate()).padStart(2, '0');
 
-                // Count people out this week
-                const outThisWeek = new Set();
+                // People on leave (Blocks Scheduling Completely)
+                const onLeave = new Map();
                 allData.timeAway.forEach(ta => {
                     const members = ta.fields[FIELDS.TIME_AWAY.teamMember];
                     if (!members || !Array.isArray(members)) return;
@@ -3440,12 +3525,49 @@
                     if (!isDateInWeekRange(weekStart, ta.fields[FIELDS.TIME_AWAY.startDateTime], ta.fields[FIELDS.TIME_AWAY.endDateTime])) return;
                     members.forEach(m => {
                         const mid = (typeof m === 'string') ? m : (m && m.id);
-                        if (mid && allData.allTeamMembers.some(tm => tm.id === mid)) outThisWeek.add(mid);
+                        if (mid && allData.allTeamMembers.some(tm => tm.id === mid)) {
+                            const cat = selectVal(ta.fields[FIELDS.TIME_AWAY.category]) || 'Leave';
+                            onLeave.set(mid, cat);
+                        }
                     });
                 });
 
-                // Count people at field surveys/conferences this week
-                const busyThisWeek = new Set();
+                // People on field surveys
+                const onFieldSurvey = new Map();
+                allData.eventAssignments.forEach(ea => {
+                    if (!isAssignedOrConfirmed(ea.fields[FIELDS.EVENT_ASSIGNMENTS.assignmentStatus])) return;
+                    const eventRecId = linkedId(ea.fields[FIELDS.EVENT_ASSIGNMENTS.event]);
+                    if (!eventRecId) return;
+                    const event = allData.events.find(e => e.id === eventRecId);
+                    if (!event) return;
+                    if (selectVal(event.fields[FIELDS.EVENTS.eventType]) === 'Field Survey' &&
+                        isDateInWeekRange(weekStart, event.fields[FIELDS.EVENTS.startDateTime], event.fields[FIELDS.EVENTS.endDateTime])) {
+                        const mid = linkedId(ea.fields[FIELDS.EVENT_ASSIGNMENTS.teamMember]);
+                        if (mid && allData.allTeamMembers.some(tm => tm.id === mid) && !onLeave.has(mid)) {
+                            onFieldSurvey.set(mid, event.fields[FIELDS.EVENTS.eventName] || 'Field Survey');
+                        }
+                    }
+                });
+
+                // People at conferences
+                const onConference = new Map();
+                allData.eventAssignments.forEach(ea => {
+                    if (!isAssignedOrConfirmed(ea.fields[FIELDS.EVENT_ASSIGNMENTS.assignmentStatus])) return;
+                    const eventRecId = linkedId(ea.fields[FIELDS.EVENT_ASSIGNMENTS.event]);
+                    if (!eventRecId) return;
+                    const event = allData.events.find(e => e.id === eventRecId);
+                    if (!event) return;
+                    if (selectVal(event.fields[FIELDS.EVENTS.eventType]) === 'Conference' &&
+                        isDateInWeekRange(weekStart, event.fields[FIELDS.EVENTS.startDateTime], event.fields[FIELDS.EVENTS.endDateTime])) {
+                        const mid = linkedId(ea.fields[FIELDS.EVENT_ASSIGNMENTS.teamMember]);
+                        if (mid && allData.allTeamMembers.some(tm => tm.id === mid) && !onLeave.has(mid) && !onFieldSurvey.has(mid)) {
+                            onConference.set(mid, event.fields[FIELDS.EVENTS.eventName] || 'Conference');
+                        }
+                    }
+                });
+
+                // People on programs (other event types)
+                const onProgram = new Map();
                 allData.eventAssignments.forEach(ea => {
                     if (!isAssignedOrConfirmed(ea.fields[FIELDS.EVENT_ASSIGNMENTS.assignmentStatus])) return;
                     const eventRecId = linkedId(ea.fields[FIELDS.EVENT_ASSIGNMENTS.event]);
@@ -3453,23 +3575,129 @@
                     const event = allData.events.find(e => e.id === eventRecId);
                     if (!event) return;
                     const eventType = selectVal(event.fields[FIELDS.EVENTS.eventType]);
-                    if (['Field Survey', 'Conference'].includes(eventType) &&
+                    if (!['Field Survey', 'Conference'].includes(eventType) &&
                         isDateInWeekRange(weekStart, event.fields[FIELDS.EVENTS.startDateTime], event.fields[FIELDS.EVENTS.endDateTime])) {
                         const mid = linkedId(ea.fields[FIELDS.EVENT_ASSIGNMENTS.teamMember]);
-                        if (mid && allData.allTeamMembers.some(tm => tm.id === mid)) busyThisWeek.add(mid);
+                        if (mid && allData.allTeamMembers.some(tm => tm.id === mid) && !onLeave.has(mid) && !onFieldSurvey.has(mid) && !onConference.has(mid)) {
+                            onProgram.set(mid, event.fields[FIELDS.EVENTS.eventName] || 'Program');
+                        }
                     }
                 });
 
-                const totalOut = outThisWeek.size + busyThisWeek.size;
-                const available = allData.allTeamMembers.length - totalOut;
-                availableCounts.push(available);
+                const totalOut = onLeave.size + onFieldSurvey.size + onConference.size;
+                const available = totalStaff - totalOut;
+                const pct = totalStaff > 0 ? Math.round((available / totalStaff) * 100) : 100;
+                const health = pct >= 80 ? 'green' : (pct >= 60 ? 'yellow' : 'red');
+
+                // Build names for who's out
+                function getName(mid) {
+                    const tm = allData.allTeamMembers.find(t => t.id === mid);
+                    if (!tm) return '?';
+                    const fn = (tm.fields[FIELDS.TEAM_MEMBERS.firstName] || '').trim();
+                    const ln = (tm.fields[FIELDS.TEAM_MEMBERS.lastName] || '').trim();
+                    return fn + (ln ? ' ' + ln.charAt(0) + '.' : '');
+                }
+
+                const outDetails = [];
+                onLeave.forEach((cat, mid) => outDetails.push({ name: getName(mid), reason: cat, type: 'leave' }));
+                onFieldSurvey.forEach((evt, mid) => outDetails.push({ name: getName(mid), reason: evt, type: 'field-survey' }));
+                onConference.forEach((evt, mid) => outDetails.push({ name: getName(mid), reason: evt, type: 'conference' }));
+                onProgram.forEach((evt, mid) => outDetails.push({ name: getName(mid), reason: evt, type: 'program' }));
+
+                weeklyCapacityData.push({
+                    weekIndex: i,
+                    weekStart: weekStart,
+                    label: `Week ${i + 1}`,
+                    dateRange: `${monthStr}/${dayStr} - ${endMonthStr}/${endDayStr}`,
+                    chartLabel: `Wk ${i + 1}\n${monthStr}/${dayStr}`,
+                    totalStaff: totalStaff,
+                    available: available,
+                    totalOut: totalOut,
+                    onLeave: onLeave,
+                    onFieldSurvey: onFieldSurvey,
+                    onConference: onConference,
+                    onProgram: onProgram,
+                    outDetails: outDetails,
+                    pct: pct,
+                    health: health,
+                });
+            }
+        }
+
+        function render12WeekKpis() {
+            const totalStaff = allData.allTeamMembers.length;
+            const thisWeek = weeklyCapacityData[0];
+            const lowestWeek = weeklyCapacityData.reduce((min, w) => w.available < min.available ? w : min, weeklyCapacityData[0]);
+            const riskWeeks = weeklyCapacityData.filter(w => w.pct < 70).length;
+
+            document.getElementById('planningKpiTotal').textContent = totalStaff;
+            document.getElementById('planningKpiAvailNow').textContent = thisWeek ? thisWeek.available : '—';
+
+            // Color the "Available This Week" KPI
+            const availCard = document.getElementById('planningKpiAvailNow').parentElement;
+            availCard.className = 'kpi-card available';
+            if (thisWeek && thisWeek.health === 'yellow') availCard.classList.add('warning');
+            if (thisWeek && thisWeek.health === 'red') availCard.classList.add('critical');
+
+            document.getElementById('planningKpiLowest').textContent = lowestWeek ? lowestWeek.available : '—';
+            document.getElementById('planningKpiLowestLabel').textContent = lowestWeek ? lowestWeek.dateRange : '';
+            document.getElementById('planningKpiRiskWeeks').textContent = riskWeeks;
+
+            // Color risk weeks KPI
+            const riskCard = document.getElementById('planningKpiRiskWeeks').parentElement;
+            riskCard.className = 'kpi-card';
+            if (riskWeeks > 0) riskCard.classList.add('out');
+        }
+
+        function renderRiskWeeksPanel() {
+            const panel = document.getElementById('riskWeeksPanel');
+            const body = document.getElementById('riskWeeksPanelBody');
+            const title = document.getElementById('riskWeeksPanelTitle');
+
+            const riskWeeks = weeklyCapacityData.filter(w => w.health !== 'green');
+            const hasCritical = riskWeeks.some(w => w.health === 'red');
+
+            panel.className = 'risk-weeks-panel';
+            if (hasCritical) {
+                panel.classList.add('has-critical');
+                title.textContent = 'Staffing Alerts';
+            } else if (riskWeeks.length > 0) {
+                panel.classList.add('has-warnings');
+                title.textContent = 'Staffing Alerts';
+            } else {
+                title.textContent = 'Staffing Outlook';
             }
 
+            if (riskWeeks.length === 0) {
+                body.innerHTML = '<div style="font-size:13px;color:#059669;font-weight:500;">All 12 weeks are at 80%+ capacity. No staffing concerns.</div>';
+                return;
+            }
+
+            let html = '';
+            riskWeeks.sort((a, b) => a.pct - b.pct);
+            riskWeeks.forEach(w => {
+                const outNames = w.outDetails.slice(0, 4).map(d => d.name).join(', ');
+                const moreCount = w.outDetails.length > 4 ? ` +${w.outDetails.length - 4} more` : '';
+                html += `
+                    <div class="risk-week-item">
+                        <span class="risk-week-badge ${w.health}">${w.pct}%</span>
+                        <span class="risk-week-detail"><strong>${w.label}</strong> (${w.dateRange}) &mdash; ${w.available} of ${w.totalStaff} available, ${w.totalOut} out</span>
+                        <span class="risk-week-who">${outNames}${moreCount}</span>
+                    </div>
+                `;
+            });
+            body.innerHTML = html;
+        }
+
+        function render12WeekCapacityChart() {
+            const ctx = document.getElementById('capacityChart').getContext('2d');
             const totalStaff = allData.allTeamMembers.length;
-            const colors = availableCounts.map(count => {
-                const percentage = (count / totalStaff) * 100;
-                if (percentage >= 80) return '#8CC63E';
-                if (percentage >= 60) return '#FFDD00';
+
+            const labels = weeklyCapacityData.map(w => w.chartLabel);
+            const available = weeklyCapacityData.map(w => w.available);
+            const colors = weeklyCapacityData.map(w => {
+                if (w.health === 'green') return '#8CC63E';
+                if (w.health === 'yellow') return '#F7931D';
                 return '#AD1D22';
             });
 
@@ -3482,8 +3710,8 @@
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Available Staff',
-                        data: availableCounts,
+                        label: 'Available',
+                        data: available,
                         backgroundColor: colors,
                         borderColor: '#ddd',
                         borderWidth: 1,
@@ -3492,34 +3720,108 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    indexAxis: 'x',
                     plugins: {
-                        legend: {
-                            display: false,
-                        }
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const w = weeklyCapacityData[context.dataIndex];
+                                    return `${w.available} of ${w.totalStaff} available (${w.pct}%)`;
+                                },
+                                afterLabel: function(context) {
+                                    const w = weeklyCapacityData[context.dataIndex];
+                                    if (w.outDetails.length === 0) return '';
+                                    return 'Out: ' + w.outDetails.slice(0, 5).map(d => d.name).join(', ') + (w.outDetails.length > 5 ? '...' : '');
+                                }
+                            }
+                        },
+                        annotation: totalStaff > 0 ? {
+                            annotations: {
+                                thresholdLine: {
+                                    type: 'line',
+                                    yMin: Math.round(totalStaff * 0.7),
+                                    yMax: Math.round(totalStaff * 0.7),
+                                    borderColor: '#F7931D',
+                                    borderWidth: 2,
+                                    borderDash: [6, 3],
+                                    label: {
+                                        display: true,
+                                        content: '70% threshold',
+                                        position: 'end',
+                                        backgroundColor: '#F7931D',
+                                        color: 'white',
+                                        font: { size: 10 }
+                                    }
+                                }
+                            }
+                        } : undefined
                     },
                     scales: {
                         y: {
                             beginAtZero: true,
                             max: totalStaff,
-                            ticks: {
-                                color: '#666',
-                            },
-                            grid: {
-                                color: '#f0f0f0',
-                            }
+                            ticks: { color: '#666' },
+                            grid: { color: '#f0f0f0' }
                         },
                         x: {
-                            ticks: {
-                                color: '#666',
-                            },
-                            grid: {
-                                display: false,
-                            }
+                            ticks: { color: '#666', autoSkip: false, maxRotation: 0 },
+                            grid: { display: false }
                         }
                     }
                 }
             });
+        }
+
+        function renderCapacityBreakdown() {
+            const body = document.getElementById('capacityBreakdownBody');
+            const totalStaff = allData.allTeamMembers.length;
+            let html = '';
+
+            weeklyCapacityData.forEach((w, idx) => {
+                const barWidth = totalStaff > 0 ? Math.round((w.available / totalStaff) * 100) : 100;
+                const isCurrentWeek = idx === 0;
+                const outSummary = w.outDetails.slice(0, 3).map(d => d.name).join(', ');
+                const moreCount = w.outDetails.length > 3 ? ` +${w.outDetails.length - 3}` : '';
+
+                html += `<div class="capacity-week-row${isCurrentWeek ? ' current-week' : ''} capacity-week-expand" onclick="toggleWeekDetail(${idx})">`;
+                html += `<div class="capacity-week-label">${w.label}${isCurrentWeek ? ' <span style="font-size:10px;color:#24408E;font-weight:700;">(CURRENT)</span>' : ''}<span class="week-dates">${w.dateRange}</span></div>`;
+                html += `<div class="capacity-week-count" style="color:${w.health === 'green' ? '#059669' : (w.health === 'yellow' ? '#D97706' : '#AD1D22')}">${w.available}/${totalStaff}</div>`;
+                html += `<div class="capacity-week-bar-wrap"><div class="capacity-week-bar ${w.health}" style="width:${barWidth}%">${w.pct}%</div></div>`;
+                html += `<div class="capacity-week-who-out">${w.totalOut === 0 ? '<span style="color:#059669;">Full capacity</span>' : outSummary + moreCount}</div>`;
+                html += `</div>`;
+
+                // Expandable detail row
+                html += `<div class="capacity-week-detail" id="weekDetail${idx}">`;
+                if (w.outDetails.length === 0) {
+                    html += '<div style="font-size:12px;color:#059669;">Everyone available this week.</div>';
+                } else {
+                    html += '<div class="capacity-detail-list">';
+                    w.outDetails.forEach(d => {
+                        html += `<span class="capacity-detail-chip ${d.type}">${d.name} &middot; ${d.reason}</span>`;
+                    });
+                    html += '</div>';
+                }
+                html += '</div>';
+            });
+
+            body.innerHTML = html;
+        }
+
+        function toggleWeekDetail(idx) {
+            const el = document.getElementById('weekDetail' + idx);
+            if (el) el.classList.toggle('open');
+        }
+
+        function togglePersonGrid() {
+            const wrap = document.getElementById('personGridWrap');
+            const toggle = document.getElementById('personGridToggle');
+            if (wrap.style.display === 'none') {
+                wrap.style.display = 'block';
+                toggle.innerHTML = '&#9660;';
+            } else {
+                wrap.style.display = 'none';
+                toggle.innerHTML = '&#9654;';
+            }
         }
 
         function render12WeekAvailabilityGrid() {
@@ -3584,7 +3886,7 @@
 
             const allEvents = [];
 
-            // Add Events
+            // Add Events (from Scheduling base)
             allData.events.forEach(event => {
                 const startDate = event.fields[FIELDS.EVENTS.startDateTime];
                 const endDate = event.fields[FIELDS.EVENTS.endDateTime];
@@ -3597,17 +3899,36 @@
                 twoWeeksOut.setDate(twoWeeksOut.getDate() + 84);
 
                 if (eventStart <= twoWeeksOut && eventEnd >= now) {
+                    // Count assigned staff
+                    const assignedStaff = [];
+                    allData.eventAssignments.forEach(ea => {
+                        if (!isAssignedOrConfirmed(ea.fields[FIELDS.EVENT_ASSIGNMENTS.assignmentStatus])) return;
+                        const eId = linkedId(ea.fields[FIELDS.EVENT_ASSIGNMENTS.event]);
+                        if (eId !== event.id) return;
+                        const mid = linkedId(ea.fields[FIELDS.EVENT_ASSIGNMENTS.teamMember]);
+                        if (mid) {
+                            const tm = allData.allTeamMembers.find(t => t.id === mid);
+                            if (tm) {
+                                const fn = (tm.fields[FIELDS.TEAM_MEMBERS.firstName] || '').trim();
+                                const ln = (tm.fields[FIELDS.TEAM_MEMBERS.lastName] || '').trim();
+                                assignedStaff.push(fn + (ln ? ' ' + ln.charAt(0) + '.' : ''));
+                            }
+                        }
+                    });
+
                     allEvents.push({
                         name: event.fields[FIELDS.EVENTS.eventName] || 'Unnamed Event',
                         type: selectVal(event.fields[FIELDS.EVENTS.eventType]) || 'Event',
                         startDate: startDate,
                         endDate: endDate || startDate,
-                        source: 'events'
+                        source: 'events',
+                        staffCount: assignedStaff.length,
+                        staffNames: assignedStaff,
                     });
                 }
             });
 
-            // Add REEF Programs
+            // Add REEF Programs (from REEF Database)
             (allData.reefPrograms || []).forEach(prog => {
                 const startDate = prog.fields[FIELDS.EVENTS_DB.startDateTime];
                 const endDate = prog.fields[FIELDS.EVENTS_DB.endDateTime];
@@ -3620,12 +3941,19 @@
                 twoWeeksOut.setDate(twoWeeksOut.getDate() + 84);
 
                 if (eventStart <= twoWeeksOut && eventEnd >= now) {
+                    const needed = prog.fields[FIELDS.EVENTS_DB.staffNeeded] || 0;
+                    const stillNeeded = prog.fields[FIELDS.EVENTS_DB.staffStillNeeded] || 0;
+
                     allEvents.push({
                         name: prog.fields[FIELDS.EVENTS_DB.eventName] || 'Unnamed Event',
                         type: selectVal(prog.fields[FIELDS.EVENTS_DB.eventType]) || 'Event',
                         startDate: startDate,
                         endDate: endDate || startDate,
-                        source: 'reefPrograms'
+                        source: 'reefPrograms',
+                        staffCount: needed - stillNeeded,
+                        staffNames: [],
+                        staffNeeded: needed,
+                        staffStillNeeded: stillNeeded,
                     });
                 }
             });
@@ -3648,12 +3976,28 @@
                 const endStr = `${String(endDate.getMonth() + 1).padStart(2, '0')}/${String(endDate.getDate()).padStart(2, '0')}`;
                 const dateRange = startStr === endStr ? startStr : `${startStr} - ${endStr}`;
 
+                // Staffing impact line
+                let staffLine = '';
+                if (event.staffCount > 0 || event.staffNeeded > 0) {
+                    const names = event.staffNames.length > 0 ? event.staffNames.slice(0, 3).join(', ') + (event.staffNames.length > 3 ? '...' : '') : '';
+                    if (event.staffStillNeeded > 0) {
+                        staffLine = `<div style="font-size:11px;color:#AD1D22;margin-top:4px;font-weight:600;">${event.staffStillNeeded} staff still needed</div>`;
+                    }
+                    if (names) {
+                        staffLine += `<div style="font-size:10px;color:#666;margin-top:2px;">${names}</div>`;
+                    }
+                    if (event.staffCount > 0) {
+                        staffLine += `<div style="font-size:10px;color:#999;margin-top:2px;">${event.staffCount} assigned</div>`;
+                    }
+                }
+
                 const eventDiv = document.createElement('div');
                 eventDiv.className = `timeline-event ${typeClass}`;
                 eventDiv.innerHTML = `
                     <div class="timeline-event-name">${event.name}</div>
                     <div class="timeline-event-date">${event.type}</div>
                     <div class="timeline-event-date">${dateRange}</div>
+                    ${staffLine}
                 `;
                 container.appendChild(eventDiv);
             });
