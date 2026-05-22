@@ -1170,6 +1170,20 @@
             opacity: 0.5;
             cursor: not-allowed;
         }
+        .btn-sync-gcal {
+            padding: 6px 14px;
+            background: #1a73e8;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            white-space: nowrap;
+            transition: background 0.15s;
+        }
+        .btn-sync-gcal:hover { background: #1557b0; }
+        .btn-sync-gcal:disabled { background: #93b4d4; cursor: not-allowed; }
         .btn-copy-week:disabled:hover {
             background: white;
             color: #24408E;
@@ -2357,6 +2371,7 @@
                     <div class="week-label" id="weekLabel">—</div>
                     <button id="nextWeekBtn" onclick="goToNextWeek()">Next Week &#8594;</button>
                     <button class="btn-copy-week" id="copyWeekBtn" onclick="openCopyWeekModal()" title="Copy OEC staff assignments from the previous week">&#128203; Copy Last Week's Staff</button>
+                    <button class="btn-sync-gcal" id="syncGCalBtn" onclick="syncAllToGCal()" title="Push current titles and staff lists to Google Calendar for all shifts and events this week">&#128197; Sync to GCal</button>
                 </div>
 
                 <!-- Status Summary -->
@@ -5425,6 +5440,187 @@
             return member.fields[FIELDS.TEAM_MEMBERS.email] || null;
         }
 
+        // ===== GCAL TITLE & DESCRIPTION SYNC HELPERS =====
+        // Build a staff list description from an array of member IDs
+        function buildGCalStaffDescription(memberIds) {
+            const names = memberIds.map(mid => {
+                const member = allData.allTeamMembers.find(m => m.id === mid)
+                            || allData.teamMembers.find(m => m.id === mid);
+                if (!member) return null;
+                const fn = (member.fields[FIELDS.TEAM_MEMBERS.firstName] || '').trim();
+                const ln = (member.fields[FIELDS.TEAM_MEMBERS.lastName] || '').trim();
+                return fn + (ln ? ' ' + ln.charAt(0) + '.' : '');
+            }).filter(Boolean).sort();
+            if (names.length === 0) return 'Staff: None assigned';
+            return `Staff (${names.length}):\n` + names.map(n => `• ${n}`).join('\n');
+        }
+
+        // Get all currently assigned member IDs for an OEC shift
+        function getOecShiftAssignedMembers(shiftId) {
+            return allData.oecAssignments
+                .filter(oa =>
+                    linkedHas(oa.fields[FIELDS.OEC_ASSIGNMENTS.shiftInstance], shiftId) &&
+                    isAssignedOrConfirmed(oa.fields[FIELDS.OEC_ASSIGNMENTS.assignmentStatus])
+                )
+                .map(oa => linkedId(oa.fields[FIELDS.OEC_ASSIGNMENTS.teamMember]))
+                .filter(Boolean);
+        }
+
+        // Get all currently assigned member IDs for a campus event (by Events table record ID)
+        function getEventAssignedMembers(eventsTableRecordId) {
+            return allData.eventAssignments
+                .filter(ea =>
+                    linkedHas(ea.fields[FIELDS.EVENT_ASSIGNMENTS.event], eventsTableRecordId) &&
+                    isAssignedOrConfirmed(ea.fields[FIELDS.EVENT_ASSIGNMENTS.assignmentStatus])
+                )
+                .map(ea => linkedId(ea.fields[FIELDS.EVENT_ASSIGNMENTS.teamMember]))
+                .filter(Boolean);
+        }
+
+        // Build a static OEC shift title (no names): "OEC AM — Fri 5/22"
+        function buildOecShiftTitle(shiftId) {
+            const shift = allData.oecShifts.find(s => s.id === shiftId);
+            if (!shift) return 'OEC Shift';
+            const slot = selectVal(shift.fields[FIELDS.OEC_SHIFTS.shiftSlot]) || '';
+            const label = shift.fields[FIELDS.OEC_SHIFTS.shiftLabel] || 'Shift';
+            const dateStr = shift.fields[FIELDS.OEC_SHIFTS.shiftDate];
+            let datePart = '';
+            if (dateStr) {
+                const d = new Date(dateStr + 'T12:00:00');
+                const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+                datePart = ` — ${days[d.getDay()]} ${d.getMonth()+1}/${d.getDate()}`;
+            }
+            return `${slot || label}${datePart}`;
+        }
+
+        // Update GCal event summary + description to reflect current assignments
+        async function updateGCalEventDetails(calendarId, gcalEventId, summary, description) {
+            try {
+                const calId = encodeURIComponent(calendarId);
+                const patchResp = await fetch(
+                    `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}?sendUpdates=none`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'Authorization': `Bearer ${getGoogleAccessToken()}`,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ summary, description }),
+                    }
+                );
+                if (patchResp.ok) {
+                    console.log('[GCal Details] Updated title/description for', gcalEventId);
+                } else {
+                    console.log('[GCal Details] Failed to update', gcalEventId, patchResp.status);
+                }
+            } catch (err) {
+                console.error('[GCal Details] Error:', err);
+            }
+        }
+
+        // ===== SYNC ALL TO GCAL (bulk re-push titles + descriptions) =====
+        async function syncAllToGCal() {
+            if (!getGoogleAccessToken()) {
+                alert('Please connect to Google Calendar first (click "Connect GCal" in the header).');
+                return;
+            }
+
+            const btn = document.getElementById('syncGCalBtn');
+            const origText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = '⏳ Syncing…';
+
+            try {
+                let updated = 0;
+                let skipped = 0;
+                let errors = 0;
+
+                // 1. Sync OEC Shifts for the current scheduler week
+                const weekStart = currentWeekStart;
+                const weekEnd = new Date(weekStart);
+                weekEnd.setDate(weekEnd.getDate() + 6);
+
+                const shiftsThisWeek = allData.oecShifts.filter(s => {
+                    const d = s.fields[FIELDS.OEC_SHIFTS.shiftDate];
+                    if (!d) return false;
+                    const sd = new Date(d + 'T12:00:00');
+                    return sd >= weekStart && sd <= weekEnd;
+                });
+
+                for (const shift of shiftsThisWeek) {
+                    const gcalEventId = OEC_GCAL_MAPPING[shift.id];
+                    if (!gcalEventId) { skipped++; continue; }
+
+                    const title = buildOecShiftTitle(shift.id);
+                    const assignedIds = getOecShiftAssignedMembers(shift.id);
+                    const desc = buildGCalStaffDescription(assignedIds);
+
+                    try {
+                        await updateGCalEventDetails(GCAL_CONFIG.oecShiftsCalendarId, gcalEventId, title, desc);
+                        updated++;
+                    } catch (e) {
+                        console.error('[Sync All] OEC shift error:', shift.id, e);
+                        errors++;
+                    }
+
+                    // Rate limit: ~200ms between calls
+                    await new Promise(r => setTimeout(r, 200));
+                    btn.textContent = `⏳ Syncing… (${updated})`;
+                }
+
+                // 2. Sync Campus Events for the current week
+                const weekStartStr = weekStart.toISOString().split('T')[0];
+                const weekEndStr = weekEnd.toISOString().split('T')[0];
+
+                for (const evt of allData.events) {
+                    const evtStart = evt.fields[FIELDS.EVENTS.startDateTime];
+                    if (!evtStart) continue;
+                    const evtDate = evtStart.split('T')[0];
+                    if (evtDate < weekStartStr || evtDate > weekEndStr) continue;
+
+                    // Find EVENTS_DB record to get GCal ID
+                    const eventsDBId = findEventsDBRecordId(evt.id);
+                    if (!eventsDBId) { skipped++; continue; }
+                    const gcalEventId = GCAL_EVENT_MAPPING[eventsDBId];
+                    if (!gcalEventId) { skipped++; continue; }
+
+                    const assignedIds = getEventAssignedMembers(evt.id);
+                    const desc = buildGCalStaffDescription(assignedIds);
+                    // Keep the original event name as the title
+                    const eventName = evt.fields[FIELDS.EVENTS.eventName] || 'REEF Campus Event';
+
+                    try {
+                        await updateGCalEventDetails(GCAL_CONFIG.reefCampus2CalendarId, gcalEventId, eventName, desc);
+                        updated++;
+                    } catch (e) {
+                        console.error('[Sync All] Event error:', evt.id, e);
+                        errors++;
+                    }
+
+                    await new Promise(r => setTimeout(r, 200));
+                    btn.textContent = `⏳ Syncing… (${updated})`;
+                }
+
+                // Done
+                const msg = `✅ Synced ${updated} event${updated !== 1 ? 's' : ''} to GCal` +
+                    (skipped ? ` (${skipped} skipped — no GCal ID)` : '') +
+                    (errors ? ` (${errors} error${errors !== 1 ? 's' : ''})` : '');
+                btn.textContent = msg;
+                setTimeout(() => {
+                    btn.textContent = origText;
+                    btn.disabled = false;
+                }, 4000);
+
+            } catch (err) {
+                console.error('[Sync All] Error:', err);
+                btn.textContent = '❌ Sync failed';
+                setTimeout(() => {
+                    btn.textContent = origText;
+                    btn.disabled = false;
+                }, 3000);
+            }
+        }
+
         // Add attendee to a REEF Campus 2 Google Calendar event (fire-and-forget, no blocking)
         // Auto-create a Google Calendar event on REEF Campus 2 for an EVENTS_DB program
         async function autoCreateGCalEvent(eventsDBId) {
@@ -5559,6 +5755,10 @@
                 );
                 if (patchResp.ok) {
                     console.log('[GCal Sync] Added attendee', email, 'to GCal event', gcalEventId);
+                    // Update event description with current staff list
+                    const assignedIds = getEventAssignedMembers(eventsTableRecordId);
+                    const desc = buildGCalStaffDescription(assignedIds);
+                    await updateGCalEventDetails(GCAL_CONFIG.reefCampus2CalendarId, gcalEventId, gcalEvent.summary, desc);
                 } else {
                     console.log('[GCal Sync] Failed to update GCal event', gcalEventId, patchResp.status);
                 }
@@ -5589,6 +5789,10 @@
                 const filtered = existingAttendees.filter(a => a.email.toLowerCase() !== email.toLowerCase());
                 if (filtered.length === existingAttendees.length) return; // wasn't there
 
+                // Also rebuild description with current staff list
+                const assignedIds = getEventAssignedMembers(eventsTableRecordId);
+                const desc = buildGCalStaffDescription(assignedIds);
+
                 const patchResp = await fetch(
                     `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}?sendUpdates=none`,
                     {
@@ -5597,7 +5801,7 @@
                             'Authorization': `Bearer ${getGoogleAccessToken()}`,
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({ attendees: filtered }),
+                        body: JSON.stringify({ attendees: filtered, description: desc }),
                     }
                 );
                 if (patchResp.ok) {
@@ -5659,6 +5863,11 @@
                 );
                 if (patchResp.ok) {
                     console.log('[GCal OEC Sync] Added attendee', email, 'to OEC GCal event', gcalEventId);
+                    // Update title (static, no names) + description (current staff list)
+                    const title = buildOecShiftTitle(shiftId);
+                    const assignedIds = getOecShiftAssignedMembers(shiftId);
+                    const desc = buildGCalStaffDescription(assignedIds);
+                    await updateGCalEventDetails(GCAL_CONFIG.oecShiftsCalendarId, gcalEventId, title, desc);
                 } else {
                     console.log('[GCal OEC Sync] Failed to update GCal event', gcalEventId, patchResp.status);
                 }
@@ -5687,6 +5896,11 @@
                 const filtered = existingAttendees.filter(a => a.email.toLowerCase() !== email.toLowerCase());
                 if (filtered.length === existingAttendees.length) return; // wasn't there
 
+                // Also rebuild title + description with current staff list
+                const title = buildOecShiftTitle(shiftId);
+                const assignedIds = getOecShiftAssignedMembers(shiftId);
+                const desc = buildGCalStaffDescription(assignedIds);
+
                 const patchResp = await fetch(
                     `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}?sendUpdates=none`,
                     {
@@ -5695,7 +5909,7 @@
                             'Authorization': `Bearer ${getGoogleAccessToken()}`,
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({ attendees: filtered }),
+                        body: JSON.stringify({ attendees: filtered, summary: title, description: desc }),
                     }
                 );
                 if (patchResp.ok) {
