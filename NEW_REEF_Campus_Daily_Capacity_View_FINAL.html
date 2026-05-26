@@ -3108,9 +3108,20 @@
                 });
             });
 
-            // Compute open shift gaps
-            const belowMinShifts = shiftGaps.filter(g => g.assigned < g.min);
-            const belowTargetShifts = shiftGaps.filter(g => g.assigned >= g.min && g.assigned < g.target);
+            // Consolidate shift gaps by type (AM/PM/Evening) instead of per-instance
+            const gapsByType = {};
+            shiftGaps.forEach(g => {
+                const key = g.label || 'Shift';
+                if (!gapsByType[key]) gapsByType[key] = { label: key, totalAssigned: 0, totalMin: 0, totalTarget: 0, count: 0, belowMin: 0, belowTarget: 0 };
+                gapsByType[key].totalAssigned += g.assigned;
+                gapsByType[key].totalMin += g.min;
+                gapsByType[key].totalTarget += g.target;
+                gapsByType[key].count++;
+                if (g.assigned < g.min) gapsByType[key].belowMin++;
+                if (g.assigned >= g.min && g.assigned < g.target) gapsByType[key].belowTarget++;
+            });
+            const belowMinShifts = Object.values(gapsByType).filter(g => g.belowMin > 0);
+            const belowTargetShifts = Object.values(gapsByType).filter(g => g.belowMin === 0 && g.belowTarget > 0);
             const totalOpenGaps = shiftGaps.reduce((sum, g) => sum + Math.max(0, g.target - g.assigned), 0);
 
             // Event staffing gaps
@@ -3204,13 +3215,16 @@
             // --- 3. TODAY'S ISSUES ---
             const issues = [];
             belowMinShifts.forEach(g => {
-                issues.push({ icon: 'critical', text: `OEC ${g.label} below minimum staffing (${g.assigned}/${g.min})` });
+                issues.push({ icon: 'critical', text: `OEC ${g.label} below minimum staffing (${g.totalAssigned}/${g.totalMin})` });
             });
-            noLeadShifts.forEach(s => {
+            // Consolidate no-lead warnings by shift type
+            const noLeadByType = {};
+            noLeadShifts.forEach(s => { noLeadByType[s] = true; });
+            Object.keys(noLeadByType).forEach(s => {
                 issues.push({ icon: 'warn', text: `No lead assigned to ${s} shift` });
             });
             belowTargetShifts.forEach(g => {
-                issues.push({ icon: 'warn', text: `OEC ${g.label} below target (${g.assigned}/${g.target})` });
+                issues.push({ icon: 'warn', text: `OEC ${g.label} below target (${g.totalAssigned}/${g.totalTarget})` });
             });
             eventGaps.forEach(g => {
                 issues.push({ icon: 'warn', text: `${g.name} understaffed (${g.assigned}/${g.needed})` });
@@ -3318,7 +3332,8 @@
             let html = '';
 
             Object.values(shiftsByDate).forEach(shift => {
-                const slot = selectVal(shift.fields[FIELDS.OEC_SHIFTS.shiftSlot]) || 'Unknown';
+                const slot = selectVal(shift.fields[FIELDS.OEC_SHIFTS.shiftSlot]);
+                if (!slot) return; // Skip shifts without a valid Shift Slot (ghost records)
                 const label = shift.fields[FIELDS.OEC_SHIFTS.shiftLabel] || 'Shift';
                 const minHeadcount = shift.fields[FIELDS.OEC_SHIFTS.minHeadcount] || 0;
                 const targetHeadcount = shift.fields[FIELDS.OEC_SHIFTS.targetHeadcount] || 0;
@@ -4028,6 +4043,7 @@
             if (/entry.*gallery.*eval.*pm/i.test(stripped)) return 'Entry/Gallery';
             if (/^am$/i.test(stripped)) return '';
             if (/^pm$/i.test(stripped)) return '';
+            if (/^evening$/i.test(stripped)) return '';
             return stripped;
         }
 
@@ -4045,7 +4061,7 @@
             const endDT = shift.fields[FIELDS.OEC_SHIFTS.endDateTime];
             const timeLabel = (startDT && endDT)
                 ? `${formatShiftTime(startDT)} – ${formatShiftTime(endDT)}`
-                : (slot === 'AM' ? '9:30a – 1:30p' : '1:30p – 5:30p');
+                : (slot === 'AM' ? '9:30a – 1:30p' : slot === 'Evening' ? '4:00p – 8:30p' : '1:30p – 5:30p');
 
             // Show shift type label if it's not a standard AM/PM
             const typeLabel = getShiftTypeLabel(shift);
