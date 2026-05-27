@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>REEF Campus Scheduling & Availability Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
     <style>
         * {
             margin: 0;
@@ -450,6 +449,9 @@
         .whos-where-card.available-card .card-header { border-bottom-color: #8CC63E; }
         .whos-where-card.available-card .card-dot { background: #8CC63E; }
         .whos-where-card.available-card .person-chip { background: #ECFCCB; color: #4D7C0F; }
+        .whos-where-card.docent-card .card-header { border-bottom-color: #0EA5E9; }
+        .whos-where-card.docent-card .card-dot { background: #0EA5E9; }
+        .whos-where-card.docent-card .person-chip { background: #E0F2FE; color: #0369A1; }
         .whos-where-card.out-card .card-header { border-bottom-color: #AD1D22; }
         .whos-where-card.out-card .card-dot { background: #AD1D22; }
         .whos-where-card.out-card .person-chip { background: #FEE2E2; color: #991B1B; }
@@ -780,101 +782,6 @@
             margin-bottom: 20px;
         }
 
-        /* --- High-Risk Weeks Alert Panel --- */
-        .risk-weeks-panel {
-            background: white;
-            border-radius: 10px;
-            padding: 18px 24px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            border-left: 4px solid #8CC63E;
-        }
-        .risk-weeks-panel.has-warnings { border-left-color: #F7931D; }
-        .risk-weeks-panel.has-critical { border-left-color: #AD1D22; }
-        .risk-weeks-panel h3 {
-            font-size: 14px; font-weight: 700; text-transform: uppercase;
-            letter-spacing: 0.5px; margin-bottom: 10px; color: #333;
-        }
-        .risk-weeks-panel .risk-week-item {
-            display: flex; align-items: center; gap: 10px;
-            padding: 8px 0; border-bottom: 1px solid #f5f5f5; font-size: 13px;
-        }
-        .risk-weeks-panel .risk-week-item:last-child { border-bottom: none; }
-        .risk-week-badge {
-            display: inline-block; padding: 3px 10px; border-radius: 12px;
-            font-size: 11px; font-weight: 700; min-width: 60px; text-align: center;
-        }
-        .risk-week-badge.green { background: #DEF7EC; color: #059669; }
-        .risk-week-badge.yellow { background: #FEF3CD; color: #D97706; }
-        .risk-week-badge.red { background: #FDE8E8; color: #AD1D22; }
-        .risk-week-detail { color: #666; flex: 1; }
-        .risk-week-who { font-size: 12px; color: #999; }
-
-        /* --- Weekly Capacity Breakdown --- */
-        .capacity-breakdown {
-            background: white;
-            border-radius: 8px;
-            padding: 25px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            margin-bottom: 30px;
-        }
-        .capacity-week-row {
-            display: grid;
-            grid-template-columns: 140px 100px 1fr 200px;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid #f0f0f0;
-            gap: 12px;
-        }
-        .capacity-week-row:last-child { border-bottom: none; }
-        .capacity-week-row.header {
-            font-size: 11px; font-weight: 700; color: #999;
-            text-transform: uppercase; letter-spacing: 0.5px;
-            padding-bottom: 8px; border-bottom: 2px solid #e0e0e0;
-        }
-        .capacity-week-label { font-weight: 600; font-size: 13px; color: #333; }
-        .capacity-week-label .week-dates { font-weight: 400; font-size: 11px; color: #999; display: block; }
-        .capacity-week-count { font-size: 14px; font-weight: 700; text-align: center; }
-        .capacity-week-bar-wrap {
-            background: #f0f0f0; border-radius: 6px; height: 24px;
-            position: relative; overflow: hidden;
-        }
-        .capacity-week-bar {
-            height: 100%; border-radius: 6px; transition: width 0.3s ease;
-            display: flex; align-items: center; padding-left: 8px;
-            font-size: 11px; font-weight: 600; color: white;
-        }
-        .capacity-week-bar.green { background: #8CC63E; }
-        .capacity-week-bar.yellow { background: #F7931D; }
-        .capacity-week-bar.red { background: #AD1D22; }
-        .capacity-week-who-out {
-            font-size: 11px; color: #888; white-space: nowrap;
-            overflow: hidden; text-overflow: ellipsis;
-        }
-        .capacity-week-row.current-week {
-            background: #f0f7ff; border-radius: 6px; padding: 12px 8px;
-        }
-        .capacity-week-expand {
-            cursor: pointer; user-select: none;
-        }
-        .capacity-week-expand:hover .capacity-week-label { color: #24408E; }
-        .capacity-week-detail {
-            display: none; grid-column: 1 / -1; padding: 8px 0 4px 12px;
-        }
-        .capacity-week-detail.open { display: block; }
-        .capacity-detail-list {
-            display: flex; flex-wrap: wrap; gap: 6px;
-        }
-        .capacity-detail-chip {
-            display: inline-flex; align-items: center; gap: 4px;
-            padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 500;
-        }
-        .capacity-detail-chip.leave { background: #f0f0f0; color: #666; }
-        .capacity-detail-chip.field-survey { background: #FDE8E8; color: #AD1D22; }
-        .capacity-detail-chip.conference { background: #FEF3CD; color: #D97706; }
-        .capacity-detail-chip.program { background: #E0F3FC; color: #0077A8; }
-
-        /* --- Keep old grid/timeline for fallback but restyle --- */
         .grid-section {
             background: white;
             border-radius: 8px;
@@ -1170,20 +1077,6 @@
             opacity: 0.5;
             cursor: not-allowed;
         }
-        .btn-sync-gcal {
-            padding: 6px 14px;
-            background: #1a73e8;
-            color: #fff;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: 500;
-            white-space: nowrap;
-            transition: background 0.15s;
-        }
-        .btn-sync-gcal:hover { background: #1557b0; }
-        .btn-sync-gcal:disabled { background: #93b4d4; cursor: not-allowed; }
         .btn-copy-week:disabled:hover {
             background: white;
             color: #24408E;
@@ -2272,89 +2165,62 @@
     <!-- 12-Week Planning Tab -->
     <div id="planningViewContent" class="tab-content">
         <div id="planningContent" class="container">
-            <!-- Capacity Forecast KPI Cards -->
+            <!-- Summary KPI Cards -->
             <div class="kpi-row">
                 <div class="kpi-card">
-                    <div class="kpi-label">Total Team</div>
+                    <div class="kpi-label">Total Active Staff</div>
                     <div class="kpi-value" id="planningKpiTotal">—</div>
                 </div>
-                <div class="kpi-card available">
-                    <div class="kpi-label">Available This Week</div>
-                    <div class="kpi-value" id="planningKpiAvailNow">—</div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Campus Staff</div>
+                    <div class="kpi-value" id="planningKpiCampus">—</div>
                 </div>
                 <div class="kpi-card out">
-                    <div class="kpi-label">Lowest Week (Next 12)</div>
-                    <div class="kpi-value" id="planningKpiLowest">—</div>
-                    <div style="font-size:11px;color:#999;margin-top:4px;" id="planningKpiLowestLabel"></div>
+                    <div class="kpi-label">Away This Week</div>
+                    <div class="kpi-value" id="planningKpiAwayThisWeek">—</div>
                 </div>
                 <div class="kpi-card out">
-                    <div class="kpi-label">Weeks At Risk</div>
-                    <div class="kpi-value" id="planningKpiRiskWeeks">—</div>
-                    <div style="font-size:11px;color:#999;margin-top:4px;">below 70% capacity</div>
+                    <div class="kpi-label">Away Next Week</div>
+                    <div class="kpi-value" id="planningKpiAwayNextWeek">—</div>
                 </div>
             </div>
 
-            <!-- High-Risk Weeks Alert Panel -->
-            <div class="risk-weeks-panel" id="riskWeeksPanel">
-                <h3 id="riskWeeksPanelTitle">Staffing Risk Summary</h3>
-                <div id="riskWeeksPanelBody"></div>
+            <!-- Filter Bar -->
+            <div class="filter-bar">
+                <select id="departmentFilter" class="filter-select">
+                    <option value="">All Departments</option>
+                    <option value="REEF Campus">REEF Campus</option>
+                    <option value="Remote">Remote</option>
+                </select>
             </div>
 
             <!-- 12-Week Capacity Chart -->
             <div class="chart-section">
-                <h2 class="section-title">12-Week Capacity Forecast</h2>
-                <div style="display:flex;gap:16px;margin-bottom:12px;font-size:12px;color:#666;">
-                    <span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:12px;border-radius:2px;background:#8CC63E;display:inline-block;"></span> 80%+ staffed</span>
-                    <span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:12px;border-radius:2px;background:#F7931D;display:inline-block;"></span> 60-79% staffed</span>
-                    <span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:12px;border-radius:2px;background:#AD1D22;display:inline-block;"></span> Below 60%</span>
-                </div>
+                <h2 class="section-title">12-Week Staffing Capacity</h2>
                 <div class="chart-container">
                     <canvas id="capacityChart"></canvas>
                 </div>
             </div>
 
-            <!-- Weekly Capacity Breakdown -->
-            <div class="capacity-breakdown">
-                <h2 class="section-title">Weekly Capacity Breakdown</h2>
-                <div class="capacity-week-row header">
-                    <div>Week</div>
-                    <div style="text-align:center;">Available</div>
-                    <div>Capacity</div>
-                    <div>Who's Out</div>
-                </div>
-                <div id="capacityBreakdownBody"></div>
-            </div>
-
-            <!-- Person-Level Grid (collapsed by default) -->
+            <!-- Weekly Staff Availability Grid -->
             <div class="grid-section">
-                <h2 class="section-title" style="cursor:pointer;" onclick="togglePersonGrid()">
-                    <span id="personGridToggle">&#9654;</span> Individual Availability (8 Weeks)
-                </h2>
-                <div id="personGridWrap" style="display:none;">
-                    <div class="filter-bar" style="margin-bottom:15px;">
-                        <select id="departmentFilter" class="filter-select">
-                            <option value="">All Departments</option>
-                            <option value="REEF Campus">REEF Campus</option>
-                            <option value="Remote">Remote</option>
-                        </select>
-                    </div>
-                    <table class="availability-grid" id="availabilityGrid">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Department</th>
-                                <th colspan="8">Week</th>
-                            </tr>
-                        </thead>
-                        <tbody id="availabilityBody">
-                        </tbody>
-                    </table>
-                </div>
+                <h2 class="section-title">Weekly Staff Availability (8 Weeks)</h2>
+                <table class="availability-grid" id="availabilityGrid">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Department</th>
+                            <th colspan="8">Week</th>
+                        </tr>
+                    </thead>
+                    <tbody id="availabilityBody">
+                    </tbody>
+                </table>
             </div>
 
             <!-- Upcoming Events Timeline -->
             <div class="timeline-section">
-                <h2 class="section-title">Upcoming Events &amp; Staffing Impact (12 Weeks)</h2>
+                <h2 class="section-title">Upcoming Events (12 Weeks)</h2>
                 <div class="timeline-container" id="timelineContainer">
                 </div>
             </div>
@@ -2371,7 +2237,6 @@
                     <div class="week-label" id="weekLabel">—</div>
                     <button id="nextWeekBtn" onclick="goToNextWeek()">Next Week &#8594;</button>
                     <button class="btn-copy-week" id="copyWeekBtn" onclick="openCopyWeekModal()" title="Copy OEC staff assignments from the previous week">&#128203; Copy Last Week's Staff</button>
-                    <button class="btn-sync-gcal" id="syncGCalBtn" onclick="syncAllToGCal()" title="Push current titles and staff lists to Google Calendar for all shifts and events this week">&#128197; Sync to GCal</button>
                 </div>
 
                 <!-- Status Summary -->
@@ -2465,6 +2330,9 @@
     </div>
 
     <script>
+        // ===== VIEW-ONLY MODE =====
+        const VIEW_ONLY = new URLSearchParams(window.location.search).get('mode') === 'view';
+
         // ===== STATE MANAGEMENT =====
         let apiKey = sessionStorage.getItem('reef_api_key') || '';
         let selectedDate = new Date();
@@ -2477,6 +2345,7 @@
             events: [],
             eventAssignments: [],
             reefPrograms: [],
+            docentVolunteers: [],
         };
 
         let capacityChart = null;
@@ -2485,6 +2354,22 @@
         document.addEventListener('DOMContentLoaded', () => {
             setDateInputToToday();
             setupEventListeners();
+
+            // View-only mode: hide edit controls and show badge
+            if (VIEW_ONLY) {
+                const copyBtn = document.getElementById('copyWeekBtn');
+                if (copyBtn) copyBtn.style.display = 'none';
+                const gcalBtn = document.getElementById('gcalConnectBtn');
+                if (gcalBtn) gcalBtn.style.display = 'none';
+                // Add view-only badge next to the refresh button
+                const refreshBtn = document.getElementById('refreshBtn');
+                if (refreshBtn) {
+                    const badge = document.createElement('span');
+                    badge.textContent = '👁 View Only';
+                    badge.style.cssText = 'display:inline-block;background:#f0f0f0;color:#666;font-size:11px;padding:4px 10px;border-radius:12px;margin-left:8px;font-weight:600;';
+                    refreshBtn.parentNode.insertBefore(badge, refreshBtn.nextSibling);
+                }
+            }
 
             // Check for saved API key — show modal if none found
             if (apiKey) {
@@ -2660,6 +2545,7 @@
                 availableForScheduling: 'fldjtuSk5OIcTa8Lr',
                 normalWorkDays: 'fldxiJD1QQSCi7RvT',
                 email: 'fld2TcDAC1a0A9XBt',
+                teamMemberType: 'fldtIcWqMhKobEjBQ',
             },
             TIME_AWAY: {
                 teamMember: 'fldDwbzWMWqdk6PMm',
@@ -2832,9 +2718,17 @@
             allData.allTeamMembers = allTeam.filter(m =>
                 selectVal(m.fields[FIELDS.TEAM_MEMBERS.activeStatus]) === 'Active'
             );
+            // Staff = Active + REEF Campus + NOT Docent
             allData.teamMembers = allTeam.filter(m =>
                 selectVal(m.fields[FIELDS.TEAM_MEMBERS.activeStatus]) === 'Active' &&
-                selectVal(m.fields[FIELDS.TEAM_MEMBERS.workBase]) === 'REEF Campus'
+                selectVal(m.fields[FIELDS.TEAM_MEMBERS.workBase]) === 'REEF Campus' &&
+                selectVal(m.fields[FIELDS.TEAM_MEMBERS.teamMemberType]) !== 'Docent'
+            );
+            // Docent volunteers = Active + REEF Campus + Docent type
+            allData.docentVolunteers = allTeam.filter(m =>
+                selectVal(m.fields[FIELDS.TEAM_MEMBERS.activeStatus]) === 'Active' &&
+                selectVal(m.fields[FIELDS.TEAM_MEMBERS.workBase]) === 'REEF Campus' &&
+                selectVal(m.fields[FIELDS.TEAM_MEMBERS.teamMemberType]) === 'Docent'
             );
 
             // Fetch Time Away (filter client-side for Approved)
@@ -3166,7 +3060,8 @@
             allData.oecShifts.forEach(shift => {
                 if (shift.fields[FIELDS.OEC_SHIFTS.shiftDate] !== todayStr) return;
                 const slot = selectVal(shift.fields[FIELDS.OEC_SHIFTS.shiftSlot]) || '';
-                const label = slot || (shift.fields[FIELDS.OEC_SHIFTS.shiftLabel] || 'Shift');
+                // Use slot (AM/PM) as label — avoid shiftLabel formula which already contains "OEC" prefix
+                const label = slot || 'Shift';
                 const minH = shift.fields[FIELDS.OEC_SHIFTS.minHeadcount] || 0;
                 const targetH = shift.fields[FIELDS.OEC_SHIFTS.targetHeadcount] || 0;
 
@@ -3213,9 +3108,20 @@
                 });
             });
 
-            // Compute open shift gaps
-            const belowMinShifts = shiftGaps.filter(g => g.assigned < g.min);
-            const belowTargetShifts = shiftGaps.filter(g => g.assigned >= g.min && g.assigned < g.target);
+            // Consolidate shift gaps by type (AM/PM/Evening) instead of per-instance
+            const gapsByType = {};
+            shiftGaps.forEach(g => {
+                const key = g.label || 'Shift';
+                if (!gapsByType[key]) gapsByType[key] = { label: key, totalAssigned: 0, totalMin: 0, totalTarget: 0, count: 0, belowMin: 0, belowTarget: 0 };
+                gapsByType[key].totalAssigned += g.assigned;
+                gapsByType[key].totalMin += g.min;
+                gapsByType[key].totalTarget += g.target;
+                gapsByType[key].count++;
+                if (g.assigned < g.min) gapsByType[key].belowMin++;
+                if (g.assigned >= g.min && g.assigned < g.target) gapsByType[key].belowTarget++;
+            });
+            const belowMinShifts = Object.values(gapsByType).filter(g => g.belowMin > 0);
+            const belowTargetShifts = Object.values(gapsByType).filter(g => g.belowMin === 0 && g.belowTarget > 0);
             const totalOpenGaps = shiftGaps.reduce((sum, g) => sum + Math.max(0, g.target - g.assigned), 0);
 
             // Event staffing gaps
@@ -3309,13 +3215,16 @@
             // --- 3. TODAY'S ISSUES ---
             const issues = [];
             belowMinShifts.forEach(g => {
-                issues.push({ icon: 'critical', text: `OEC ${g.label} below minimum staffing (${g.assigned}/${g.min})` });
+                issues.push({ icon: 'critical', text: `OEC ${g.label} below minimum staffing (${g.totalAssigned}/${g.totalMin})` });
             });
-            noLeadShifts.forEach(s => {
+            // Consolidate no-lead warnings by shift type
+            const noLeadByType = {};
+            noLeadShifts.forEach(s => { noLeadByType[s] = true; });
+            Object.keys(noLeadByType).forEach(s => {
                 issues.push({ icon: 'warn', text: `No lead assigned to ${s} shift` });
             });
             belowTargetShifts.forEach(g => {
-                issues.push({ icon: 'warn', text: `OEC ${g.label} below target (${g.assigned}/${g.target})` });
+                issues.push({ icon: 'warn', text: `OEC ${g.label} below target (${g.totalAssigned}/${g.totalTarget})` });
             });
             eventGaps.forEach(g => {
                 issues.push({ icon: 'warn', text: `${g.name} understaffed (${g.assigned}/${g.needed})` });
@@ -3386,10 +3295,18 @@
                 `;
             }
 
+            // Build docent volunteer list (separate from staff)
+            const docentList = (allData.docentVolunteers || []).map(m => {
+                const fn = m.fields[FIELDS.TEAM_MEMBERS.firstName] || '';
+                const ln = m.fields[FIELDS.TEAM_MEMBERS.lastName] || '';
+                return { name: `${fn} ${ln}`.trim() };
+            });
+
             whosWhere.innerHTML =
                 renderCard('On OEC Shifts', 'oec-shifts', oecPeople, true) +
                 renderCard('At Programs / Events', 'programs', programPeople, true) +
                 renderCard('Available', 'available-card', availList, false) +
+                renderCard('Docent Volunteers', 'docent-card', docentList, false) +
                 renderCard('Out Today', 'out-card', outList, true);
 
             // --- Render detail panels (kept for drill-down) ---
@@ -3415,7 +3332,8 @@
             let html = '';
 
             Object.values(shiftsByDate).forEach(shift => {
-                const slot = selectVal(shift.fields[FIELDS.OEC_SHIFTS.shiftSlot]) || 'Unknown';
+                const slot = selectVal(shift.fields[FIELDS.OEC_SHIFTS.shiftSlot]);
+                if (!slot) return; // Skip shifts without a valid Shift Slot (ghost records)
                 const label = shift.fields[FIELDS.OEC_SHIFTS.shiftLabel] || 'Shift';
                 const minHeadcount = shift.fields[FIELDS.OEC_SHIFTS.minHeadcount] || 0;
                 const targetHeadcount = shift.fields[FIELDS.OEC_SHIFTS.targetHeadcount] || 0;
@@ -3504,35 +3422,73 @@
         }
 
         // ===== 12-WEEK PLANNING VIEW =====
-        // Cached weekly capacity data shared across render functions
-        let weeklyCapacityData = [];
-
         function render12WeekView() {
-            computeWeeklyCapacity();
             render12WeekKpis();
-            renderRiskWeeksPanel();
             render12WeekCapacityChart();
-            renderCapacityBreakdown();
             render12WeekAvailabilityGrid();
             renderTimelineEvents();
         }
 
-        // Core computation: build capacity data for each of 12 weeks
-        function computeWeeklyCapacity() {
-            weeklyCapacityData = [];
-            const totalStaff = allData.allTeamMembers.length;
+        function render12WeekKpis() {
+            const totalActive = allData.allTeamMembers.length;
+            const campusStaff = allData.teamMembers.length;
+
+            // Away this week (Blocks Scheduling Completely)
+            const weekStart = getWeekStartDate(0);
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekEnd.getDate() + 6);
+
+            const awayThisWeek = new Set();
+            allData.timeAway.forEach(ta => {
+                const members = ta.fields[FIELDS.TIME_AWAY.teamMember];
+                if (!members || !Array.isArray(members)) return;
+                if (selectVal(ta.fields[FIELDS.TIME_AWAY.schedulingImpact]) !== 'Blocks Scheduling Completely') return;
+                if (!isDateInWeekRange(weekStart, ta.fields[FIELDS.TIME_AWAY.startDateTime], ta.fields[FIELDS.TIME_AWAY.endDateTime])) return;
+                members.forEach(m => {
+                    const mid = (typeof m === 'string') ? m : (m && m.id);
+                    if (mid && allData.allTeamMembers.some(tm => tm.id === mid)) awayThisWeek.add(mid);
+                });
+            });
+
+            // Away next week
+            const nextWeekStart = getWeekStartDate(1);
+            const nextWeekEnd = new Date(nextWeekStart);
+            nextWeekEnd.setDate(nextWeekEnd.getDate() + 6);
+
+            const awayNextWeek = new Set();
+            allData.timeAway.forEach(ta => {
+                const members = ta.fields[FIELDS.TIME_AWAY.teamMember];
+                if (!members || !Array.isArray(members)) return;
+                if (selectVal(ta.fields[FIELDS.TIME_AWAY.schedulingImpact]) !== 'Blocks Scheduling Completely') return;
+                if (!isDateInWeekRange(nextWeekStart, ta.fields[FIELDS.TIME_AWAY.startDateTime], ta.fields[FIELDS.TIME_AWAY.endDateTime])) return;
+                members.forEach(m => {
+                    const mid = (typeof m === 'string') ? m : (m && m.id);
+                    if (mid && allData.allTeamMembers.some(tm => tm.id === mid)) awayNextWeek.add(mid);
+                });
+            });
+
+            document.getElementById('planningKpiTotal').textContent = totalActive;
+            document.getElementById('planningKpiCampus').textContent = campusStaff;
+            document.getElementById('planningKpiAwayThisWeek').textContent = awayThisWeek.size;
+            document.getElementById('planningKpiAwayNextWeek').textContent = awayNextWeek.size;
+        }
+
+        function render12WeekCapacityChart() {
+            const ctx = document.getElementById('capacityChart').getContext('2d');
+            const weeks = [];
+            const availableCounts = [];
+            const labels = [];
 
             for (let i = 0; i < 12; i++) {
                 const weekStart = getWeekStartDate(i);
+                weeks.push(weekStart);
+
                 const monthStr = String(weekStart.getMonth() + 1).padStart(2, '0');
                 const dayStr = String(weekStart.getDate()).padStart(2, '0');
-                const weekEnd = new Date(weekStart);
-                weekEnd.setDate(weekEnd.getDate() + 6);
-                const endMonthStr = String(weekEnd.getMonth() + 1).padStart(2, '0');
-                const endDayStr = String(weekEnd.getDate()).padStart(2, '0');
+                labels.push(`Week ${i + 1}\n${monthStr}/${dayStr}`);
 
-                // People on leave (Blocks Scheduling Completely)
-                const onLeave = new Map();
+                // Count people out this week
+                const outThisWeek = new Set();
                 allData.timeAway.forEach(ta => {
                     const members = ta.fields[FIELDS.TIME_AWAY.teamMember];
                     if (!members || !Array.isArray(members)) return;
@@ -3540,49 +3496,12 @@
                     if (!isDateInWeekRange(weekStart, ta.fields[FIELDS.TIME_AWAY.startDateTime], ta.fields[FIELDS.TIME_AWAY.endDateTime])) return;
                     members.forEach(m => {
                         const mid = (typeof m === 'string') ? m : (m && m.id);
-                        if (mid && allData.allTeamMembers.some(tm => tm.id === mid)) {
-                            const cat = selectVal(ta.fields[FIELDS.TIME_AWAY.category]) || 'Leave';
-                            onLeave.set(mid, cat);
-                        }
+                        if (mid && allData.allTeamMembers.some(tm => tm.id === mid)) outThisWeek.add(mid);
                     });
                 });
 
-                // People on field surveys
-                const onFieldSurvey = new Map();
-                allData.eventAssignments.forEach(ea => {
-                    if (!isAssignedOrConfirmed(ea.fields[FIELDS.EVENT_ASSIGNMENTS.assignmentStatus])) return;
-                    const eventRecId = linkedId(ea.fields[FIELDS.EVENT_ASSIGNMENTS.event]);
-                    if (!eventRecId) return;
-                    const event = allData.events.find(e => e.id === eventRecId);
-                    if (!event) return;
-                    if (selectVal(event.fields[FIELDS.EVENTS.eventType]) === 'Field Survey' &&
-                        isDateInWeekRange(weekStart, event.fields[FIELDS.EVENTS.startDateTime], event.fields[FIELDS.EVENTS.endDateTime])) {
-                        const mid = linkedId(ea.fields[FIELDS.EVENT_ASSIGNMENTS.teamMember]);
-                        if (mid && allData.allTeamMembers.some(tm => tm.id === mid) && !onLeave.has(mid)) {
-                            onFieldSurvey.set(mid, event.fields[FIELDS.EVENTS.eventName] || 'Field Survey');
-                        }
-                    }
-                });
-
-                // People at conferences
-                const onConference = new Map();
-                allData.eventAssignments.forEach(ea => {
-                    if (!isAssignedOrConfirmed(ea.fields[FIELDS.EVENT_ASSIGNMENTS.assignmentStatus])) return;
-                    const eventRecId = linkedId(ea.fields[FIELDS.EVENT_ASSIGNMENTS.event]);
-                    if (!eventRecId) return;
-                    const event = allData.events.find(e => e.id === eventRecId);
-                    if (!event) return;
-                    if (selectVal(event.fields[FIELDS.EVENTS.eventType]) === 'Conference' &&
-                        isDateInWeekRange(weekStart, event.fields[FIELDS.EVENTS.startDateTime], event.fields[FIELDS.EVENTS.endDateTime])) {
-                        const mid = linkedId(ea.fields[FIELDS.EVENT_ASSIGNMENTS.teamMember]);
-                        if (mid && allData.allTeamMembers.some(tm => tm.id === mid) && !onLeave.has(mid) && !onFieldSurvey.has(mid)) {
-                            onConference.set(mid, event.fields[FIELDS.EVENTS.eventName] || 'Conference');
-                        }
-                    }
-                });
-
-                // People on programs (other event types)
-                const onProgram = new Map();
+                // Count people at field surveys/conferences this week
+                const busyThisWeek = new Set();
                 allData.eventAssignments.forEach(ea => {
                     if (!isAssignedOrConfirmed(ea.fields[FIELDS.EVENT_ASSIGNMENTS.assignmentStatus])) return;
                     const eventRecId = linkedId(ea.fields[FIELDS.EVENT_ASSIGNMENTS.event]);
@@ -3590,129 +3509,23 @@
                     const event = allData.events.find(e => e.id === eventRecId);
                     if (!event) return;
                     const eventType = selectVal(event.fields[FIELDS.EVENTS.eventType]);
-                    if (!['Field Survey', 'Conference'].includes(eventType) &&
+                    if (['Field Survey', 'Conference'].includes(eventType) &&
                         isDateInWeekRange(weekStart, event.fields[FIELDS.EVENTS.startDateTime], event.fields[FIELDS.EVENTS.endDateTime])) {
                         const mid = linkedId(ea.fields[FIELDS.EVENT_ASSIGNMENTS.teamMember]);
-                        if (mid && allData.allTeamMembers.some(tm => tm.id === mid) && !onLeave.has(mid) && !onFieldSurvey.has(mid) && !onConference.has(mid)) {
-                            onProgram.set(mid, event.fields[FIELDS.EVENTS.eventName] || 'Program');
-                        }
+                        if (mid && allData.allTeamMembers.some(tm => tm.id === mid)) busyThisWeek.add(mid);
                     }
                 });
 
-                const totalOut = onLeave.size + onFieldSurvey.size + onConference.size;
-                const available = totalStaff - totalOut;
-                const pct = totalStaff > 0 ? Math.round((available / totalStaff) * 100) : 100;
-                const health = pct >= 80 ? 'green' : (pct >= 60 ? 'yellow' : 'red');
-
-                // Build names for who's out
-                function getName(mid) {
-                    const tm = allData.allTeamMembers.find(t => t.id === mid);
-                    if (!tm) return '?';
-                    const fn = (tm.fields[FIELDS.TEAM_MEMBERS.firstName] || '').trim();
-                    const ln = (tm.fields[FIELDS.TEAM_MEMBERS.lastName] || '').trim();
-                    return fn + (ln ? ' ' + ln.charAt(0) + '.' : '');
-                }
-
-                const outDetails = [];
-                onLeave.forEach((cat, mid) => outDetails.push({ name: getName(mid), reason: cat, type: 'leave' }));
-                onFieldSurvey.forEach((evt, mid) => outDetails.push({ name: getName(mid), reason: evt, type: 'field-survey' }));
-                onConference.forEach((evt, mid) => outDetails.push({ name: getName(mid), reason: evt, type: 'conference' }));
-                onProgram.forEach((evt, mid) => outDetails.push({ name: getName(mid), reason: evt, type: 'program' }));
-
-                weeklyCapacityData.push({
-                    weekIndex: i,
-                    weekStart: weekStart,
-                    label: `Week ${i + 1}`,
-                    dateRange: `${monthStr}/${dayStr} - ${endMonthStr}/${endDayStr}`,
-                    chartLabel: `Wk ${i + 1}\n${monthStr}/${dayStr}`,
-                    totalStaff: totalStaff,
-                    available: available,
-                    totalOut: totalOut,
-                    onLeave: onLeave,
-                    onFieldSurvey: onFieldSurvey,
-                    onConference: onConference,
-                    onProgram: onProgram,
-                    outDetails: outDetails,
-                    pct: pct,
-                    health: health,
-                });
+                const totalOut = outThisWeek.size + busyThisWeek.size;
+                const available = allData.allTeamMembers.length - totalOut;
+                availableCounts.push(available);
             }
-        }
 
-        function render12WeekKpis() {
             const totalStaff = allData.allTeamMembers.length;
-            const thisWeek = weeklyCapacityData[0];
-            const lowestWeek = weeklyCapacityData.reduce((min, w) => w.available < min.available ? w : min, weeklyCapacityData[0]);
-            const riskWeeks = weeklyCapacityData.filter(w => w.pct < 70).length;
-
-            document.getElementById('planningKpiTotal').textContent = totalStaff;
-            document.getElementById('planningKpiAvailNow').textContent = thisWeek ? thisWeek.available : '—';
-
-            // Color the "Available This Week" KPI
-            const availCard = document.getElementById('planningKpiAvailNow').parentElement;
-            availCard.className = 'kpi-card available';
-            if (thisWeek && thisWeek.health === 'yellow') availCard.classList.add('warning');
-            if (thisWeek && thisWeek.health === 'red') availCard.classList.add('critical');
-
-            document.getElementById('planningKpiLowest').textContent = lowestWeek ? lowestWeek.available : '—';
-            document.getElementById('planningKpiLowestLabel').textContent = lowestWeek ? lowestWeek.dateRange : '';
-            document.getElementById('planningKpiRiskWeeks').textContent = riskWeeks;
-
-            // Color risk weeks KPI
-            const riskCard = document.getElementById('planningKpiRiskWeeks').parentElement;
-            riskCard.className = 'kpi-card';
-            if (riskWeeks > 0) riskCard.classList.add('out');
-        }
-
-        function renderRiskWeeksPanel() {
-            const panel = document.getElementById('riskWeeksPanel');
-            const body = document.getElementById('riskWeeksPanelBody');
-            const title = document.getElementById('riskWeeksPanelTitle');
-
-            const riskWeeks = weeklyCapacityData.filter(w => w.health !== 'green');
-            const hasCritical = riskWeeks.some(w => w.health === 'red');
-
-            panel.className = 'risk-weeks-panel';
-            if (hasCritical) {
-                panel.classList.add('has-critical');
-                title.textContent = 'Staffing Alerts';
-            } else if (riskWeeks.length > 0) {
-                panel.classList.add('has-warnings');
-                title.textContent = 'Staffing Alerts';
-            } else {
-                title.textContent = 'Staffing Outlook';
-            }
-
-            if (riskWeeks.length === 0) {
-                body.innerHTML = '<div style="font-size:13px;color:#059669;font-weight:500;">All 12 weeks are at 80%+ capacity. No staffing concerns.</div>';
-                return;
-            }
-
-            let html = '';
-            riskWeeks.sort((a, b) => a.pct - b.pct);
-            riskWeeks.forEach(w => {
-                const outNames = w.outDetails.slice(0, 4).map(d => d.name).join(', ');
-                const moreCount = w.outDetails.length > 4 ? ` +${w.outDetails.length - 4} more` : '';
-                html += `
-                    <div class="risk-week-item">
-                        <span class="risk-week-badge ${w.health}">${w.pct}%</span>
-                        <span class="risk-week-detail"><strong>${w.label}</strong> (${w.dateRange}) &mdash; ${w.available} of ${w.totalStaff} available, ${w.totalOut} out</span>
-                        <span class="risk-week-who">${outNames}${moreCount}</span>
-                    </div>
-                `;
-            });
-            body.innerHTML = html;
-        }
-
-        function render12WeekCapacityChart() {
-            const ctx = document.getElementById('capacityChart').getContext('2d');
-            const totalStaff = allData.allTeamMembers.length;
-
-            const labels = weeklyCapacityData.map(w => w.chartLabel);
-            const available = weeklyCapacityData.map(w => w.available);
-            const colors = weeklyCapacityData.map(w => {
-                if (w.health === 'green') return '#8CC63E';
-                if (w.health === 'yellow') return '#F7931D';
+            const colors = availableCounts.map(count => {
+                const percentage = (count / totalStaff) * 100;
+                if (percentage >= 80) return '#8CC63E';
+                if (percentage >= 60) return '#FFDD00';
                 return '#AD1D22';
             });
 
@@ -3725,8 +3538,8 @@
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Available',
-                        data: available,
+                        label: 'Available Staff',
+                        data: availableCounts,
                         backgroundColor: colors,
                         borderColor: '#ddd',
                         borderWidth: 1,
@@ -3735,108 +3548,34 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    indexAxis: 'x',
                     plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const w = weeklyCapacityData[context.dataIndex];
-                                    return `${w.available} of ${w.totalStaff} available (${w.pct}%)`;
-                                },
-                                afterLabel: function(context) {
-                                    const w = weeklyCapacityData[context.dataIndex];
-                                    if (w.outDetails.length === 0) return '';
-                                    return 'Out: ' + w.outDetails.slice(0, 5).map(d => d.name).join(', ') + (w.outDetails.length > 5 ? '...' : '');
-                                }
-                            }
-                        },
-                        annotation: totalStaff > 0 ? {
-                            annotations: {
-                                thresholdLine: {
-                                    type: 'line',
-                                    yMin: Math.round(totalStaff * 0.7),
-                                    yMax: Math.round(totalStaff * 0.7),
-                                    borderColor: '#F7931D',
-                                    borderWidth: 2,
-                                    borderDash: [6, 3],
-                                    label: {
-                                        display: true,
-                                        content: '70% threshold',
-                                        position: 'end',
-                                        backgroundColor: '#F7931D',
-                                        color: 'white',
-                                        font: { size: 10 }
-                                    }
-                                }
-                            }
-                        } : undefined
+                        legend: {
+                            display: false,
+                        }
                     },
                     scales: {
                         y: {
                             beginAtZero: true,
                             max: totalStaff,
-                            ticks: { color: '#666' },
-                            grid: { color: '#f0f0f0' }
+                            ticks: {
+                                color: '#666',
+                            },
+                            grid: {
+                                color: '#f0f0f0',
+                            }
                         },
                         x: {
-                            ticks: { color: '#666', autoSkip: false, maxRotation: 0 },
-                            grid: { display: false }
+                            ticks: {
+                                color: '#666',
+                            },
+                            grid: {
+                                display: false,
+                            }
                         }
                     }
                 }
             });
-        }
-
-        function renderCapacityBreakdown() {
-            const body = document.getElementById('capacityBreakdownBody');
-            const totalStaff = allData.allTeamMembers.length;
-            let html = '';
-
-            weeklyCapacityData.forEach((w, idx) => {
-                const barWidth = totalStaff > 0 ? Math.round((w.available / totalStaff) * 100) : 100;
-                const isCurrentWeek = idx === 0;
-                const outSummary = w.outDetails.slice(0, 3).map(d => d.name).join(', ');
-                const moreCount = w.outDetails.length > 3 ? ` +${w.outDetails.length - 3}` : '';
-
-                html += `<div class="capacity-week-row${isCurrentWeek ? ' current-week' : ''} capacity-week-expand" onclick="toggleWeekDetail(${idx})">`;
-                html += `<div class="capacity-week-label">${w.label}${isCurrentWeek ? ' <span style="font-size:10px;color:#24408E;font-weight:700;">(CURRENT)</span>' : ''}<span class="week-dates">${w.dateRange}</span></div>`;
-                html += `<div class="capacity-week-count" style="color:${w.health === 'green' ? '#059669' : (w.health === 'yellow' ? '#D97706' : '#AD1D22')}">${w.available}/${totalStaff}</div>`;
-                html += `<div class="capacity-week-bar-wrap"><div class="capacity-week-bar ${w.health}" style="width:${barWidth}%">${w.pct}%</div></div>`;
-                html += `<div class="capacity-week-who-out">${w.totalOut === 0 ? '<span style="color:#059669;">Full capacity</span>' : outSummary + moreCount}</div>`;
-                html += `</div>`;
-
-                // Expandable detail row
-                html += `<div class="capacity-week-detail" id="weekDetail${idx}">`;
-                if (w.outDetails.length === 0) {
-                    html += '<div style="font-size:12px;color:#059669;">Everyone available this week.</div>';
-                } else {
-                    html += '<div class="capacity-detail-list">';
-                    w.outDetails.forEach(d => {
-                        html += `<span class="capacity-detail-chip ${d.type}">${d.name} &middot; ${d.reason}</span>`;
-                    });
-                    html += '</div>';
-                }
-                html += '</div>';
-            });
-
-            body.innerHTML = html;
-        }
-
-        function toggleWeekDetail(idx) {
-            const el = document.getElementById('weekDetail' + idx);
-            if (el) el.classList.toggle('open');
-        }
-
-        function togglePersonGrid() {
-            const wrap = document.getElementById('personGridWrap');
-            const toggle = document.getElementById('personGridToggle');
-            if (wrap.style.display === 'none') {
-                wrap.style.display = 'block';
-                toggle.innerHTML = '&#9660;';
-            } else {
-                wrap.style.display = 'none';
-                toggle.innerHTML = '&#9654;';
-            }
         }
 
         function render12WeekAvailabilityGrid() {
@@ -3901,7 +3640,7 @@
 
             const allEvents = [];
 
-            // Add Events (from Scheduling base)
+            // Add Events
             allData.events.forEach(event => {
                 const startDate = event.fields[FIELDS.EVENTS.startDateTime];
                 const endDate = event.fields[FIELDS.EVENTS.endDateTime];
@@ -3914,36 +3653,17 @@
                 twoWeeksOut.setDate(twoWeeksOut.getDate() + 84);
 
                 if (eventStart <= twoWeeksOut && eventEnd >= now) {
-                    // Count assigned staff
-                    const assignedStaff = [];
-                    allData.eventAssignments.forEach(ea => {
-                        if (!isAssignedOrConfirmed(ea.fields[FIELDS.EVENT_ASSIGNMENTS.assignmentStatus])) return;
-                        const eId = linkedId(ea.fields[FIELDS.EVENT_ASSIGNMENTS.event]);
-                        if (eId !== event.id) return;
-                        const mid = linkedId(ea.fields[FIELDS.EVENT_ASSIGNMENTS.teamMember]);
-                        if (mid) {
-                            const tm = allData.allTeamMembers.find(t => t.id === mid);
-                            if (tm) {
-                                const fn = (tm.fields[FIELDS.TEAM_MEMBERS.firstName] || '').trim();
-                                const ln = (tm.fields[FIELDS.TEAM_MEMBERS.lastName] || '').trim();
-                                assignedStaff.push(fn + (ln ? ' ' + ln.charAt(0) + '.' : ''));
-                            }
-                        }
-                    });
-
                     allEvents.push({
                         name: event.fields[FIELDS.EVENTS.eventName] || 'Unnamed Event',
                         type: selectVal(event.fields[FIELDS.EVENTS.eventType]) || 'Event',
                         startDate: startDate,
                         endDate: endDate || startDate,
-                        source: 'events',
-                        staffCount: assignedStaff.length,
-                        staffNames: assignedStaff,
+                        source: 'events'
                     });
                 }
             });
 
-            // Add REEF Programs (from REEF Database)
+            // Add REEF Programs
             (allData.reefPrograms || []).forEach(prog => {
                 const startDate = prog.fields[FIELDS.EVENTS_DB.startDateTime];
                 const endDate = prog.fields[FIELDS.EVENTS_DB.endDateTime];
@@ -3956,19 +3676,12 @@
                 twoWeeksOut.setDate(twoWeeksOut.getDate() + 84);
 
                 if (eventStart <= twoWeeksOut && eventEnd >= now) {
-                    const needed = prog.fields[FIELDS.EVENTS_DB.staffNeeded] || 0;
-                    const stillNeeded = prog.fields[FIELDS.EVENTS_DB.staffStillNeeded] || 0;
-
                     allEvents.push({
                         name: prog.fields[FIELDS.EVENTS_DB.eventName] || 'Unnamed Event',
                         type: selectVal(prog.fields[FIELDS.EVENTS_DB.eventType]) || 'Event',
                         startDate: startDate,
                         endDate: endDate || startDate,
-                        source: 'reefPrograms',
-                        staffCount: needed - stillNeeded,
-                        staffNames: [],
-                        staffNeeded: needed,
-                        staffStillNeeded: stillNeeded,
+                        source: 'reefPrograms'
                     });
                 }
             });
@@ -3991,28 +3704,12 @@
                 const endStr = `${String(endDate.getMonth() + 1).padStart(2, '0')}/${String(endDate.getDate()).padStart(2, '0')}`;
                 const dateRange = startStr === endStr ? startStr : `${startStr} - ${endStr}`;
 
-                // Staffing impact line
-                let staffLine = '';
-                if (event.staffCount > 0 || event.staffNeeded > 0) {
-                    const names = event.staffNames.length > 0 ? event.staffNames.slice(0, 3).join(', ') + (event.staffNames.length > 3 ? '...' : '') : '';
-                    if (event.staffStillNeeded > 0) {
-                        staffLine = `<div style="font-size:11px;color:#AD1D22;margin-top:4px;font-weight:600;">${event.staffStillNeeded} staff still needed</div>`;
-                    }
-                    if (names) {
-                        staffLine += `<div style="font-size:10px;color:#666;margin-top:2px;">${names}</div>`;
-                    }
-                    if (event.staffCount > 0) {
-                        staffLine += `<div style="font-size:10px;color:#999;margin-top:2px;">${event.staffCount} assigned</div>`;
-                    }
-                }
-
                 const eventDiv = document.createElement('div');
                 eventDiv.className = `timeline-event ${typeClass}`;
                 eventDiv.innerHTML = `
                     <div class="timeline-event-name">${event.name}</div>
                     <div class="timeline-event-date">${event.type}</div>
                     <div class="timeline-event-date">${dateRange}</div>
-                    ${staffLine}
                 `;
                 container.appendChild(eventDiv);
             });
@@ -4322,7 +4019,7 @@
             return `${h % 12 || 12}${mStr}${h >= 12 ? 'p' : 'a'}`;
         }
 
-        // Get the template name for a shift (e.g., "Tuesday Float AM", "Monday AM")
+        // Get the template name for a shift (e.g., "Tuesday AM", "Monday AM")
         function getShiftTemplateName(shift) {
             const tmplLink = shift.fields[FIELDS.OEC_SHIFTS.shiftTemplate];
             if (Array.isArray(tmplLink) && tmplLink.length > 0) {
@@ -4339,8 +4036,6 @@
             // Strip the day-of-week prefix ("Monday ", "Tuesday ", etc.)
             const stripped = tmplName.replace(/^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\s*/i, '');
             // Return shortened label
-            if (/float\s*am/i.test(stripped)) return 'Float';
-            if (/float\s*pm/i.test(stripped)) return 'Float';
             if (/block\s*1/i.test(stripped)) return 'Entry Blk 1';
             if (/block\s*2/i.test(stripped)) return 'Entry Blk 2';
             if (/block\s*3/i.test(stripped)) return 'Entry Blk 3';
@@ -4348,6 +4043,7 @@
             if (/entry.*gallery.*eval.*pm/i.test(stripped)) return 'Entry/Gallery';
             if (/^am$/i.test(stripped)) return '';
             if (/^pm$/i.test(stripped)) return '';
+            if (/^evening$/i.test(stripped)) return '';
             return stripped;
         }
 
@@ -4360,12 +4056,7 @@
             const badge = getSchedulerShiftBadge(shift);
             const slot = selectVal(shift.fields[FIELDS.OEC_SHIFTS.shiftSlot]);
 
-            // Use actual start/end times from the shift instance
-            const startDT = shift.fields[FIELDS.OEC_SHIFTS.startDateTime];
-            const endDT = shift.fields[FIELDS.OEC_SHIFTS.endDateTime];
-            const timeLabel = (startDT && endDT)
-                ? `${formatShiftTime(startDT)} – ${formatShiftTime(endDT)}`
-                : (slot === 'AM' ? '9:30a – 1:30p' : '1:30p – 5:30p');
+            // Shift times only needed for Google Calendar sync, not dashboard display
 
             // Show shift type label if it's not a standard AM/PM
             const typeLabel = getShiftTypeLabel(shift);
@@ -4383,7 +4074,7 @@
             if (typeLabel) {
                 html += `<div class="shift-type-label">${typeLabel}</div>`;
             }
-            html += `<div class="shift-time">${timeLabel}</div>`;
+            // Time label removed from OEC shifts — only relevant for GCal sync
             html += `<div class="shift-staff">`;
 
             confirmed.forEach((assign, idx) => {
@@ -4413,10 +4104,7 @@
             const startTime = evt.fields[FIELDS.EVENTS.startDateTime];
             let timeStr = '';
             if (startTime) {
-                const d = new Date(startTime);
-                const h = d.getHours();
-                const m = String(d.getMinutes()).padStart(2, '0');
-                timeStr = `${h % 12 || 12}:${m}${h >= 12 ? 'p' : 'a'}`;
+                timeStr = formatShiftTime(startTime);
             }
 
             const eventAssigns = allData.eventAssignments.filter(a =>
@@ -4499,10 +4187,7 @@
             const startTime = evt.fields[FIELDS.EVENTS_DB.startDateTime];
             let timeStr = '';
             if (startTime) {
-                const d = new Date(startTime);
-                const h = d.getHours();
-                const m = String(d.getMinutes()).padStart(2, '0');
-                timeStr = `${h % 12 || 12}:${m}${h >= 12 ? 'p' : 'a'}`;
+                timeStr = formatShiftTime(startTime);
             }
 
             // Find matching Events table record for assignment lookups and creation
@@ -4612,7 +4297,7 @@
                 const dayShifts = getSchedulerDayShifts(i);
                 const amShifts = dayShifts.filter(s => selectVal(s.fields[FIELDS.OEC_SHIFTS.shiftSlot]) === 'AM');
                 if (amShifts.length > 0) {
-                    // Show all AM shifts for the day (e.g., Tuesday has Float AM + Entry blocks)
+                    // Show all AM shifts for the day (e.g., Tuesday has AM + Entry blocks)
                     td.innerHTML = amShifts.map(s => buildSchedulerShiftCell(s, i)).join('');
                 } else {
                     td.innerHTML = '<div class="shift-cell empty" style="justify-content:center;align-items:center;color:#ccc;font-size:12px;font-style:italic;">No shift</div>';
@@ -5440,187 +5125,6 @@
             return member.fields[FIELDS.TEAM_MEMBERS.email] || null;
         }
 
-        // ===== GCAL TITLE & DESCRIPTION SYNC HELPERS =====
-        // Build a staff list description from an array of member IDs
-        function buildGCalStaffDescription(memberIds) {
-            const names = memberIds.map(mid => {
-                const member = allData.allTeamMembers.find(m => m.id === mid)
-                            || allData.teamMembers.find(m => m.id === mid);
-                if (!member) return null;
-                const fn = (member.fields[FIELDS.TEAM_MEMBERS.firstName] || '').trim();
-                const ln = (member.fields[FIELDS.TEAM_MEMBERS.lastName] || '').trim();
-                return fn + (ln ? ' ' + ln.charAt(0) + '.' : '');
-            }).filter(Boolean).sort();
-            if (names.length === 0) return 'Staff: None assigned';
-            return `Staff (${names.length}):\n` + names.map(n => `• ${n}`).join('\n');
-        }
-
-        // Get all currently assigned member IDs for an OEC shift
-        function getOecShiftAssignedMembers(shiftId) {
-            return allData.oecAssignments
-                .filter(oa =>
-                    linkedHas(oa.fields[FIELDS.OEC_ASSIGNMENTS.shiftInstance], shiftId) &&
-                    isAssignedOrConfirmed(oa.fields[FIELDS.OEC_ASSIGNMENTS.assignmentStatus])
-                )
-                .map(oa => linkedId(oa.fields[FIELDS.OEC_ASSIGNMENTS.teamMember]))
-                .filter(Boolean);
-        }
-
-        // Get all currently assigned member IDs for a campus event (by Events table record ID)
-        function getEventAssignedMembers(eventsTableRecordId) {
-            return allData.eventAssignments
-                .filter(ea =>
-                    linkedHas(ea.fields[FIELDS.EVENT_ASSIGNMENTS.event], eventsTableRecordId) &&
-                    isAssignedOrConfirmed(ea.fields[FIELDS.EVENT_ASSIGNMENTS.assignmentStatus])
-                )
-                .map(ea => linkedId(ea.fields[FIELDS.EVENT_ASSIGNMENTS.teamMember]))
-                .filter(Boolean);
-        }
-
-        // Build a static OEC shift title (no names): "OEC AM — Fri 5/22"
-        function buildOecShiftTitle(shiftId) {
-            const shift = allData.oecShifts.find(s => s.id === shiftId);
-            if (!shift) return 'OEC Shift';
-            const slot = selectVal(shift.fields[FIELDS.OEC_SHIFTS.shiftSlot]) || '';
-            const label = shift.fields[FIELDS.OEC_SHIFTS.shiftLabel] || 'Shift';
-            const dateStr = shift.fields[FIELDS.OEC_SHIFTS.shiftDate];
-            let datePart = '';
-            if (dateStr) {
-                const d = new Date(dateStr + 'T12:00:00');
-                const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-                datePart = ` — ${days[d.getDay()]} ${d.getMonth()+1}/${d.getDate()}`;
-            }
-            return `${slot || label}${datePart}`;
-        }
-
-        // Update GCal event summary + description to reflect current assignments
-        async function updateGCalEventDetails(calendarId, gcalEventId, summary, description) {
-            try {
-                const calId = encodeURIComponent(calendarId);
-                const patchResp = await fetch(
-                    `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}?sendUpdates=none`,
-                    {
-                        method: 'PATCH',
-                        headers: {
-                            'Authorization': `Bearer ${getGoogleAccessToken()}`,
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ summary, description }),
-                    }
-                );
-                if (patchResp.ok) {
-                    console.log('[GCal Details] Updated title/description for', gcalEventId);
-                } else {
-                    console.log('[GCal Details] Failed to update', gcalEventId, patchResp.status);
-                }
-            } catch (err) {
-                console.error('[GCal Details] Error:', err);
-            }
-        }
-
-        // ===== SYNC ALL TO GCAL (bulk re-push titles + descriptions) =====
-        async function syncAllToGCal() {
-            if (!getGoogleAccessToken()) {
-                alert('Please connect to Google Calendar first (click "Connect GCal" in the header).');
-                return;
-            }
-
-            const btn = document.getElementById('syncGCalBtn');
-            const origText = btn.textContent;
-            btn.disabled = true;
-            btn.textContent = '⏳ Syncing…';
-
-            try {
-                let updated = 0;
-                let skipped = 0;
-                let errors = 0;
-
-                // 1. Sync OEC Shifts for the current scheduler week
-                const weekStart = currentWeekStart;
-                const weekEnd = new Date(weekStart);
-                weekEnd.setDate(weekEnd.getDate() + 6);
-
-                const shiftsThisWeek = allData.oecShifts.filter(s => {
-                    const d = s.fields[FIELDS.OEC_SHIFTS.shiftDate];
-                    if (!d) return false;
-                    const sd = new Date(d + 'T12:00:00');
-                    return sd >= weekStart && sd <= weekEnd;
-                });
-
-                for (const shift of shiftsThisWeek) {
-                    const gcalEventId = OEC_GCAL_MAPPING[shift.id];
-                    if (!gcalEventId) { skipped++; continue; }
-
-                    const title = buildOecShiftTitle(shift.id);
-                    const assignedIds = getOecShiftAssignedMembers(shift.id);
-                    const desc = buildGCalStaffDescription(assignedIds);
-
-                    try {
-                        await updateGCalEventDetails(GCAL_CONFIG.oecShiftsCalendarId, gcalEventId, title, desc);
-                        updated++;
-                    } catch (e) {
-                        console.error('[Sync All] OEC shift error:', shift.id, e);
-                        errors++;
-                    }
-
-                    // Rate limit: ~200ms between calls
-                    await new Promise(r => setTimeout(r, 200));
-                    btn.textContent = `⏳ Syncing… (${updated})`;
-                }
-
-                // 2. Sync Campus Events for the current week
-                const weekStartStr = weekStart.toISOString().split('T')[0];
-                const weekEndStr = weekEnd.toISOString().split('T')[0];
-
-                for (const evt of allData.events) {
-                    const evtStart = evt.fields[FIELDS.EVENTS.startDateTime];
-                    if (!evtStart) continue;
-                    const evtDate = evtStart.split('T')[0];
-                    if (evtDate < weekStartStr || evtDate > weekEndStr) continue;
-
-                    // Find EVENTS_DB record to get GCal ID
-                    const eventsDBId = findEventsDBRecordId(evt.id);
-                    if (!eventsDBId) { skipped++; continue; }
-                    const gcalEventId = GCAL_EVENT_MAPPING[eventsDBId];
-                    if (!gcalEventId) { skipped++; continue; }
-
-                    const assignedIds = getEventAssignedMembers(evt.id);
-                    const desc = buildGCalStaffDescription(assignedIds);
-                    // Keep the original event name as the title
-                    const eventName = evt.fields[FIELDS.EVENTS.eventName] || 'REEF Campus Event';
-
-                    try {
-                        await updateGCalEventDetails(GCAL_CONFIG.reefCampus2CalendarId, gcalEventId, eventName, desc);
-                        updated++;
-                    } catch (e) {
-                        console.error('[Sync All] Event error:', evt.id, e);
-                        errors++;
-                    }
-
-                    await new Promise(r => setTimeout(r, 200));
-                    btn.textContent = `⏳ Syncing… (${updated})`;
-                }
-
-                // Done
-                const msg = `✅ Synced ${updated} event${updated !== 1 ? 's' : ''} to GCal` +
-                    (skipped ? ` (${skipped} skipped — no GCal ID)` : '') +
-                    (errors ? ` (${errors} error${errors !== 1 ? 's' : ''})` : '');
-                btn.textContent = msg;
-                setTimeout(() => {
-                    btn.textContent = origText;
-                    btn.disabled = false;
-                }, 4000);
-
-            } catch (err) {
-                console.error('[Sync All] Error:', err);
-                btn.textContent = '❌ Sync failed';
-                setTimeout(() => {
-                    btn.textContent = origText;
-                    btn.disabled = false;
-                }, 3000);
-            }
-        }
-
         // Add attendee to a REEF Campus 2 Google Calendar event (fire-and-forget, no blocking)
         // Auto-create a Google Calendar event on REEF Campus 2 for an EVENTS_DB program
         async function autoCreateGCalEvent(eventsDBId) {
@@ -5755,10 +5259,6 @@
                 );
                 if (patchResp.ok) {
                     console.log('[GCal Sync] Added attendee', email, 'to GCal event', gcalEventId);
-                    // Update event description with current staff list
-                    const assignedIds = getEventAssignedMembers(eventsTableRecordId);
-                    const desc = buildGCalStaffDescription(assignedIds);
-                    await updateGCalEventDetails(GCAL_CONFIG.reefCampus2CalendarId, gcalEventId, gcalEvent.summary, desc);
                 } else {
                     console.log('[GCal Sync] Failed to update GCal event', gcalEventId, patchResp.status);
                 }
@@ -5789,10 +5289,6 @@
                 const filtered = existingAttendees.filter(a => a.email.toLowerCase() !== email.toLowerCase());
                 if (filtered.length === existingAttendees.length) return; // wasn't there
 
-                // Also rebuild description with current staff list
-                const assignedIds = getEventAssignedMembers(eventsTableRecordId);
-                const desc = buildGCalStaffDescription(assignedIds);
-
                 const patchResp = await fetch(
                     `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}?sendUpdates=none`,
                     {
@@ -5801,7 +5297,7 @@
                             'Authorization': `Bearer ${getGoogleAccessToken()}`,
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({ attendees: filtered, description: desc }),
+                        body: JSON.stringify({ attendees: filtered }),
                     }
                 );
                 if (patchResp.ok) {
@@ -5863,11 +5359,6 @@
                 );
                 if (patchResp.ok) {
                     console.log('[GCal OEC Sync] Added attendee', email, 'to OEC GCal event', gcalEventId);
-                    // Update title (static, no names) + description (current staff list)
-                    const title = buildOecShiftTitle(shiftId);
-                    const assignedIds = getOecShiftAssignedMembers(shiftId);
-                    const desc = buildGCalStaffDescription(assignedIds);
-                    await updateGCalEventDetails(GCAL_CONFIG.oecShiftsCalendarId, gcalEventId, title, desc);
                 } else {
                     console.log('[GCal OEC Sync] Failed to update GCal event', gcalEventId, patchResp.status);
                 }
@@ -5896,11 +5387,6 @@
                 const filtered = existingAttendees.filter(a => a.email.toLowerCase() !== email.toLowerCase());
                 if (filtered.length === existingAttendees.length) return; // wasn't there
 
-                // Also rebuild title + description with current staff list
-                const title = buildOecShiftTitle(shiftId);
-                const assignedIds = getOecShiftAssignedMembers(shiftId);
-                const desc = buildGCalStaffDescription(assignedIds);
-
                 const patchResp = await fetch(
                     `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}?sendUpdates=none`,
                     {
@@ -5909,7 +5395,7 @@
                             'Authorization': `Bearer ${getGoogleAccessToken()}`,
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({ attendees: filtered, summary: title, description: desc }),
+                        body: JSON.stringify({ attendees: filtered }),
                     }
                 );
                 if (patchResp.ok) {
@@ -6522,6 +6008,18 @@
         // --- Wire up interactive features after render ---
 
         function initInteractiveCells() {
+            // View-only mode: hide add buttons and disable interactive pills
+            if (VIEW_ONLY) {
+                document.querySelectorAll('#schedulerGridBody .cell-add-btn').forEach(btn => {
+                    btn.style.display = 'none';
+                });
+                document.querySelectorAll('#schedulerGridBody .staff-pill-interactive').forEach(pill => {
+                    pill.style.cursor = 'default';
+                    pill.classList.remove('staff-pill-interactive');
+                });
+                return;
+            }
+
             // "+" buttons — open staff picker
             document.querySelectorAll('#schedulerGridBody .cell-add-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
