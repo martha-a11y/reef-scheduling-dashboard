@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>REEF Campus Scheduling & Availability Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
     <style>
         * {
             margin: 0;
@@ -357,6 +358,13 @@
 
         .kpi-card.available.critical .kpi-value {
             color: #AD1D22;
+        }
+
+        .kpi-detail {
+            font-size: 11px;
+            color: #999;
+            margin-top: 6px;
+            line-height: 1.4;
         }
 
         /* ===== TODAY STATUS BANNER ===== */
@@ -842,6 +850,45 @@
             color: white;
         }
 
+        .availability-grid td.week-highlight,
+        .availability-grid th.week-highlight {
+            background: #eef2fa !important;
+            box-shadow: inset 0 0 0 2px #24408E;
+        }
+
+        .availability-group-header td {
+            background: #f0f3f8 !important;
+            font-weight: 700;
+            font-size: 12px;
+            color: #24408E;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            user-select: none;
+            padding: 10px 15px !important;
+            text-align: left !important;
+            border-bottom: 2px solid #d0d7e6 !important;
+        }
+
+        .availability-group-header td:hover {
+            background: #e4e9f4 !important;
+        }
+
+        .availability-group-header .group-toggle {
+            display: inline-block;
+            width: 16px;
+            transition: transform 0.2s;
+            margin-right: 6px;
+        }
+
+        .availability-group-header.collapsed .group-toggle {
+            transform: rotate(-90deg);
+        }
+
+        .availability-group-row.hidden {
+            display: none;
+        }
+
         .status-available {
             background: #8CC63E;
         }
@@ -874,46 +921,246 @@
             padding: 25px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             margin-bottom: 30px;
-            overflow-x: auto;
         }
 
-        .timeline-container {
+        /* Capacity Legend */
+        .capacity-legend {
             display: flex;
-            gap: 15px;
-            padding-bottom: 10px;
-            min-width: min-content;
+            gap: 18px;
+            flex-wrap: wrap;
+            justify-content: center;
+            padding: 10px 0 0;
+            border-top: 1px solid #f0f0f0;
+            margin-top: 8px;
         }
 
-        .timeline-event {
-            min-width: 200px;
+        .capacity-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            color: #777;
+        }
+
+        .capacity-legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+
+        .capacity-legend-line {
+            width: 18px;
+            height: 0;
+            border-top: 2px dashed #AD1D22;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+
+        /* Risk Alerts */
+        #riskAlertsPanel:empty {
+            display: none;
+        }
+
+        .risk-alerts-header {
+            font-size: 13px;
+            font-weight: 700;
+            color: #AD1D22;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .risk-alert {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 10px 14px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .risk-alert.critical {
+            background: #fde8e8;
+            border-left: 4px solid #AD1D22;
+        }
+
+        .risk-alert.warning {
+            background: #fff8e0;
+            border-left: 4px solid #F7931D;
+        }
+
+        .risk-alert-week {
+            font-weight: 700;
+            min-width: 50px;
+            color: #333;
+        }
+
+        .risk-alert-body {
+            flex: 1;
+            color: #555;
+        }
+
+        .risk-alert-count {
+            font-weight: 700;
+            min-width: 90px;
+            text-align: right;
+        }
+
+        .risk-alert.critical .risk-alert-count {
+            color: #AD1D22;
+        }
+
+        .risk-alert.warning .risk-alert-count {
+            color: #F7931D;
+        }
+
+        .event-density-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 6px;
+        }
+
+        .density-week {
             background: #f9f9f9;
             border-radius: 6px;
-            padding: 15px;
+            padding: 10px 6px;
+            text-align: center;
+            cursor: pointer;
+            transition: background 0.15s, box-shadow 0.15s;
+            border: 2px solid transparent;
+            min-height: 70px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .density-week:hover {
+            background: #eef2fa;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        .density-week.selected {
+            border-color: #24408E;
+            background: #eef2fa;
+        }
+
+        .density-week.empty {
+            cursor: default;
+            opacity: 0.5;
+        }
+
+        .density-week-label {
+            font-size: 10px;
+            color: #999;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .density-week-date {
+            font-size: 10px;
+            color: #bbb;
+        }
+
+        .density-count {
+            font-size: 20px;
+            font-weight: 700;
+            color: #24408E;
+            line-height: 1;
+        }
+
+        .density-count.zero {
+            color: #ccc;
+            font-size: 16px;
+        }
+
+        .density-badges {
+            display: flex;
+            gap: 3px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .density-badge {
+            font-size: 8px;
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .density-badge.campus {
+            background: #e8f4fd;
+            color: #00B1E3;
+        }
+
+        .density-badge.offsite {
+            background: #fde8e8;
+            color: #AD1D22;
+        }
+
+        .event-density-detail {
+            margin-top: 15px;
+        }
+
+        .density-detail-header {
+            font-size: 13px;
+            font-weight: 700;
+            color: #24408E;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .density-detail-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .density-detail-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: #f9f9f9;
+            border-radius: 6px;
             border-left: 4px solid #24408E;
         }
 
-        .timeline-event.field-survey {
+        .density-detail-item.field-survey {
             border-left-color: #AD1D22;
         }
 
-        .timeline-event.conference {
+        .density-detail-item.conference {
             border-left-color: #FFDD00;
         }
 
-        .timeline-event.program {
-            border-left-color: #00B1E3;
-        }
-
-        .timeline-event-name {
+        .density-detail-item .detail-name {
             font-weight: 600;
-            color: #24408E;
-            font-size: 13px;
-            margin-bottom: 5px;
+            font-size: 12px;
+            color: #333;
+            flex: 1;
         }
 
-        .timeline-event-date {
-            font-size: 11px;
+        .density-detail-item .detail-type {
+            font-size: 10px;
             color: #999;
+            min-width: 80px;
+        }
+
+        .density-detail-item .detail-dates {
+            font-size: 10px;
+            color: #999;
+            min-width: 100px;
+            text-align: right;
         }
 
         /* ===== FOOTER ===== */
@@ -1652,6 +1899,10 @@
             letter-spacing: 1px;
             border-bottom: 2px solid #1a2d5f;
         }
+        .scheduler-group-header.section-header.offsite-section-header {
+            background: #8B4513 !important;
+            border-bottom: 2px solid #6b3410;
+        }
 
         /* === Compact sidebar (#13) === */
         .staff-summary-item {
@@ -2165,32 +2416,37 @@
     <!-- 12-Week Planning Tab -->
     <div id="planningViewContent" class="tab-content">
         <div id="planningContent" class="container">
-            <!-- Summary KPI Cards -->
+            <!-- Workforce Summary KPI Cards -->
             <div class="kpi-row">
                 <div class="kpi-card">
-                    <div class="kpi-label">Total Active Staff</div>
-                    <div class="kpi-value" id="planningKpiTotal">—</div>
+                    <div class="kpi-label">Campus Operational</div>
+                    <div class="kpi-value" id="planningKpiCampusOps">—</div>
+                    <div class="kpi-detail" id="planningKpiCampusDetail"></div>
                 </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Campus Staff</div>
-                    <div class="kpi-value" id="planningKpiCampus">—</div>
+                <div class="kpi-card" style="border-left-color: #666;">
+                    <div class="kpi-label">Remote Staff</div>
+                    <div class="kpi-value" id="planningKpiRemote" style="color: #666;">—</div>
+                </div>
+                <div class="kpi-card" style="border-left-color: #00B1E3;">
+                    <div class="kpi-label">Supplemental</div>
+                    <div class="kpi-value" id="planningKpiSupplemental" style="color: #00B1E3;">—</div>
+                    <div class="kpi-detail" id="planningKpiSupplementalDetail"></div>
                 </div>
                 <div class="kpi-card out">
                     <div class="kpi-label">Away This Week</div>
                     <div class="kpi-value" id="planningKpiAwayThisWeek">—</div>
-                </div>
-                <div class="kpi-card out">
-                    <div class="kpi-label">Away Next Week</div>
-                    <div class="kpi-value" id="planningKpiAwayNextWeek">—</div>
+                    <div class="kpi-detail" id="planningKpiAwayDetail"></div>
                 </div>
             </div>
 
             <!-- Filter Bar -->
             <div class="filter-bar">
                 <select id="departmentFilter" class="filter-select">
-                    <option value="">All Departments</option>
-                    <option value="REEF Campus">REEF Campus</option>
-                    <option value="Remote">Remote</option>
+                    <option value="">All Categories</option>
+                    <option value="campusStaff">Campus Staff</option>
+                    <option value="internsFellows">Interns & Fellows</option>
+                    <option value="remote">Remote Staff</option>
+                    <option value="docents">Docents & Volunteers</option>
                 </select>
             </div>
 
@@ -2200,17 +2456,25 @@
                 <div class="chart-container">
                     <canvas id="capacityChart"></canvas>
                 </div>
+                <div class="capacity-legend">
+                    <span class="capacity-legend-item"><span class="capacity-legend-dot" style="background:#8CC63E;"></span> 6+ available (healthy)</span>
+                    <span class="capacity-legend-item"><span class="capacity-legend-dot" style="background:#FFDD00;"></span> 4–5 available (tight)</span>
+                    <span class="capacity-legend-item"><span class="capacity-legend-dot" style="background:#AD1D22;"></span> &lt;4 available (critical)</span>
+                    <span class="capacity-legend-item"><span class="capacity-legend-line"></span> Minimum safe threshold</span>
+                    <span class="capacity-legend-item"><span class="capacity-legend-dot" style="background:white;border:3px solid #24408E;width:10px;height:10px;"></span> This week</span>
+                </div>
+                <div id="riskAlertsPanel"></div>
             </div>
 
             <!-- Weekly Staff Availability Grid -->
             <div class="grid-section">
-                <h2 class="section-title">Weekly Staff Availability (8 Weeks)</h2>
+                <h2 class="section-title">Team Availability by Category (12 Weeks)</h2>
                 <table class="availability-grid" id="availabilityGrid">
                     <thead>
                         <tr>
                             <th>Name</th>
                             <th>Department</th>
-                            <th colspan="8">Week</th>
+                            <th colspan="12">Week</th>
                         </tr>
                     </thead>
                     <tbody id="availabilityBody">
@@ -2220,9 +2484,9 @@
 
             <!-- Upcoming Events Timeline -->
             <div class="timeline-section">
-                <h2 class="section-title">Upcoming Events (12 Weeks)</h2>
-                <div class="timeline-container" id="timelineContainer">
-                </div>
+                <h2 class="section-title">Event Density (12 Weeks)</h2>
+                <div class="event-density-grid" id="eventDensityGrid"></div>
+                <div class="event-density-detail" id="eventDensityDetail"></div>
             </div>
         </div>
     </div>
@@ -2346,6 +2610,9 @@
             eventAssignments: [],
             reefPrograms: [],
             docentVolunteers: [],
+            remoteStaff: [],
+            internsFellows: [],
+            campusStaffOnly: [],
         };
 
         let capacityChart = null;
@@ -2718,17 +2985,34 @@
             allData.allTeamMembers = allTeam.filter(m =>
                 selectVal(m.fields[FIELDS.TEAM_MEMBERS.activeStatus]) === 'Active'
             );
-            // Staff = Active + REEF Campus + NOT Docent
+            // Campus operational = Active + REEF Campus + NOT Docent/Volunteer
             allData.teamMembers = allTeam.filter(m =>
                 selectVal(m.fields[FIELDS.TEAM_MEMBERS.activeStatus]) === 'Active' &&
                 selectVal(m.fields[FIELDS.TEAM_MEMBERS.workBase]) === 'REEF Campus' &&
-                selectVal(m.fields[FIELDS.TEAM_MEMBERS.teamMemberType]) !== 'Docent'
+                !['Docent', 'Volunteer'].includes(selectVal(m.fields[FIELDS.TEAM_MEMBERS.teamMemberType]))
             );
-            // Docent volunteers = Active + REEF Campus + Docent type
+            // Docent & Volunteers = Active + REEF Campus + Docent or Volunteer type
             allData.docentVolunteers = allTeam.filter(m =>
                 selectVal(m.fields[FIELDS.TEAM_MEMBERS.activeStatus]) === 'Active' &&
                 selectVal(m.fields[FIELDS.TEAM_MEMBERS.workBase]) === 'REEF Campus' &&
-                selectVal(m.fields[FIELDS.TEAM_MEMBERS.teamMemberType]) === 'Docent'
+                ['Docent', 'Volunteer'].includes(selectVal(m.fields[FIELDS.TEAM_MEMBERS.teamMemberType]))
+            );
+            // Remote staff = Active + Remote work base
+            allData.remoteStaff = allTeam.filter(m =>
+                selectVal(m.fields[FIELDS.TEAM_MEMBERS.activeStatus]) === 'Active' &&
+                selectVal(m.fields[FIELDS.TEAM_MEMBERS.workBase]) === 'Remote'
+            );
+            // Interns & Fellows = Active + REEF Campus + Intern or Fellow type
+            allData.internsFellows = allTeam.filter(m =>
+                selectVal(m.fields[FIELDS.TEAM_MEMBERS.activeStatus]) === 'Active' &&
+                selectVal(m.fields[FIELDS.TEAM_MEMBERS.workBase]) === 'REEF Campus' &&
+                ['Intern', 'Fellow'].includes(selectVal(m.fields[FIELDS.TEAM_MEMBERS.teamMemberType]))
+            );
+            // Campus Staff only = Active + REEF Campus + Staff type (not Intern/Fellow/Docent)
+            allData.campusStaffOnly = allTeam.filter(m =>
+                selectVal(m.fields[FIELDS.TEAM_MEMBERS.activeStatus]) === 'Active' &&
+                selectVal(m.fields[FIELDS.TEAM_MEMBERS.workBase]) === 'REEF Campus' &&
+                selectVal(m.fields[FIELDS.TEAM_MEMBERS.teamMemberType]) === 'Staff'
             );
 
             // Fetch Time Away (filter client-side for Approved)
@@ -3430,15 +3714,17 @@
         }
 
         function render12WeekKpis() {
-            const totalActive = allData.allTeamMembers.length;
-            const campusStaff = allData.teamMembers.length;
+            const campusOps = allData.teamMembers.length; // Campus Staff + Interns + Fellows
+            const campusStaffCount = allData.campusStaffOnly.length;
+            const internsFellowsCount = allData.internsFellows.length;
+            const remoteCount = allData.remoteStaff.length;
+            const docentCount = allData.docentVolunteers.length;
 
-            // Away this week (Blocks Scheduling Completely)
+            // Away this week — count campus operational staff with blocking time away
             const weekStart = getWeekStartDate(0);
-            const weekEnd = new Date(weekStart);
-            weekEnd.setDate(weekEnd.getDate() + 6);
 
             const awayThisWeek = new Set();
+            const awayCampusOps = new Set();
             allData.timeAway.forEach(ta => {
                 const members = ta.fields[FIELDS.TIME_AWAY.teamMember];
                 if (!members || !Array.isArray(members)) return;
@@ -3446,49 +3732,50 @@
                 if (!isDateInWeekRange(weekStart, ta.fields[FIELDS.TIME_AWAY.startDateTime], ta.fields[FIELDS.TIME_AWAY.endDateTime])) return;
                 members.forEach(m => {
                     const mid = (typeof m === 'string') ? m : (m && m.id);
-                    if (mid && allData.allTeamMembers.some(tm => tm.id === mid)) awayThisWeek.add(mid);
+                    if (!mid) return;
+                    if (allData.allTeamMembers.some(tm => tm.id === mid)) awayThisWeek.add(mid);
+                    if (allData.teamMembers.some(tm => tm.id === mid)) awayCampusOps.add(mid);
                 });
             });
 
-            // Away next week
-            const nextWeekStart = getWeekStartDate(1);
-            const nextWeekEnd = new Date(nextWeekStart);
-            nextWeekEnd.setDate(nextWeekEnd.getDate() + 6);
+            // Campus Operational card
+            document.getElementById('planningKpiCampusOps').textContent = campusOps;
+            document.getElementById('planningKpiCampusDetail').textContent =
+                `${campusStaffCount} Staff · ${internsFellowsCount} Interns/Fellows`;
 
-            const awayNextWeek = new Set();
-            allData.timeAway.forEach(ta => {
-                const members = ta.fields[FIELDS.TIME_AWAY.teamMember];
-                if (!members || !Array.isArray(members)) return;
-                if (selectVal(ta.fields[FIELDS.TIME_AWAY.schedulingImpact]) !== 'Blocks Scheduling Completely') return;
-                if (!isDateInWeekRange(nextWeekStart, ta.fields[FIELDS.TIME_AWAY.startDateTime], ta.fields[FIELDS.TIME_AWAY.endDateTime])) return;
-                members.forEach(m => {
-                    const mid = (typeof m === 'string') ? m : (m && m.id);
-                    if (mid && allData.allTeamMembers.some(tm => tm.id === mid)) awayNextWeek.add(mid);
-                });
-            });
+            // Remote card
+            document.getElementById('planningKpiRemote').textContent = remoteCount;
 
-            document.getElementById('planningKpiTotal').textContent = totalActive;
-            document.getElementById('planningKpiCampus').textContent = campusStaff;
-            document.getElementById('planningKpiAwayThisWeek').textContent = awayThisWeek.size;
-            document.getElementById('planningKpiAwayNextWeek').textContent = awayNextWeek.size;
+            // Supplemental card
+            document.getElementById('planningKpiSupplemental').textContent = docentCount;
+            document.getElementById('planningKpiSupplementalDetail').textContent = 'Docents & Volunteers';
+
+            // Away This Week card — show campus ops away + total
+            document.getElementById('planningKpiAwayThisWeek').textContent = awayCampusOps.size;
+            const otherAway = awayThisWeek.size - awayCampusOps.size;
+            document.getElementById('planningKpiAwayDetail').textContent =
+                `of ${campusOps} campus ops` + (otherAway > 0 ? ` · ${otherAway} other away` : '');
         }
 
         function render12WeekCapacityChart() {
             const ctx = document.getElementById('capacityChart').getContext('2d');
-            const weeks = [];
+            const weekData = []; // Store per-week breakdown for risk alerts
             const availableCounts = [];
             const labels = [];
 
+            // Minimum campus ops needed to cover OEC shifts (2 shifts × 2 min each = 4)
+            const MIN_SAFE_THRESHOLD = 4;
+            const WARNING_THRESHOLD = 6;
+
             for (let i = 0; i < 12; i++) {
                 const weekStart = getWeekStartDate(i);
-                weeks.push(weekStart);
-
                 const monthStr = String(weekStart.getMonth() + 1).padStart(2, '0');
                 const dayStr = String(weekStart.getDate()).padStart(2, '0');
                 labels.push(`Week ${i + 1}\n${monthStr}/${dayStr}`);
 
-                // Count people out this week
+                // Count campus operational staff out this week (PTO / blocking time away)
                 const outThisWeek = new Set();
+                const outNames = [];
                 allData.timeAway.forEach(ta => {
                     const members = ta.fields[FIELDS.TIME_AWAY.teamMember];
                     if (!members || !Array.isArray(members)) return;
@@ -3496,12 +3783,18 @@
                     if (!isDateInWeekRange(weekStart, ta.fields[FIELDS.TIME_AWAY.startDateTime], ta.fields[FIELDS.TIME_AWAY.endDateTime])) return;
                     members.forEach(m => {
                         const mid = (typeof m === 'string') ? m : (m && m.id);
-                        if (mid && allData.allTeamMembers.some(tm => tm.id === mid)) outThisWeek.add(mid);
+                        if (mid && allData.teamMembers.some(tm => tm.id === mid)) {
+                            if (!outThisWeek.has(mid)) {
+                                outThisWeek.add(mid);
+                                outNames.push(getTeamMemberName(mid));
+                            }
+                        }
                     });
                 });
 
-                // Count people at field surveys/conferences this week
+                // Count campus operational staff at field surveys/conferences
                 const busyThisWeek = new Set();
+                const busyNames = [];
                 allData.eventAssignments.forEach(ea => {
                     if (!isAssignedOrConfirmed(ea.fields[FIELDS.EVENT_ASSIGNMENTS.assignmentStatus])) return;
                     const eventRecId = linkedId(ea.fields[FIELDS.EVENT_ASSIGNMENTS.event]);
@@ -3512,26 +3805,66 @@
                     if (['Field Survey', 'Conference'].includes(eventType) &&
                         isDateInWeekRange(weekStart, event.fields[FIELDS.EVENTS.startDateTime], event.fields[FIELDS.EVENTS.endDateTime])) {
                         const mid = linkedId(ea.fields[FIELDS.EVENT_ASSIGNMENTS.teamMember]);
-                        if (mid && allData.allTeamMembers.some(tm => tm.id === mid)) busyThisWeek.add(mid);
+                        if (mid && allData.teamMembers.some(tm => tm.id === mid) && !outThisWeek.has(mid)) {
+                            if (!busyThisWeek.has(mid)) {
+                                busyThisWeek.add(mid);
+                                busyNames.push(getTeamMemberName(mid));
+                            }
+                        }
                     }
                 });
 
                 const totalOut = outThisWeek.size + busyThisWeek.size;
-                const available = allData.allTeamMembers.length - totalOut;
+                const available = allData.teamMembers.length - totalOut;
                 availableCounts.push(available);
+
+                weekData.push({
+                    weekNum: i + 1,
+                    weekLabel: `${monthStr}/${dayStr}`,
+                    available,
+                    outCount: outThisWeek.size,
+                    busyCount: busyThisWeek.size,
+                    outNames,
+                    busyNames
+                });
             }
 
-            const totalStaff = allData.allTeamMembers.length;
+            const totalStaff = allData.teamMembers.length;
             const colors = availableCounts.map(count => {
-                const percentage = (count / totalStaff) * 100;
-                if (percentage >= 80) return '#8CC63E';
-                if (percentage >= 60) return '#FFDD00';
+                if (count >= WARNING_THRESHOLD) return '#8CC63E';
+                if (count >= MIN_SAFE_THRESHOLD) return '#FFDD00';
                 return '#AD1D22';
+            });
+
+            // Current week highlight: thick dark border on Week 1
+            const borderColors = availableCounts.map((_, i) => i === 0 ? '#24408E' : '#ddd');
+            const borderWidths = availableCounts.map((_, i) => i === 0 ? 3 : 1);
+
+            // Count campus events per week for tooltip
+            const OFF_SITE_TYPES_CHART = ['Field Survey', 'Conference'];
+            weekData.forEach((wd, i) => {
+                const ws = getWeekStartDate(i);
+                const we = new Date(ws); we.setDate(we.getDate() + 6);
+                let campusEvtCount = 0;
+                allData.events.forEach(evt => {
+                    const s = evt.fields[FIELDS.EVENTS.startDateTime];
+                    const e = evt.fields[FIELDS.EVENTS.endDateTime];
+                    if (!s) return;
+                    const es = new Date(s), ee = new Date(e || s);
+                    if (es <= we && ee >= ws) {
+                        const et = selectVal(evt.fields[FIELDS.EVENTS.eventType]) || '';
+                        if (!OFF_SITE_TYPES_CHART.includes(et)) campusEvtCount++;
+                    }
+                });
+                wd.campusEvents = campusEvtCount;
             });
 
             if (capacityChart) {
                 capacityChart.destroy();
             }
+
+            // Store weekData on window so tooltip callback can access it
+            window._capacityWeekData = weekData;
 
             capacityChart = new Chart(ctx, {
                 type: 'bar',
@@ -3541,8 +3874,8 @@
                         label: 'Available Staff',
                         data: availableCounts,
                         backgroundColor: colors,
-                        borderColor: '#ddd',
-                        borderWidth: 1,
+                        borderColor: borderColors,
+                        borderWidth: borderWidths,
                     }]
                 },
                 options: {
@@ -3550,55 +3883,140 @@
                     maintainAspectRatio: false,
                     indexAxis: 'x',
                     plugins: {
-                        legend: {
-                            display: false,
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: (items) => {
+                                    const idx = items[0].dataIndex;
+                                    const wd = window._capacityWeekData[idx];
+                                    return `Week ${wd.weekNum} (${wd.weekLabel})${idx === 0 ? '  ← this week' : ''}`;
+                                },
+                                label: (item) => {
+                                    const wd = window._capacityWeekData[item.dataIndex];
+                                    const lines = [`${wd.available} available of ${totalStaff} campus ops`];
+                                    if (wd.outCount > 0) lines.push(`${wd.outCount} on leave`);
+                                    if (wd.busyCount > 0) lines.push(`${wd.busyCount} off-site`);
+                                    if (wd.campusEvents > 0) lines.push(`${wd.campusEvents} campus events`);
+                                    return lines;
+                                }
+                            }
+                        },
+                        annotation: {
+                            annotations: {
+                                minLine: {
+                                    type: 'line',
+                                    yMin: MIN_SAFE_THRESHOLD,
+                                    yMax: MIN_SAFE_THRESHOLD,
+                                    borderColor: '#AD1D22',
+                                    borderWidth: 2,
+                                    borderDash: [6, 4],
+                                    label: {
+                                        display: true,
+                                        content: `Min safe (${MIN_SAFE_THRESHOLD})`,
+                                        position: 'start',
+                                        backgroundColor: 'rgba(173,29,34,0.8)',
+                                        color: 'white',
+                                        font: { size: 10 }
+                                    }
+                                }
+                            }
                         }
                     },
                     scales: {
                         y: {
                             beginAtZero: true,
                             max: totalStaff,
-                            ticks: {
-                                color: '#666',
-                            },
-                            grid: {
-                                color: '#f0f0f0',
-                            }
+                            ticks: { color: '#666' },
+                            grid: { color: '#f0f0f0' }
                         },
                         x: {
-                            ticks: {
-                                color: '#666',
-                            },
-                            grid: {
-                                display: false,
-                            }
+                            ticks: { color: '#666' },
+                            grid: { display: false }
                         }
                     }
                 }
             });
+
+            // Render risk alerts
+            renderRiskAlerts(weekData, MIN_SAFE_THRESHOLD, WARNING_THRESHOLD);
+        }
+
+        function renderRiskAlerts(weekData, minThreshold, warnThreshold) {
+            const panel = document.getElementById('riskAlertsPanel');
+            const riskyWeeks = weekData.filter(w => w.available < warnThreshold);
+            const criticalCount = riskyWeeks.filter(w => w.available < minThreshold).length;
+
+            if (riskyWeeks.length === 0) {
+                panel.innerHTML = '';
+                return;
+            }
+
+            const summary = criticalCount > 0
+                ? `${criticalCount} critical, ${riskyWeeks.length - criticalCount} warning`
+                : `${riskyWeeks.length} warning`;
+
+            let html = `<div style="margin-top:18px;">
+                <div class="risk-alerts-header" style="cursor:pointer;user-select:none;" onclick="
+                    const body = this.nextElementSibling;
+                    const toggle = this.querySelector('.risk-toggle');
+                    if (body.style.display === 'none') { body.style.display = 'block'; toggle.textContent = '▼'; }
+                    else { body.style.display = 'none'; toggle.textContent = '▶'; }
+                ">
+                    <span class="risk-toggle">▼</span> &#9888; Staffing Risk Weeks (${riskyWeeks.length}) <span style="font-weight:400;font-size:11px;color:#999;margin-left:8px;">${summary}</span>
+                </div>
+                <div class="risk-alerts-body">`;
+
+            riskyWeeks.forEach(w => {
+                const isCritical = w.available < minThreshold;
+                const level = isCritical ? 'critical' : 'warning';
+                const levelLabel = isCritical ? 'CRITICAL' : 'WARNING';
+
+                let reasons = [];
+                if (w.outCount > 0) reasons.push(`${w.outCount} on leave (${w.outNames.join(', ')})`);
+                if (w.busyCount > 0) reasons.push(`${w.busyCount} off-site (${w.busyNames.join(', ')})`);
+                const reasonText = reasons.length > 0 ? reasons.join(' · ') : 'Low staffing';
+
+                html += `
+                    <div class="risk-alert ${level}">
+                        <span class="risk-alert-week">Wk ${w.weekNum}<br><span style="font-size:10px;font-weight:400;color:#999;">${w.weekLabel}</span></span>
+                        <span class="risk-alert-body">${reasonText}</span>
+                        <span class="risk-alert-count">${w.available} available<br><span style="font-size:10px;font-weight:400;">${levelLabel}</span></span>
+                    </div>`;
+            });
+
+            html += '</div></div>';
+            panel.innerHTML = html;
         }
 
         function render12WeekAvailabilityGrid() {
-            const departmentFilter = document.getElementById('departmentFilter').value;
-            let filteredTeam = allData.allTeamMembers;
+            const categoryFilter = document.getElementById('departmentFilter').value;
 
-            if (departmentFilter) {
-                filteredTeam = filteredTeam.filter(m =>
-                    selectVal(m.fields[FIELDS.TEAM_MEMBERS.workBase]) === departmentFilter
-                );
-            }
+            // Define workforce groups
+            const groups = [
+                { key: 'campusStaff', label: 'REEF Campus Staff', data: allData.campusStaffOnly, expanded: true },
+                { key: 'internsFellows', label: 'Interns & Fellows', data: allData.internsFellows, expanded: true },
+                { key: 'remote', label: 'Remote Staff', data: allData.remoteStaff, expanded: false },
+                { key: 'docents', label: 'Docents & Volunteers', data: allData.docentVolunteers, expanded: false },
+            ];
 
-            filteredTeam.sort((a, b) => {
+            // Filter to single category if selected
+            const visibleGroups = categoryFilter
+                ? groups.filter(g => g.key === categoryFilter)
+                : groups;
+
+            // Sort members within each group alphabetically
+            const sortByName = (a, b) => {
                 const nameA = (a.fields[FIELDS.TEAM_MEMBERS.firstName] || '') + (a.fields[FIELDS.TEAM_MEMBERS.lastName] || '');
                 const nameB = (b.fields[FIELDS.TEAM_MEMBERS.firstName] || '') + (b.fields[FIELDS.TEAM_MEMBERS.lastName] || '');
                 return nameA.localeCompare(nameB);
-            });
+            };
 
             const tbody = document.getElementById('availabilityBody');
             tbody.innerHTML = '';
 
+            // Build week headers (12 weeks to match capacity chart)
             const weekHeaders = [];
-            for (let i = 0; i < 8; i++) {
+            for (let i = 0; i < 12; i++) {
                 const weekStart = getWeekStartDate(i);
                 const monthStr = String(weekStart.getMonth() + 1).padStart(2, '0');
                 const dayStr = String(weekStart.getDate()).padStart(2, '0');
@@ -3608,111 +4026,218 @@
             const header = document.getElementById('availabilityGrid').querySelector('thead tr');
             header.innerHTML = `
                 <th>Name</th>
-                <th>Department</th>
-                ${weekHeaders.map(h => `<th>${h}</th>`).join('')}
+                <th>Type</th>
+                ${weekHeaders.map((h, i) => `<th data-week="${i}">${h}</th>`).join('')}
             `;
 
-            filteredTeam.forEach(member => {
-                const memberId = member.id;
-                const firstName = member.fields[FIELDS.TEAM_MEMBERS.firstName] || '';
-                const lastName = member.fields[FIELDS.TEAM_MEMBERS.lastName] || '';
-                const fullName = `${firstName} ${lastName}`.trim();
-                const workBase = selectVal(member.fields[FIELDS.TEAM_MEMBERS.workBase]) || 'Unknown';
+            visibleGroups.forEach(group => {
+                const members = [...group.data].sort(sortByName);
+                if (members.length === 0) return;
 
-                const row = document.createElement('tr');
-                let html = `<td class="name-col">${fullName}</td><td>${workBase}</td>`;
+                const isExpanded = categoryFilter ? true : group.expanded;
+                const totalCols = 2 + weekHeaders.length;
 
-                for (let i = 0; i < 8; i++) {
-                    const weekStart = getWeekStartDate(i);
-                    const status = getPersonStatusForWeek(memberId, weekStart);
-                    const statusClass = `status-${status.status}`;
-                    html += `<td><span class="status-cell ${statusClass}">${status.label}</span></td>`;
-                }
+                // Group header row
+                const headerRow = document.createElement('tr');
+                headerRow.className = `availability-group-header ${isExpanded ? '' : 'collapsed'}`;
+                headerRow.dataset.group = group.key;
+                headerRow.innerHTML = `<td colspan="${totalCols}"><span class="group-toggle">▼</span>${group.label} (${members.length})</td>`;
+                headerRow.addEventListener('click', () => {
+                    headerRow.classList.toggle('collapsed');
+                    const rows = tbody.querySelectorAll(`.availability-group-row[data-group="${group.key}"]`);
+                    rows.forEach(r => r.classList.toggle('hidden'));
+                });
+                tbody.appendChild(headerRow);
 
-                row.innerHTML = html;
-                tbody.appendChild(row);
+                // Member rows
+                members.forEach(member => {
+                    const memberId = member.id;
+                    const firstName = member.fields[FIELDS.TEAM_MEMBERS.firstName] || '';
+                    const lastName = member.fields[FIELDS.TEAM_MEMBERS.lastName] || '';
+                    const fullName = `${firstName} ${lastName}`.trim();
+                    const memberType = selectVal(member.fields[FIELDS.TEAM_MEMBERS.teamMemberType]) || '';
+
+                    const row = document.createElement('tr');
+                    row.className = `availability-group-row ${isExpanded ? '' : 'hidden'}`;
+                    row.dataset.group = group.key;
+
+                    let html = `<td class="name-col">${fullName}</td><td>${memberType}</td>`;
+
+                    for (let i = 0; i < 12; i++) {
+                        const weekStart = getWeekStartDate(i);
+                        const status = getPersonStatusForWeek(memberId, weekStart);
+                        const statusClass = `status-${status.status}`;
+                        html += `<td data-week="${i}"><span class="status-cell ${statusClass}">${status.label}</span></td>`;
+                    }
+
+                    row.innerHTML = html;
+                    tbody.appendChild(row);
+                });
             });
         }
 
-        function renderTimelineEvents() {
-            const container = document.getElementById('timelineContainer');
-            container.innerHTML = '';
+        let selectedDensityWeek = null;
 
+        function renderTimelineEvents() {
+            const grid = document.getElementById('eventDensityGrid');
+            const detail = document.getElementById('eventDensityDetail');
+            grid.innerHTML = '';
+            detail.innerHTML = '';
+            selectedDensityWeek = null;
+
+            const OFF_SITE_TYPES = ['Field Survey', 'Conference'];
+
+            // Collect all events across both tables
             const allEvents = [];
 
-            // Add Events
             allData.events.forEach(event => {
                 const startDate = event.fields[FIELDS.EVENTS.startDateTime];
                 const endDate = event.fields[FIELDS.EVENTS.endDateTime];
                 if (!startDate) return;
-
-                const eventStart = new Date(startDate);
-                const eventEnd = new Date(endDate || startDate);
-                const now = selectedDate;
-                const twoWeeksOut = new Date(now);
-                twoWeeksOut.setDate(twoWeeksOut.getDate() + 84);
-
-                if (eventStart <= twoWeeksOut && eventEnd >= now) {
-                    allEvents.push({
-                        name: event.fields[FIELDS.EVENTS.eventName] || 'Unnamed Event',
-                        type: selectVal(event.fields[FIELDS.EVENTS.eventType]) || 'Event',
-                        startDate: startDate,
-                        endDate: endDate || startDate,
-                        source: 'events'
-                    });
-                }
+                allEvents.push({
+                    name: event.fields[FIELDS.EVENTS.eventName] || 'Unnamed Event',
+                    type: selectVal(event.fields[FIELDS.EVENTS.eventType]) || 'Event',
+                    startDate: startDate,
+                    endDate: endDate || startDate
+                });
             });
 
-            // Add REEF Programs
             (allData.reefPrograms || []).forEach(prog => {
                 const startDate = prog.fields[FIELDS.EVENTS_DB.startDateTime];
                 const endDate = prog.fields[FIELDS.EVENTS_DB.endDateTime];
                 if (!startDate) return;
-
-                const eventStart = new Date(startDate);
-                const eventEnd = new Date(endDate || startDate);
-                const now = selectedDate;
-                const twoWeeksOut = new Date(now);
-                twoWeeksOut.setDate(twoWeeksOut.getDate() + 84);
-
-                if (eventStart <= twoWeeksOut && eventEnd >= now) {
+                const progName = prog.fields[FIELDS.EVENTS_DB.eventName] || 'Unnamed';
+                // Deduplicate against events table
+                const isDupe = allEvents.some(e => {
+                    const normA = (e.name || '').toLowerCase().trim();
+                    const normB = (progName || '').toLowerCase().trim();
+                    return (normA === normB || normA.includes(normB) || normB.includes(normA))
+                        && new Date(e.startDate).toDateString() === new Date(startDate).toDateString();
+                });
+                if (!isDupe) {
                     allEvents.push({
-                        name: prog.fields[FIELDS.EVENTS_DB.eventName] || 'Unnamed Event',
+                        name: progName,
                         type: selectVal(prog.fields[FIELDS.EVENTS_DB.eventType]) || 'Event',
                         startDate: startDate,
-                        endDate: endDate || startDate,
-                        source: 'reefPrograms'
+                        endDate: endDate || startDate
                     });
                 }
             });
 
-            allEvents.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+            // Bucket events into 12 weeks
+            const weekBuckets = [];
+            for (let i = 0; i < 12; i++) {
+                const weekStart = getWeekStartDate(i);
+                const weekEnd = new Date(weekStart);
+                weekEnd.setDate(weekEnd.getDate() + 6);
 
-            if (allEvents.length === 0) {
-                container.innerHTML = '<div style="padding: 20px; color: #999;">No upcoming events in the next 12 weeks</div>';
-                return;
+                const weekEvents = allEvents.filter(e => {
+                    const s = new Date(e.startDate);
+                    const ed = new Date(e.endDate);
+                    return s <= weekEnd && ed >= weekStart;
+                });
+
+                const campus = weekEvents.filter(e => !OFF_SITE_TYPES.includes(e.type));
+                const offsite = weekEvents.filter(e => OFF_SITE_TYPES.includes(e.type));
+
+                weekBuckets.push({ weekStart, weekEnd, events: weekEvents, campus, offsite, weekNum: i });
             }
 
-            allEvents.forEach(event => {
-                let typeClass = 'program';
-                if (event.type === 'Field Survey') typeClass = 'field-survey';
-                if (event.type === 'Conference') typeClass = 'conference';
+            // Render density grid
+            weekBuckets.forEach(bucket => {
+                const monthStr = String(bucket.weekStart.getMonth() + 1).padStart(2, '0');
+                const dayStr = String(bucket.weekStart.getDate()).padStart(2, '0');
+                const total = bucket.events.length;
+                const isEmpty = total === 0;
 
-                const startDate = new Date(event.startDate);
-                const endDate = new Date(event.endDate);
+                const cell = document.createElement('div');
+                cell.className = `density-week ${isEmpty ? 'empty' : ''}`;
+
+                let badgesHtml = '';
+                if (bucket.campus.length > 0) {
+                    badgesHtml += `<span class="density-badge campus">${bucket.campus.length} campus</span>`;
+                }
+                if (bucket.offsite.length > 0) {
+                    badgesHtml += `<span class="density-badge offsite">${bucket.offsite.length} off-site</span>`;
+                }
+
+                cell.innerHTML = `
+                    <div class="density-week-label">Wk ${bucket.weekNum + 1}</div>
+                    <div class="density-week-date">${monthStr}/${dayStr}</div>
+                    <div class="density-count ${isEmpty ? 'zero' : ''}">${total || '—'}</div>
+                    <div class="density-badges">${badgesHtml || '<span style="font-size:9px;color:#ccc;">none</span>'}</div>
+                `;
+
+                if (!isEmpty) {
+                    cell.addEventListener('click', () => {
+                        // Toggle selection
+                        grid.querySelectorAll('.density-week').forEach(c => c.classList.remove('selected'));
+                        if (selectedDensityWeek === bucket.weekNum) {
+                            selectedDensityWeek = null;
+                            detail.innerHTML = '';
+                            highlightAvailabilityWeek(null);
+                            return;
+                        }
+                        selectedDensityWeek = bucket.weekNum;
+                        cell.classList.add('selected');
+                        renderDensityDetail(bucket, detail);
+                        highlightAvailabilityWeek(bucket.weekNum);
+                    });
+                }
+
+                grid.appendChild(cell);
+            });
+        }
+
+        function renderDensityDetail(bucket, container) {
+            const monthStr = String(bucket.weekStart.getMonth() + 1).padStart(2, '0');
+            const dayStr = String(bucket.weekStart.getDate()).padStart(2, '0');
+            const endMonthStr = String(bucket.weekEnd.getMonth() + 1).padStart(2, '0');
+            const endDayStr = String(bucket.weekEnd.getDate()).padStart(2, '0');
+
+            let html = `<div class="density-detail-header">Week ${bucket.weekNum + 1}: ${monthStr}/${dayStr} – ${endMonthStr}/${endDayStr} (${bucket.events.length} events)</div>`;
+            html += '<div class="density-detail-list">';
+
+            const sorted = [...bucket.events].sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+
+            sorted.forEach(evt => {
+                let typeClass = '';
+                if (evt.type === 'Field Survey') typeClass = 'field-survey';
+                if (evt.type === 'Conference') typeClass = 'conference';
+
+                const startDate = new Date(evt.startDate);
+                const endDate = new Date(evt.endDate);
                 const startStr = `${String(startDate.getMonth() + 1).padStart(2, '0')}/${String(startDate.getDate()).padStart(2, '0')}`;
                 const endStr = `${String(endDate.getMonth() + 1).padStart(2, '0')}/${String(endDate.getDate()).padStart(2, '0')}`;
-                const dateRange = startStr === endStr ? startStr : `${startStr} - ${endStr}`;
+                const dateRange = startStr === endStr ? startStr : `${startStr} – ${endStr}`;
 
-                const eventDiv = document.createElement('div');
-                eventDiv.className = `timeline-event ${typeClass}`;
-                eventDiv.innerHTML = `
-                    <div class="timeline-event-name">${event.name}</div>
-                    <div class="timeline-event-date">${event.type}</div>
-                    <div class="timeline-event-date">${dateRange}</div>
-                `;
-                container.appendChild(eventDiv);
+                html += `
+                    <div class="density-detail-item ${typeClass}">
+                        <span class="detail-name">${evt.name}</span>
+                        <span class="detail-type">${evt.type}</span>
+                        <span class="detail-dates">${dateRange}</span>
+                    </div>`;
             });
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function highlightAvailabilityWeek(weekIndex) {
+            const grid = document.getElementById('availabilityGrid');
+            // Clear existing highlights
+            grid.querySelectorAll('.week-highlight').forEach(el => el.classList.remove('week-highlight'));
+
+            if (weekIndex === null || weekIndex === undefined) return;
+
+            // Highlight header and body cells for this week
+            grid.querySelectorAll(`[data-week="${weekIndex}"]`).forEach(el => el.classList.add('week-highlight'));
+
+            // Scroll the first highlighted header cell into view
+            const firstHighlight = grid.querySelector(`thead th[data-week="${weekIndex}"]`);
+            if (firstHighlight) {
+                firstHighlight.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }
         }
 
         function updateLastRefreshed() {
@@ -4327,7 +4852,7 @@
             }
             tbody.appendChild(pmRow);
 
-            // === PROGRAMS & EVENTS ROWS ===
+            // === PROGRAMS & EVENTS ROWS (Campus vs Off-Site split) ===
             // Collect all events/programs that overlap the scheduler week
             const weekEnd = new Date(schedulerWeekStart);
             weekEnd.setDate(weekEnd.getDate() + 6);
@@ -4370,25 +4895,19 @@
                 }
             });
 
-            if (allWeekEvents.length > 0) {
-                // Section divider (#10)
-                const dividerRow = document.createElement('tr');
-                const dividerTd = document.createElement('td');
-                dividerTd.colSpan = 7;
-                dividerTd.className = 'section-divider-row';
-                dividerRow.appendChild(dividerTd);
-                tbody.appendChild(dividerRow);
+            // Classify events into campus vs off-site
+            const OFF_SITE_TYPES = ['Field Survey', 'Conference'];
+            function getEventType(evt) {
+                if (evt._isProgram) return selectVal(evt.fields[FIELDS.EVENTS_DB.eventType]) || '';
+                return selectVal(evt.fields[FIELDS.EVENTS.eventType]) || '';
+            }
+            const campusEvents = allWeekEvents.filter(e => !OFF_SITE_TYPES.includes(getEventType(e)));
+            const offSiteEvents = allWeekEvents.filter(e => OFF_SITE_TYPES.includes(getEventType(e)));
 
-                // Programs section header (#10)
-                const headerRow = document.createElement('tr');
-                const headerTd = document.createElement('td');
-                headerTd.className = 'scheduler-group-header section-header';
-                headerTd.colSpan = 7;
-
-                // Compute KPI metrics (#12)
-                let totalAssigned = 0;
-                let totalGaps = 0;
-                allWeekEvents.forEach(evt => {
+            // Helper: compute KPI metrics for an event list
+            function computeEventKpis(events) {
+                let totalAssigned = 0, totalGaps = 0;
+                events.forEach(evt => {
                     let eventAssigns = [];
                     if (evt._isProgram) {
                         const matchId = findMatchingEventsRecordId(evt);
@@ -4400,19 +4919,21 @@
                     totalAssigned += conf.length;
                     if (conf.length === 0) totalGaps++;
                 });
+                return { totalAssigned, totalGaps };
+            }
 
-                headerTd.innerHTML = `Programs & Events (${allWeekEvents.length}) <span style="font-weight:400;font-size:10px;letter-spacing:0;text-transform:none;margin-left:12px;opacity:0.85;">${totalAssigned} team members assigned · ${totalGaps} unstaffed</span>`;
-                headerRow.appendChild(headerTd);
-                tbody.appendChild(headerRow);
-
-                allWeekEvents.forEach(evt => {
+            // Helper: render event rows into tbody
+            function renderEventRows(events) {
+                events.forEach(evt => {
                     const tr = document.createElement('tr');
                     const labelTd = document.createElement('td');
                     labelTd.className = 'time-col';
                     const eName = evt._isProgram
                         ? (evt.fields[FIELDS.EVENTS_DB.eventName] || 'Program')
                         : (evt.fields[FIELDS.EVENTS.eventName] || 'Event');
-                    labelTd.innerHTML = `<span style="font-weight:600;color:#333;display:block;overflow:hidden;text-overflow:ellipsis;word-break:break-word;line-height:1.3;font-size:11px;">${eName}</span>`;
+                    const eType = getEventType(evt);
+                    const typeTag = eType ? `<span style="font-size:9px;color:#999;display:block;margin-top:2px;">${eType}</span>` : '';
+                    labelTd.innerHTML = `<span style="font-weight:600;color:#333;display:block;overflow:hidden;text-overflow:ellipsis;word-break:break-word;line-height:1.3;font-size:11px;">${eName}</span>${typeTag}`;
                     tr.appendChild(labelTd);
 
                     for (let i = 0; i < 6; i++) {
@@ -4420,8 +4941,6 @@
                         const dayDate = new Date(schedulerWeekStart);
                         dayDate.setDate(schedulerWeekStart.getDate() + i);
                         dayDate.setHours(0,0,0,0);
-                        const nextDay = new Date(dayDate);
-                        nextDay.setDate(nextDay.getDate() + 1);
 
                         let evtStart, evtEnd;
                         if (evt._isProgram) {
@@ -4432,7 +4951,6 @@
                             evtEnd = new Date(evt.fields[FIELDS.EVENTS.endDateTime] || evt.fields[FIELDS.EVENTS.startDateTime]);
                         }
 
-                        // Check if event spans this day
                         const evtStartDay = new Date(evtStart); evtStartDay.setHours(0,0,0,0);
                         const evtEndDay = new Date(evtEnd); evtEndDay.setHours(0,0,0,0);
 
@@ -4447,6 +4965,51 @@
                     }
                     tbody.appendChild(tr);
                 });
+            }
+
+            // --- Campus Programs & Events section ---
+            if (campusEvents.length > 0) {
+                const dividerRow = document.createElement('tr');
+                const dividerTd = document.createElement('td');
+                dividerTd.colSpan = 7;
+                dividerTd.className = 'section-divider-row';
+                dividerRow.appendChild(dividerTd);
+                tbody.appendChild(dividerRow);
+
+                const campusKpis = computeEventKpis(campusEvents);
+                const headerRow = document.createElement('tr');
+                const headerTd = document.createElement('td');
+                headerTd.className = 'scheduler-group-header section-header';
+                headerTd.colSpan = 7;
+                headerTd.innerHTML = `Campus Programs & Events (${campusEvents.length}) <span style="font-weight:400;font-size:10px;letter-spacing:0;text-transform:none;margin-left:12px;opacity:0.85;">${campusKpis.totalAssigned} assigned · ${campusKpis.totalGaps} unstaffed</span>`;
+                headerRow.appendChild(headerTd);
+                tbody.appendChild(headerRow);
+                renderEventRows(campusEvents);
+            }
+
+            // --- Off-Site Events section ---
+            if (offSiteEvents.length > 0) {
+                const dividerRow = document.createElement('tr');
+                const dividerTd = document.createElement('td');
+                dividerTd.colSpan = 7;
+                dividerTd.className = 'section-divider-row';
+                dividerRow.appendChild(dividerTd);
+                tbody.appendChild(dividerRow);
+
+                const offSiteKpis = computeEventKpis(offSiteEvents);
+                const headerRow = document.createElement('tr');
+                const headerTd = document.createElement('td');
+                headerTd.className = 'scheduler-group-header section-header offsite-section-header';
+                headerTd.colSpan = 7;
+                headerTd.innerHTML = `Off-Site Events (${offSiteEvents.length}) <span style="font-weight:400;font-size:10px;letter-spacing:0;text-transform:none;margin-left:12px;opacity:0.85;">${offSiteKpis.totalAssigned} assigned · ${offSiteKpis.totalGaps} unstaffed</span>`;
+                headerRow.appendChild(headerTd);
+                tbody.appendChild(headerRow);
+                renderEventRows(offSiteEvents);
+            }
+
+            // Show placeholder if no events at all
+            if (campusEvents.length === 0 && offSiteEvents.length === 0 && allWeekEvents.length === 0) {
+                // No events — no section rendered
             }
         }
 
