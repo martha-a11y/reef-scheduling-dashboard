@@ -1900,8 +1900,8 @@
             border-bottom: 2px solid #1a2d5f;
         }
         .scheduler-group-header.section-header.offsite-section-header {
-            background: #8B4513 !important;
-            border-bottom: 2px solid #6b3410;
+            background: #2E75B6 !important;
+            border-bottom: 2px solid #1a5a94;
         }
 
         /* === Compact sidebar (#13) === */
@@ -4851,6 +4851,36 @@
                 pmRow.appendChild(td);
             }
             tbody.appendChild(pmRow);
+
+            // === OEC EVENING ROW (only shown if any Evening shifts exist this week) ===
+            let hasEveningShifts = false;
+            for (let i = 0; i < 6; i++) {
+                const dayShifts = getSchedulerDayShifts(i);
+                if (dayShifts.some(s => selectVal(s.fields[FIELDS.OEC_SHIFTS.shiftSlot]) === 'Evening')) {
+                    hasEveningShifts = true;
+                    break;
+                }
+            }
+            if (hasEveningShifts) {
+                const eveRow = document.createElement('tr');
+                const eveLabel = document.createElement('td');
+                eveLabel.className = 'scheduler-group-header';
+                eveLabel.textContent = 'Evening';
+                eveRow.appendChild(eveLabel);
+
+                for (let i = 0; i < 6; i++) {
+                    const td = document.createElement('td');
+                    const dayShifts = getSchedulerDayShifts(i);
+                    const eveShifts = dayShifts.filter(s => selectVal(s.fields[FIELDS.OEC_SHIFTS.shiftSlot]) === 'Evening');
+                    if (eveShifts.length > 0) {
+                        td.innerHTML = eveShifts.map(s => buildSchedulerShiftCell(s, i)).join('');
+                    } else {
+                        td.innerHTML = '<div class="shift-cell empty" style="justify-content:center;align-items:center;color:#ccc;font-size:12px;font-style:italic;">—</div>';
+                    }
+                    eveRow.appendChild(td);
+                }
+                tbody.appendChild(eveRow);
+            }
 
             // === PROGRAMS & EVENTS ROWS (Campus vs Off-Site split) ===
             // Collect all events/programs that overlap the scheduler week
