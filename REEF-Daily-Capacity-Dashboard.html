@@ -4322,6 +4322,18 @@
                 return new Date(shiftDate).toISOString().split('T')[0] === dayStr;
             });
 
+            // DEBUG: log raw shift data to console for diagnosis
+            if (dayOffset === 0) {
+                console.log('=== DEBUG: Day 0 shifts ===');
+                dayShifts.forEach(shift => {
+                    const rawSlot = shift.fields[FIELDS.OEC_SHIFTS.shiftSlot];
+                    const label = shift.fields[FIELDS.OEC_SHIFTS.shiftLabel] || '';
+                    const startDt = shift.fields[FIELDS.OEC_SHIFTS.startDateTime] || '';
+                    const classified = classifyShiftSlot(shift);
+                    console.log(`Shift ${shift.id}: rawSlot=${JSON.stringify(rawSlot)}, label="${label}", start="${startDt}", classified="${classified}"`);
+                });
+            }
+
             // Deduplicate: keep first shift per slot classification
             const seen = {};
             const primary = [];
