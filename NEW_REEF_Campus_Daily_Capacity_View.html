@@ -2888,6 +2888,14 @@
             return '';
         }
 
+        // Helper: check if an event type string indicates off-site
+        // Matches: "Field Survey", "Field Survey Trips & Fieldwork", "Conference", etc.
+        function isOffSiteType(eventType) {
+            if (!eventType) return false;
+            const t = eventType.toLowerCase();
+            return t.includes('field survey') || t.includes('conference');
+        }
+
         // Helper: check if a linked record array contains a specific record ID
         function linkedHas(linkedArr, recordId) {
             if (!linkedArr || !Array.isArray(linkedArr)) return false;
@@ -3841,7 +3849,6 @@
             const borderWidths = availableCounts.map((_, i) => i === 0 ? 3 : 1);
 
             // Count campus events per week for tooltip
-            const OFF_SITE_TYPES_CHART = ['Field Survey', 'Conference'];
             weekData.forEach((wd, i) => {
                 const ws = getWeekStartDate(i);
                 const we = new Date(ws); we.setDate(we.getDate() + 6);
@@ -3853,7 +3860,7 @@
                     const es = new Date(s), ee = new Date(e || s);
                     if (es <= we && ee >= ws) {
                         const et = selectVal(evt.fields[FIELDS.EVENTS.eventType]) || '';
-                        if (!OFF_SITE_TYPES_CHART.includes(et)) campusEvtCount++;
+                        if (!isOffSiteType(et)) campusEvtCount++;
                     }
                 });
                 wd.campusEvents = campusEvtCount;
@@ -4085,8 +4092,6 @@
             detail.innerHTML = '';
             selectedDensityWeek = null;
 
-            const OFF_SITE_TYPES = ['Field Survey', 'Conference'];
-
             // Collect all events across both tables
             const allEvents = [];
 
@@ -4137,8 +4142,8 @@
                     return s <= weekEnd && ed >= weekStart;
                 });
 
-                const campus = weekEvents.filter(e => !OFF_SITE_TYPES.includes(e.type));
-                const offsite = weekEvents.filter(e => OFF_SITE_TYPES.includes(e.type));
+                const campus = weekEvents.filter(e => !isOffSiteType(e.type));
+                const offsite = weekEvents.filter(e => isOffSiteType(e.type));
 
                 weekBuckets.push({ weekStart, weekEnd, events: weekEvents, campus, offsite, weekNum: i });
             }
@@ -4946,15 +4951,14 @@
             });
 
             // Classify events into campus vs off-site
-            const OFF_SITE_TYPES = ['Field Survey', 'Conference'];
             function getEventType(evt) {
                 if (evt._isProgram) return selectVal(evt.fields[FIELDS.EVENTS_DB.eventType]) || '';
                 return selectVal(evt.fields[FIELDS.EVENTS.eventType]) || '';
             }
-            // Off-site = only events with explicit off-site type (Conference, Field Survey)
+            // Off-site = event type contains "field survey" or "conference"
             // Local Keys/South Florida programs (Pennekamp, OXP, etc.) stay in Campus section
-            const campusEvents = allWeekEvents.filter(e => !OFF_SITE_TYPES.includes(getEventType(e)));
-            const offSiteEvents = allWeekEvents.filter(e => OFF_SITE_TYPES.includes(getEventType(e)));
+            const campusEvents = allWeekEvents.filter(e => !isOffSiteType(getEventType(e)));
+            const offSiteEvents = allWeekEvents.filter(e => isOffSiteType(getEventType(e)));
 
             // Helper: compute KPI metrics for an event list
             function computeEventKpis(events) {
