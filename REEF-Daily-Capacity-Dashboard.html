@@ -4290,32 +4290,53 @@
             return `${months[start.getMonth()]} ${start.getDate()} – ${months[end.getMonth()]} ${end.getDate()}, ${end.getFullYear()}`;
         }
 
-        // Check if a shift is an Entry/Gallery/Eval block (role variant, not a separate shift)
-        function isEntryGalleryEvalBlock(shift) {
-            const tmplName = getShiftTemplateName(shift);
-            if (/entry.*gallery.*eval|entry\/gallery/i.test(tmplName)) return true;
+        // Classify a shift as 'AM', 'PM', or 'Evening'
+        // Evening = starts at 4pm or later (16:00+), OR Airtable slot/label says Evening
+        function classifyShiftSlot(shift) {
+            const slot = selectVal(shift.fields[FIELDS.OEC_SHIFTS.shiftSlot]) || '';
+            if (/evening/i.test(slot)) return 'Evening';
             const label = shift.fields[FIELDS.OEC_SHIFTS.shiftLabel] || '';
-            if (/entry.*gallery.*eval|entry\/gallery/i.test(label)) return true;
-            return false;
+            if (/evening/i.test(label)) return 'Evening';
+            const tmplName = getShiftTemplateName(shift);
+            if (/evening/i.test(tmplName)) return 'Evening';
+            const startDt = shift.fields[FIELDS.OEC_SHIFTS.startDateTime];
+            if (startDt) {
+                const startHour = new Date(startDt).getHours();
+                if (startHour >= 16) return 'Evening';
+            }
+            return slot || 'PM';
         }
 
+        // Deduplicate shifts: keep only ONE shift per day per time slot (AM, PM, Evening).
+        // Multiple shift instances can exist for the same day+slot (e.g., Entry/Gallery/Eval blocks).
+        // We pick one as the "primary" and merge all others' assignments into it.
         function getSchedulerDayShifts(dayOffset) {
             const dayDate = new Date(schedulerWeekStart);
             dayDate.setDate(schedulerWeekStart.getDate() + dayOffset);
             const dayStr = dayDate.toISOString().split('T')[0];
 
-            // Return only the primary shifts (exclude Entry/Gallery/Eval blocks)
-            // Block assignments are merged into primary shifts via getSchedulerShiftAssignments
-            return allData.oecShifts.filter(shift => {
+            // Get all shifts for this day
+            const dayShifts = allData.oecShifts.filter(shift => {
                 const shiftDate = shift.fields[FIELDS.OEC_SHIFTS.shiftDate];
                 if (!shiftDate) return false;
-                const shiftDayStr = new Date(shiftDate).toISOString().split('T')[0];
-                if (shiftDayStr !== dayStr) return false;
-                return !isEntryGalleryEvalBlock(shift);
+                return new Date(shiftDate).toISOString().split('T')[0] === dayStr;
             });
+
+            // Deduplicate: keep first shift per slot classification
+            const seen = {};
+            const primary = [];
+            dayShifts.forEach(shift => {
+                const slot = classifyShiftSlot(shift);
+                if (!seen[slot]) {
+                    seen[slot] = true;
+                    primary.push(shift);
+                }
+            });
+            return primary;
         }
 
-        // Get ALL shift instance IDs for the same day + time slot (primary + Entry/Gallery/Eval blocks)
+        // Get ALL shift instance IDs for the same day + time slot (primary + duplicates)
+        // Used to merge assignments from duplicate block instances into the primary shift
         function getRelatedShiftIds(primaryShift) {
             const shiftDate = primaryShift.fields[FIELDS.OEC_SHIFTS.shiftDate];
             const slot = classifyShiftSlot(primaryShift);
@@ -4328,10 +4349,8 @@
                 if (s.id === primaryShift.id) return;
                 const sDate = s.fields[FIELDS.OEC_SHIFTS.shiftDate];
                 if (!sDate) return;
-                const sDayStr = new Date(sDate).toISOString().split('T')[0];
-                if (sDayStr !== dayStr) return;
-                if (!isEntryGalleryEvalBlock(s)) return;
-                // Match by time slot classification
+                if (new Date(sDate).toISOString().split('T')[0] !== dayStr) return;
+                // Same day + same slot = duplicate, merge its assignments
                 if (classifyShiftSlot(s) === slot) {
                     relatedIds.push(s.id);
                 }
@@ -4647,7 +4666,7 @@
                 html += `<div class="shift-status-badge">${badge}</div>`;
             }
             // Collapsed summary line — use classified slot (handles Evening detection)
-            const classifiedSlot = (typeof classifyShiftSlot === 'function') ? classifyShiftSlot(shift) : slot;
+            const classifiedSlot = classifyShiftSlot(shift);
             const summaryType = typeLabel || classifiedSlot;
             html += `<div class="shift-collapsed-summary"><strong>${summaryType}</strong> <span>${staffCount}/${target}</span></div>`;
             if (typeLabel) {
@@ -4864,26 +4883,7 @@
             oecHeaderRow.appendChild(oecHeaderTd);
             tbody.appendChild(oecHeaderRow);
 
-            // Helper: classify a shift as 'AM', 'PM', or 'Evening'
-            // Evening = starts at 4pm or later (16:00+), OR Airtable slot/label says Evening
-            function classifyShiftSlot(shift) {
-                const slot = selectVal(shift.fields[FIELDS.OEC_SHIFTS.shiftSlot]) || '';
-                // If Airtable already says Evening, use it
-                if (/evening/i.test(slot)) return 'Evening';
-                // Check shift label and template name for "Evening"
-                const label = shift.fields[FIELDS.OEC_SHIFTS.shiftLabel] || '';
-                if (/evening/i.test(label)) return 'Evening';
-                const tmplName = getShiftTemplateName(shift);
-                if (/evening/i.test(tmplName)) return 'Evening';
-                // Detect by start time: 4pm (16:00) or later = Evening
-                const startDt = shift.fields[FIELDS.OEC_SHIFTS.startDateTime];
-                if (startDt) {
-                    const startHour = new Date(startDt).getHours();
-                    if (startHour >= 16) return 'Evening';
-                }
-                // Default: use the slot value (AM or PM)
-                return slot || 'PM';
-            }
+            // classifyShiftSlot is now defined at top level (above getSchedulerDayShifts)
 
             // === OEC AM ROW ===
             const amRow = document.createElement('tr');
