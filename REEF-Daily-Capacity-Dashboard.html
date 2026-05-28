@@ -4291,20 +4291,46 @@
         }
 
         // Classify a shift as 'AM', 'PM', or 'Evening'
-        // Evening = starts at 4pm or later (16:00+), OR Airtable slot/label says Evening
+        // Evening detection takes priority: any shift starting at 4pm ET or later is Evening,
+        // regardless of what the shiftSlot field says (Airtable marks Block 3 as "PM" but it's 4-8:30pm).
+        // Times in Airtable are UTC; ET = UTC-4 (EDT) or UTC-5 (EST).
         function classifyShiftSlot(shift) {
+            // 1. EVENING DETECTION FIRST (highest priority)
+            // Check explicit "evening" in slot, label, or template
             const slot = selectVal(shift.fields[FIELDS.OEC_SHIFTS.shiftSlot]) || '';
-            if (/evening/i.test(slot)) return 'Evening';
             const label = shift.fields[FIELDS.OEC_SHIFTS.shiftLabel] || '';
-            if (/evening/i.test(label)) return 'Evening';
             const tmplName = getShiftTemplateName(shift);
-            if (/evening/i.test(tmplName)) return 'Evening';
+            if (/evening/i.test(slot) || /evening/i.test(label) || /evening/i.test(tmplName)) return 'Evening';
+
+            // Check start time: 4pm ET (20:00 UTC in EDT) or later = Evening
             const startDt = shift.fields[FIELDS.OEC_SHIFTS.startDateTime];
             if (startDt) {
-                const startHour = new Date(startDt).getHours();
-                if (startHour >= 16) return 'Evening';
+                const utcHour = new Date(startDt).getUTCHours();
+                const etHour = (utcHour - 4 + 24) % 24;
+                if (etHour >= 16) return 'Evening';
             }
-            return slot || 'PM';
+
+            // 2. AM/PM from shiftSlot field (if present)
+            if (/^AM$/i.test(slot)) return 'AM';
+            if (/^PM$/i.test(slot)) return 'PM';
+
+            // 3. AM/PM from shift label
+            if (/\bAM\b/.test(label)) return 'AM';
+            if (/\bPM\b/.test(label)) return 'PM';
+
+            // 4. AM/PM from template name
+            if (/\bAM\b/i.test(tmplName)) return 'AM';
+            if (/\bPM\b/i.test(tmplName)) return 'PM';
+
+            // 5. Fall back to start time
+            if (startDt) {
+                const utcHour = new Date(startDt).getUTCHours();
+                const etHour = (utcHour - 4 + 24) % 24;
+                if (etHour < 12) return 'AM';
+                return 'PM';
+            }
+
+            return 'PM'; // absolute fallback
         }
 
         // Deduplicate shifts: keep only ONE shift per day per time slot (AM, PM, Evening).
@@ -4321,18 +4347,6 @@
                 if (!shiftDate) return false;
                 return new Date(shiftDate).toISOString().split('T')[0] === dayStr;
             });
-
-            // DEBUG: log raw shift data to console for diagnosis
-            if (dayOffset === 0) {
-                console.log('=== DEBUG: Day 0 shifts ===');
-                dayShifts.forEach(shift => {
-                    const rawSlot = shift.fields[FIELDS.OEC_SHIFTS.shiftSlot];
-                    const label = shift.fields[FIELDS.OEC_SHIFTS.shiftLabel] || '';
-                    const startDt = shift.fields[FIELDS.OEC_SHIFTS.startDateTime] || '';
-                    const classified = classifyShiftSlot(shift);
-                    console.log(`Shift ${shift.id}: rawSlot=${JSON.stringify(rawSlot)}, label="${label}", start="${startDt}", classified="${classified}"`);
-                });
-            }
 
             // Deduplicate: keep first shift per slot classification
             const seen = {};
