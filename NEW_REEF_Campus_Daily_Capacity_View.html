@@ -4593,8 +4593,9 @@
             if (badge) {
                 html += `<div class="shift-status-badge">${badge}</div>`;
             }
-            // Collapsed summary line
-            const summaryType = typeLabel || slot;
+            // Collapsed summary line — use classified slot (handles Evening detection)
+            const classifiedSlot = (typeof classifyShiftSlot === 'function') ? classifyShiftSlot(shift) : slot;
+            const summaryType = typeLabel || classifiedSlot;
             html += `<div class="shift-collapsed-summary"><strong>${summaryType}</strong> <span>${staffCount}/${target}</span></div>`;
             if (typeLabel) {
                 html += `<div class="shift-type-label">${typeLabel}</div>`;
@@ -4810,6 +4811,27 @@
             oecHeaderRow.appendChild(oecHeaderTd);
             tbody.appendChild(oecHeaderRow);
 
+            // Helper: classify a shift as 'AM', 'PM', or 'Evening'
+            // Evening = starts at 4pm or later (16:00+), OR Airtable slot/label says Evening
+            function classifyShiftSlot(shift) {
+                const slot = selectVal(shift.fields[FIELDS.OEC_SHIFTS.shiftSlot]) || '';
+                // If Airtable already says Evening, use it
+                if (/evening/i.test(slot)) return 'Evening';
+                // Check shift label and template name for "Evening"
+                const label = shift.fields[FIELDS.OEC_SHIFTS.shiftLabel] || '';
+                if (/evening/i.test(label)) return 'Evening';
+                const tmplName = getShiftTemplateName(shift);
+                if (/evening/i.test(tmplName)) return 'Evening';
+                // Detect by start time: 4pm (16:00) or later = Evening
+                const startDt = shift.fields[FIELDS.OEC_SHIFTS.startDateTime];
+                if (startDt) {
+                    const startHour = new Date(startDt).getHours();
+                    if (startHour >= 16) return 'Evening';
+                }
+                // Default: use the slot value (AM or PM)
+                return slot || 'PM';
+            }
+
             // === OEC AM ROW ===
             const amRow = document.createElement('tr');
             const amLabel = document.createElement('td');
@@ -4820,9 +4842,8 @@
             for (let i = 0; i < 6; i++) {
                 const td = document.createElement('td');
                 const dayShifts = getSchedulerDayShifts(i);
-                const amShifts = dayShifts.filter(s => selectVal(s.fields[FIELDS.OEC_SHIFTS.shiftSlot]) === 'AM');
+                const amShifts = dayShifts.filter(s => classifyShiftSlot(s) === 'AM');
                 if (amShifts.length > 0) {
-                    // Show all AM shifts for the day (e.g., Tuesday has AM + Entry blocks)
                     td.innerHTML = amShifts.map(s => buildSchedulerShiftCell(s, i)).join('');
                 } else {
                     td.innerHTML = '<div class="shift-cell empty" style="justify-content:center;align-items:center;color:#ccc;font-size:12px;font-style:italic;">No shift</div>';
@@ -4841,9 +4862,8 @@
             for (let i = 0; i < 6; i++) {
                 const td = document.createElement('td');
                 const dayShifts = getSchedulerDayShifts(i);
-                const pmShifts = dayShifts.filter(s => selectVal(s.fields[FIELDS.OEC_SHIFTS.shiftSlot]) === 'PM');
+                const pmShifts = dayShifts.filter(s => classifyShiftSlot(s) === 'PM');
                 if (pmShifts.length > 0) {
-                    // Show all PM shifts for the day
                     td.innerHTML = pmShifts.map(s => buildSchedulerShiftCell(s, i)).join('');
                 } else {
                     td.innerHTML = '<div class="shift-cell empty" style="justify-content:center;align-items:center;color:#ccc;font-size:12px;font-style:italic;">No shift</div>';
@@ -4856,7 +4876,7 @@
             let hasEveningShifts = false;
             for (let i = 0; i < 6; i++) {
                 const dayShifts = getSchedulerDayShifts(i);
-                if (dayShifts.some(s => selectVal(s.fields[FIELDS.OEC_SHIFTS.shiftSlot]) === 'Evening')) {
+                if (dayShifts.some(s => classifyShiftSlot(s) === 'Evening')) {
                     hasEveningShifts = true;
                     break;
                 }
@@ -4871,7 +4891,7 @@
                 for (let i = 0; i < 6; i++) {
                     const td = document.createElement('td');
                     const dayShifts = getSchedulerDayShifts(i);
-                    const eveShifts = dayShifts.filter(s => selectVal(s.fields[FIELDS.OEC_SHIFTS.shiftSlot]) === 'Evening');
+                    const eveShifts = dayShifts.filter(s => classifyShiftSlot(s) === 'Evening');
                     if (eveShifts.length > 0) {
                         td.innerHTML = eveShifts.map(s => buildSchedulerShiftCell(s, i)).join('');
                     } else {
@@ -4931,6 +4951,8 @@
                 if (evt._isProgram) return selectVal(evt.fields[FIELDS.EVENTS_DB.eventType]) || '';
                 return selectVal(evt.fields[FIELDS.EVENTS.eventType]) || '';
             }
+            // Off-site = only events with explicit off-site type (Conference, Field Survey)
+            // Local Keys/South Florida programs (Pennekamp, OXP, etc.) stay in Campus section
             const campusEvents = allWeekEvents.filter(e => !OFF_SITE_TYPES.includes(getEventType(e)));
             const offSiteEvents = allWeekEvents.filter(e => OFF_SITE_TYPES.includes(getEventType(e)));
 
@@ -5017,8 +5039,8 @@
                 renderEventRows(campusEvents);
             }
 
-            // --- Off-Site Events section ---
-            if (offSiteEvents.length > 0) {
+            // --- Off-Site Programs & Events section (always shown) ---
+            {
                 const dividerRow = document.createElement('tr');
                 const dividerTd = document.createElement('td');
                 dividerTd.colSpan = 7;
@@ -5031,15 +5053,16 @@
                 const headerTd = document.createElement('td');
                 headerTd.className = 'scheduler-group-header section-header offsite-section-header';
                 headerTd.colSpan = 7;
-                headerTd.innerHTML = `Off-Site Events (${offSiteEvents.length}) <span style="font-weight:400;font-size:10px;letter-spacing:0;text-transform:none;margin-left:12px;opacity:0.85;">${offSiteKpis.totalAssigned} assigned · ${offSiteKpis.totalGaps} unstaffed</span>`;
+                if (offSiteEvents.length > 0) {
+                    headerTd.innerHTML = `Off-Site Programs & Events (${offSiteEvents.length}) <span style="font-weight:400;font-size:10px;letter-spacing:0;text-transform:none;margin-left:12px;opacity:0.85;">${offSiteKpis.totalAssigned} assigned · ${offSiteKpis.totalGaps} unstaffed</span>`;
+                } else {
+                    headerTd.innerHTML = `Off-Site Programs & Events (0) <span style="font-weight:400;font-size:10px;letter-spacing:0;text-transform:none;margin-left:12px;opacity:0.85;">No off-site events this week</span>`;
+                }
                 headerRow.appendChild(headerTd);
                 tbody.appendChild(headerRow);
-                renderEventRows(offSiteEvents);
-            }
-
-            // Show placeholder if no events at all
-            if (campusEvents.length === 0 && offSiteEvents.length === 0 && allWeekEvents.length === 0) {
-                // No events — no section rendered
+                if (offSiteEvents.length > 0) {
+                    renderEventRows(offSiteEvents);
+                }
             }
         }
 
