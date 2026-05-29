@@ -2321,6 +2321,7 @@
                 </div>
                 <button class="btn btn-primary" id="refreshBtn">Refresh Data</button>
                 <button class="btn" id="gcalConnectBtn" style="background:#34a853;color:white;font-size:12px;padding:6px 12px;border-radius:6px;cursor:pointer;border:none;" title="Connect Google Calendar for auto-sync of staff assignments">📅 Connect GCal</button>
+                <button class="btn" id="gcalSyncAllBtn" style="background:#1a73e8;color:white;font-size:12px;padding:6px 12px;border-radius:6px;cursor:pointer;border:none;display:none;" title="Push all current assignments to Google Calendar">🔄 Sync All to GCal</button>
                 <span id="gcalStatus" style="font-size:11px;color:#aaa;display:none;">✓ GCal syncing</span>
                 <div class="last-refreshed">
                     Last refreshed: <span id="lastRefreshed">—</span>
@@ -2628,6 +2629,8 @@
                 if (copyBtn) copyBtn.style.display = 'none';
                 const gcalBtn = document.getElementById('gcalConnectBtn');
                 if (gcalBtn) gcalBtn.style.display = 'none';
+                const gcalSyncBtn = document.getElementById('gcalSyncAllBtn');
+                if (gcalSyncBtn) gcalSyncBtn.style.display = 'none';
                 // Add view-only badge next to the refresh button
                 const refreshBtn = document.getElementById('refreshBtn');
                 if (refreshBtn) {
@@ -2713,8 +2716,18 @@
         // Martha clicks "Connect GCal" → Google login popup → token stored for session
         const GOOGLE_CLIENT_ID = '1024810805864-jvlgo8cmk28e6vfvr6ik6cn5vs9gjjfg.apps.googleusercontent.com';
 
+        function showGCalConnected() {
+            const btn = document.getElementById('gcalConnectBtn');
+            const syncBtn = document.getElementById('gcalSyncAllBtn');
+            const status = document.getElementById('gcalStatus');
+            if (btn) btn.style.display = 'none';
+            if (syncBtn) syncBtn.style.display = 'inline-block';
+            if (status) status.style.display = 'inline';
+        }
+
         function initGCalConnect() {
             const btn = document.getElementById('gcalConnectBtn');
+            const syncBtn = document.getElementById('gcalSyncAllBtn');
             const status = document.getElementById('gcalStatus');
 
             // Check if we already have a token (e.g., from URL hash after redirect)
@@ -2722,8 +2735,7 @@
             const tokenFromHash = hashParams.get('access_token');
             if (tokenFromHash) {
                 window._googleAccessToken = tokenFromHash;
-                btn.style.display = 'none';
-                status.style.display = 'inline';
+                showGCalConnected();
                 // Clean up the URL hash
                 history.replaceState(null, '', window.location.pathname + window.location.search);
                 console.log('[GCal] Authenticated via OAuth redirect');
@@ -2732,8 +2744,7 @@
 
             // Check if token was manually set (e.g., via browser console for testing)
             if (window._googleAccessToken) {
-                btn.style.display = 'none';
-                status.style.display = 'inline';
+                showGCalConnected();
                 return;
             }
 
@@ -2747,8 +2758,7 @@
                     );
                     if (token && token.trim()) {
                         window._googleAccessToken = token.trim();
-                        btn.style.display = 'none';
-                        status.style.display = 'inline';
+                        showGCalConnected();
                         showToast('Google Calendar connected! Staff assignments will now sync.');
                     }
                     return;
@@ -2760,6 +2770,11 @@
                 const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=token&scope=${scope}&prompt=consent`;
                 window.location.href = authUrl;
             });
+
+            // Sync All button click handler
+            if (syncBtn) {
+                syncBtn.addEventListener('click', () => syncAllToGCal());
+            }
         }
 
         // Initialize GCal connection after page loads
@@ -6104,6 +6119,204 @@
         function getGoogleAccessToken() {
             // This will be populated via the OAuth flow or stored token
             return window._googleAccessToken || '';
+        }
+
+        // ===== SYNC ALL ASSIGNMENTS TO GOOGLE CALENDAR =====
+        async function syncAllToGCal() {
+            const token = getGoogleAccessToken();
+            if (!token) {
+                showToast('Connect Google Calendar first', 'error');
+                return;
+            }
+
+            const syncBtn = document.getElementById('gcalSyncAllBtn');
+            if (syncBtn) {
+                syncBtn.disabled = true;
+                syncBtn.textContent = '⏳ Syncing...';
+            }
+
+            let oecSynced = 0, oecSkipped = 0, oecFailed = 0;
+            let evtSynced = 0, evtSkipped = 0, evtFailed = 0;
+
+            try {
+                // --- 1. Sync OEC Shift assignments ---
+                const activeOecAssignments = allData.oecAssignments.filter(a =>
+                    isAssignedOrConfirmed(a.fields[FIELDS.OEC_ASSIGNMENTS.assignmentStatus])
+                );
+
+                for (const assign of activeOecAssignments) {
+                    try {
+                        const shiftLinks = assign.fields[FIELDS.OEC_ASSIGNMENTS.shiftInstance];
+                        const memberLinks = assign.fields[FIELDS.OEC_ASSIGNMENTS.teamMember];
+                        if (!shiftLinks || !shiftLinks.length || !memberLinks || !memberLinks.length) {
+                            oecSkipped++;
+                            continue;
+                        }
+                        const shiftId = typeof shiftLinks[0] === 'string' ? shiftLinks[0] : shiftLinks[0].id;
+                        const memberId = typeof memberLinks[0] === 'string' ? memberLinks[0] : memberLinks[0].id;
+
+                        // Look up GCal event ID
+                        const gcalEventId = OEC_GCAL_MAPPING[shiftId];
+                        if (!gcalEventId) {
+                            console.log('[GCal SyncAll] No GCal mapping for OEC shift', shiftId);
+                            oecSkipped++;
+                            continue;
+                        }
+
+                        const email = getMemberEmail(memberId);
+                        if (!email) {
+                            console.log('[GCal SyncAll] No email for member', memberId);
+                            oecSkipped++;
+                            continue;
+                        }
+
+                        // Fetch current GCal event
+                        const calId = encodeURIComponent(GCAL_CONFIG.oecShiftsCalendarId);
+                        const getResp = await fetch(
+                            `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}`,
+                            { headers: { 'Authorization': `Bearer ${token}` } }
+                        );
+                        if (!getResp.ok) {
+                            console.log('[GCal SyncAll] Failed to fetch OEC event', gcalEventId, getResp.status);
+                            oecFailed++;
+                            continue;
+                        }
+                        const gcalEvent = await getResp.json();
+                        const attendees = gcalEvent.attendees || [];
+
+                        // Skip if already present
+                        if (attendees.some(a => a.email && a.email.toLowerCase() === email.toLowerCase())) {
+                            oecSkipped++;
+                            continue;
+                        }
+
+                        // Add attendee
+                        attendees.push({ email: email, responseStatus: 'accepted' });
+                        const patchResp = await fetch(
+                            `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}?sendUpdates=none`,
+                            {
+                                method: 'PATCH',
+                                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ attendees }),
+                            }
+                        );
+                        if (patchResp.ok) {
+                            oecSynced++;
+                            console.log('[GCal SyncAll] OEC: Added', email, 'to', gcalEventId);
+                        } else {
+                            oecFailed++;
+                            console.log('[GCal SyncAll] OEC: Failed to add', email, 'to', gcalEventId, patchResp.status);
+                        }
+                    } catch (err) {
+                        oecFailed++;
+                        console.error('[GCal SyncAll] OEC error:', err);
+                    }
+                }
+
+                // --- 2. Sync Event/Program assignments ---
+                const activeEvtAssignments = allData.eventAssignments.filter(a =>
+                    isAssignedOrConfirmed(a.fields[FIELDS.EVENT_ASSIGNMENTS.assignmentStatus])
+                );
+
+                for (const assign of activeEvtAssignments) {
+                    try {
+                        const eventLinks = assign.fields[FIELDS.EVENT_ASSIGNMENTS.event];
+                        const memberLinks = assign.fields[FIELDS.EVENT_ASSIGNMENTS.teamMember];
+                        if (!eventLinks || !eventLinks.length || !memberLinks || !memberLinks.length) {
+                            evtSkipped++;
+                            continue;
+                        }
+                        const eventId = typeof eventLinks[0] === 'string' ? eventLinks[0] : eventLinks[0].id;
+                        const memberId = typeof memberLinks[0] === 'string' ? memberLinks[0] : memberLinks[0].id;
+
+                        // Find the EVENTS_DB record for this event
+                        const eventsDBId = findEventsDBRecordId(eventId);
+                        if (!eventsDBId) {
+                            console.log('[GCal SyncAll] No EVENTS_DB match for event', eventId);
+                            evtSkipped++;
+                            continue;
+                        }
+
+                        // Look up or auto-create GCal event
+                        let gcalEventId = GCAL_EVENT_MAPPING[eventsDBId];
+                        if (!gcalEventId) {
+                            console.log('[GCal SyncAll] Auto-creating GCal event for EVENTS_DB', eventsDBId);
+                            gcalEventId = await autoCreateGCalEvent(eventsDBId);
+                            if (!gcalEventId) {
+                                evtFailed++;
+                                continue;
+                            }
+                        }
+
+                        const email = getMemberEmail(memberId);
+                        if (!email) {
+                            console.log('[GCal SyncAll] No email for member', memberId);
+                            evtSkipped++;
+                            continue;
+                        }
+
+                        // Fetch current GCal event
+                        const calId = encodeURIComponent(GCAL_CONFIG.reefCampus2CalendarId);
+                        const getResp = await fetch(
+                            `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}`,
+                            { headers: { 'Authorization': `Bearer ${token}` } }
+                        );
+                        if (!getResp.ok) {
+                            console.log('[GCal SyncAll] Failed to fetch event', gcalEventId, getResp.status);
+                            evtFailed++;
+                            continue;
+                        }
+                        const gcalEvent = await getResp.json();
+                        const attendees = gcalEvent.attendees || [];
+
+                        // Skip if already present
+                        if (attendees.some(a => a.email && a.email.toLowerCase() === email.toLowerCase())) {
+                            evtSkipped++;
+                            continue;
+                        }
+
+                        // Add attendee
+                        attendees.push({ email: email, responseStatus: 'accepted' });
+                        const patchResp = await fetch(
+                            `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}?sendUpdates=none`,
+                            {
+                                method: 'PATCH',
+                                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ attendees }),
+                            }
+                        );
+                        if (patchResp.ok) {
+                            evtSynced++;
+                            console.log('[GCal SyncAll] Event: Added', email, 'to', gcalEventId);
+                        } else {
+                            evtFailed++;
+                            console.log('[GCal SyncAll] Event: Failed to add', email, 'to', gcalEventId, patchResp.status);
+                        }
+                    } catch (err) {
+                        evtFailed++;
+                        console.error('[GCal SyncAll] Event error:', err);
+                    }
+                }
+
+                // --- 3. Report results ---
+                const totalSynced = oecSynced + evtSynced;
+                const totalSkipped = oecSkipped + evtSkipped;
+                const totalFailed = oecFailed + evtFailed;
+                let msg = `GCal sync complete: ${totalSynced} added`;
+                if (totalSkipped > 0) msg += `, ${totalSkipped} already synced`;
+                if (totalFailed > 0) msg += `, ${totalFailed} failed`;
+                showToast(msg, totalFailed > 0 ? 'warning' : 'success');
+                console.log(`[GCal SyncAll] Done — OEC: ${oecSynced} synced, ${oecSkipped} skipped, ${oecFailed} failed | Events: ${evtSynced} synced, ${evtSkipped} skipped, ${evtFailed} failed`);
+
+            } catch (err) {
+                console.error('[GCal SyncAll] Error:', err);
+                showToast('GCal sync failed: ' + err.message, 'error');
+            } finally {
+                if (syncBtn) {
+                    syncBtn.disabled = false;
+                    syncBtn.textContent = '🔄 Sync All to GCal';
+                }
+            }
         }
 
         async function cancelAssignment(assignmentId, isEvent = false) {
