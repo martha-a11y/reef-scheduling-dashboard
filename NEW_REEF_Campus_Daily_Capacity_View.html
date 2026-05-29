@@ -4290,20 +4290,112 @@
             return `${months[start.getMonth()]} ${start.getDate()} – ${months[end.getMonth()]} ${end.getDate()}, ${end.getFullYear()}`;
         }
 
+        // Classify a shift as 'AM', 'PM', or 'Evening'
+        // Evening detection takes priority: any shift starting at 4pm ET or later is Evening,
+        // regardless of what the shiftSlot field says (Airtable marks Block 3 as "PM" but it's 4-8:30pm).
+        // Times in Airtable are UTC; ET = UTC-4 (EDT) or UTC-5 (EST).
+        function classifyShiftSlot(shift) {
+            // 1. EVENING DETECTION FIRST (highest priority)
+            // Check explicit "evening" in slot, label, or template
+            const slot = selectVal(shift.fields[FIELDS.OEC_SHIFTS.shiftSlot]) || '';
+            const label = shift.fields[FIELDS.OEC_SHIFTS.shiftLabel] || '';
+            const tmplName = getShiftTemplateName(shift);
+            if (/evening/i.test(slot) || /evening/i.test(label) || /evening/i.test(tmplName)) return 'Evening';
+
+            // Check start time: 4pm ET (20:00 UTC in EDT) or later = Evening
+            const startDt = shift.fields[FIELDS.OEC_SHIFTS.startDateTime];
+            if (startDt) {
+                const utcHour = new Date(startDt).getUTCHours();
+                const etHour = (utcHour - 4 + 24) % 24;
+                if (etHour >= 16) return 'Evening';
+            }
+
+            // 2. AM/PM from shiftSlot field (if present)
+            if (/^AM$/i.test(slot)) return 'AM';
+            if (/^PM$/i.test(slot)) return 'PM';
+
+            // 3. AM/PM from shift label
+            if (/\bAM\b/.test(label)) return 'AM';
+            if (/\bPM\b/.test(label)) return 'PM';
+
+            // 4. AM/PM from template name
+            if (/\bAM\b/i.test(tmplName)) return 'AM';
+            if (/\bPM\b/i.test(tmplName)) return 'PM';
+
+            // 5. Fall back to start time
+            if (startDt) {
+                const utcHour = new Date(startDt).getUTCHours();
+                const etHour = (utcHour - 4 + 24) % 24;
+                if (etHour < 12) return 'AM';
+                return 'PM';
+            }
+
+            return 'PM'; // absolute fallback
+        }
+
+        // Deduplicate shifts: keep only ONE shift per day per time slot (AM, PM, Evening).
+        // Multiple shift instances can exist for the same day+slot (e.g., Entry/Gallery/Eval blocks).
+        // We pick one as the "primary" and merge all others' assignments into it.
         function getSchedulerDayShifts(dayOffset) {
             const dayDate = new Date(schedulerWeekStart);
             dayDate.setDate(schedulerWeekStart.getDate() + dayOffset);
             const dayStr = dayDate.toISOString().split('T')[0];
 
-            return allData.oecShifts.filter(shift => {
+            // Get all shifts for this day
+            const dayShifts = allData.oecShifts.filter(shift => {
                 const shiftDate = shift.fields[FIELDS.OEC_SHIFTS.shiftDate];
                 if (!shiftDate) return false;
-                const shiftDayStr = new Date(shiftDate).toISOString().split('T')[0];
-                return shiftDayStr === dayStr;
+                return new Date(shiftDate).toISOString().split('T')[0] === dayStr;
             });
+
+            // Deduplicate: keep first shift per slot classification
+            const seen = {};
+            const primary = [];
+            dayShifts.forEach(shift => {
+                const slot = classifyShiftSlot(shift);
+                if (!seen[slot]) {
+                    seen[slot] = true;
+                    primary.push(shift);
+                }
+            });
+            return primary;
         }
 
-        function getSchedulerShiftAssignments(shiftId) {
+        // Get ALL shift instance IDs for the same day + time slot (primary + duplicates)
+        // Used to merge assignments from duplicate block instances into the primary shift
+        function getRelatedShiftIds(primaryShift) {
+            const shiftDate = primaryShift.fields[FIELDS.OEC_SHIFTS.shiftDate];
+            const slot = classifyShiftSlot(primaryShift);
+            if (!shiftDate) return [primaryShift.id];
+
+            const dayStr = new Date(shiftDate).toISOString().split('T')[0];
+            const relatedIds = [primaryShift.id];
+
+            allData.oecShifts.forEach(s => {
+                if (s.id === primaryShift.id) return;
+                const sDate = s.fields[FIELDS.OEC_SHIFTS.shiftDate];
+                if (!sDate) return;
+                if (new Date(sDate).toISOString().split('T')[0] !== dayStr) return;
+                // Same day + same slot = duplicate, merge its assignments
+                if (classifyShiftSlot(s) === slot) {
+                    relatedIds.push(s.id);
+                }
+            });
+            return relatedIds;
+        }
+
+        function getSchedulerShiftAssignments(shiftId, includeMerged) {
+            if (includeMerged) {
+                // Find the primary shift and get all related IDs
+                const primaryShift = allData.oecShifts.find(s => s.id === shiftId);
+                if (primaryShift) {
+                    const relatedIds = getRelatedShiftIds(primaryShift);
+                    return allData.oecAssignments.filter(assign => {
+                        const inst = assign.fields[FIELDS.OEC_ASSIGNMENTS.shiftInstance];
+                        return relatedIds.some(rid => linkedHas(inst, rid));
+                    });
+                }
+            }
             return allData.oecAssignments.filter(assign => {
                 const inst = assign.fields[FIELDS.OEC_ASSIGNMENTS.shiftInstance];
                 return linkedHas(inst, shiftId);
@@ -4311,7 +4403,7 @@
         }
 
         function getSchedulerShiftStatus(shift) {
-            const assignments = getSchedulerShiftAssignments(shift.id);
+            const assignments = getSchedulerShiftAssignments(shift.id, true);
             const confirmed = assignments.filter(a =>
                 isAssignedOrConfirmed(a.fields[FIELDS.OEC_ASSIGNMENTS.assignmentStatus])
             );
@@ -4322,7 +4414,7 @@
         }
 
         function getSchedulerShiftBadge(shift) {
-            const assignments = getSchedulerShiftAssignments(shift.id);
+            const assignments = getSchedulerShiftAssignments(shift.id, true);
             const confirmed = assignments.filter(a =>
                 isAssignedOrConfirmed(a.fields[FIELDS.OEC_ASSIGNMENTS.assignmentStatus])
             );
@@ -4405,7 +4497,7 @@
                 const shifts = getSchedulerDayShifts(i);
                 shifts.forEach(shift => {
                     const slot = selectVal(shift.fields[FIELDS.OEC_SHIFTS.shiftSlot]) || '';
-                    const assigns = getSchedulerShiftAssignments(shift.id).filter(a =>
+                    const assigns = getSchedulerShiftAssignments(shift.id, true).filter(a =>
                         isAssignedOrConfirmed(a.fields[FIELDS.OEC_ASSIGNMENTS.assignmentStatus])
                     );
                     assigns.forEach(a => {
@@ -4578,7 +4670,8 @@
         }
 
         function buildSchedulerShiftCell(shift, dayIndex) {
-            const assignments = getSchedulerShiftAssignments(shift.id);
+            // Merge assignments from related Entry/Gallery/Eval blocks
+            const assignments = getSchedulerShiftAssignments(shift.id, true);
             const confirmed = assignments.filter(a =>
                 isAssignedOrConfirmed(a.fields[FIELDS.OEC_ASSIGNMENTS.assignmentStatus])
             );
@@ -4599,7 +4692,7 @@
                 html += `<div class="shift-status-badge">${badge}</div>`;
             }
             // Collapsed summary line — use classified slot (handles Evening detection)
-            const classifiedSlot = (typeof classifyShiftSlot === 'function') ? classifyShiftSlot(shift) : slot;
+            const classifiedSlot = classifyShiftSlot(shift);
             const summaryType = typeLabel || classifiedSlot;
             html += `<div class="shift-collapsed-summary"><strong>${summaryType}</strong> <span>${staffCount}/${target}</span></div>`;
             if (typeLabel) {
@@ -4816,26 +4909,7 @@
             oecHeaderRow.appendChild(oecHeaderTd);
             tbody.appendChild(oecHeaderRow);
 
-            // Helper: classify a shift as 'AM', 'PM', or 'Evening'
-            // Evening = starts at 4pm or later (16:00+), OR Airtable slot/label says Evening
-            function classifyShiftSlot(shift) {
-                const slot = selectVal(shift.fields[FIELDS.OEC_SHIFTS.shiftSlot]) || '';
-                // If Airtable already says Evening, use it
-                if (/evening/i.test(slot)) return 'Evening';
-                // Check shift label and template name for "Evening"
-                const label = shift.fields[FIELDS.OEC_SHIFTS.shiftLabel] || '';
-                if (/evening/i.test(label)) return 'Evening';
-                const tmplName = getShiftTemplateName(shift);
-                if (/evening/i.test(tmplName)) return 'Evening';
-                // Detect by start time: 4pm (16:00) or later = Evening
-                const startDt = shift.fields[FIELDS.OEC_SHIFTS.startDateTime];
-                if (startDt) {
-                    const startHour = new Date(startDt).getHours();
-                    if (startHour >= 16) return 'Evening';
-                }
-                // Default: use the slot value (AM or PM)
-                return slot || 'PM';
-            }
+            // classifyShiftSlot is now defined at top level (above getSchedulerDayShifts)
 
             // === OEC AM ROW ===
             const amRow = document.createElement('tr');
@@ -5101,7 +5175,7 @@
                     workDaysThisWeek++;
                     const dayShifts = getSchedulerDayShifts(i);
                     dayShifts.forEach(shift => {
-                        const assignments = getSchedulerShiftAssignments(shift.id);
+                        const assignments = getSchedulerShiftAssignments(shift.id, true);
                         const isAssigned = assignments.some(a => {
                             const link = a.fields[FIELDS.OEC_ASSIGNMENTS.teamMember];
                             return linkedHas(link, memberId) &&
@@ -5247,7 +5321,7 @@
                 let noLeadDetails = [];
 
                 shifts.forEach(shift => {
-                    const assignments = getSchedulerShiftAssignments(shift.id);
+                    const assignments = getSchedulerShiftAssignments(shift.id, true);
                     const confirmed = assignments.filter(a =>
                         isAssignedOrConfirmed(a.fields[FIELDS.OEC_ASSIGNMENTS.assignmentStatus])
                     );
@@ -5314,7 +5388,7 @@
                     if (isPersonUnavailableOnDate(member.id, dayDate)) continue;
                     const dayShifts = getSchedulerDayShifts(i);
                     dayShifts.forEach(shift => {
-                        const assignments = getSchedulerShiftAssignments(shift.id);
+                        const assignments = getSchedulerShiftAssignments(shift.id, true);
                         if (assignments.some(a => linkedHas(a.fields[FIELDS.OEC_ASSIGNMENTS.teamMember], member.id) &&
                             isAssignedOrConfirmed(a.fields[FIELDS.OEC_ASSIGNMENTS.assignmentStatus]))) {
                             hasAnyAssignment = true;
@@ -5415,7 +5489,7 @@
                 shifts.forEach(shift => {
                     const target = parseInt(shift.fields[FIELDS.OEC_SHIFTS.targetHeadcount]) || 2;
                     totalShiftSlots += target;
-                    const assignments = getSchedulerShiftAssignments(shift.id);
+                    const assignments = getSchedulerShiftAssignments(shift.id, true);
                     const confirmed = assignments.filter(a =>
                         isAssignedOrConfirmed(a.fields[FIELDS.OEC_ASSIGNMENTS.assignmentStatus])
                     );
@@ -5498,7 +5572,7 @@
                     let shiftCount = 0;
                     for (let i = 0; i < 6; i++) {
                         getSchedulerDayShifts(i).forEach(shift => {
-                            const assignments = getSchedulerShiftAssignments(shift.id);
+                            const assignments = getSchedulerShiftAssignments(shift.id, true);
                             if (assignments.some(a => linkedHas(a.fields[FIELDS.OEC_ASSIGNMENTS.teamMember], member.id) &&
                                 isAssignedOrConfirmed(a.fields[FIELDS.OEC_ASSIGNMENTS.assignmentStatus]))) {
                                 shiftCount++;
@@ -5600,7 +5674,7 @@
                 const shifts = getSchedulerDayShifts(i);
                 shifts.forEach(shift => {
                     totalShifts++;
-                    const assignments = getSchedulerShiftAssignments(shift.id);
+                    const assignments = getSchedulerShiftAssignments(shift.id, true);
                     const confirmed = assignments.filter(a =>
                         isAssignedOrConfirmed(a.fields[FIELDS.OEC_ASSIGNMENTS.assignmentStatus])
                     );
@@ -6435,7 +6509,7 @@
             // Get already-assigned member IDs for this shift/event
             const alreadyAssigned = new Set();
             if (shiftId) {
-                getSchedulerShiftAssignments(shiftId).forEach(a => {
+                getSchedulerShiftAssignments(shiftId, true).forEach(a => {
                     if (!isAssignedOrConfirmed(a.fields[FIELDS.OEC_ASSIGNMENTS.assignmentStatus])) return;
                     const link = a.fields[FIELDS.OEC_ASSIGNMENTS.teamMember];
                     if (Array.isArray(link) && link.length > 0) {
@@ -6453,17 +6527,22 @@
             }
 
             // Build available staff list with work-day awareness
-            const staff = allData.teamMembers
+            // Include campus operational staff, docents/volunteers, AND interns/fellows
+            const allPickerMembers = [...allData.teamMembers, ...(allData.docentVolunteers || []), ...(allData.internsFellows || [])];
+            const staff = allPickerMembers
                 .filter(m => !alreadyAssigned.has(m.id))
                 .map(m => {
-                    const displayName = getDisplayName(m, allData.teamMembers);
+                    const displayName = getDisplayName(m, allData.allTeamMembers || allData.teamMembers);
                     const firstName = displayName;
                     const isOut = isPersonOutOnSchedulerDate(m.id, dayDate);
                     const isOffDay = isNonWorkDay(m.id, dayDate);
-                    return { id: m.id, name: displayName, firstName: displayName, isOut, isOffDay, unavailable: isOut || isOffDay };
+                    const isDocent = (allData.docentVolunteers || []).some(d => d.id === m.id);
+                    return { id: m.id, name: displayName, firstName: displayName, isOut, isOffDay, unavailable: isOut || isOffDay, isDocent };
                 })
                 .sort((a, b) => {
                     if (a.unavailable !== b.unavailable) return a.unavailable ? 1 : -1;
+                    // Group docents after staff
+                    if (a.isDocent !== b.isDocent) return a.isDocent ? 1 : -1;
                     return a.name.localeCompare(b.name);
                 });
 

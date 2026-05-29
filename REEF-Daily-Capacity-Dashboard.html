@@ -6527,17 +6527,22 @@
             }
 
             // Build available staff list with work-day awareness
-            const staff = allData.teamMembers
+            // Include campus operational staff, docents/volunteers, AND interns/fellows
+            const allPickerMembers = [...allData.teamMembers, ...(allData.docentVolunteers || []), ...(allData.internsFellows || [])];
+            const staff = allPickerMembers
                 .filter(m => !alreadyAssigned.has(m.id))
                 .map(m => {
-                    const displayName = getDisplayName(m, allData.teamMembers);
+                    const displayName = getDisplayName(m, allData.allTeamMembers || allData.teamMembers);
                     const firstName = displayName;
                     const isOut = isPersonOutOnSchedulerDate(m.id, dayDate);
                     const isOffDay = isNonWorkDay(m.id, dayDate);
-                    return { id: m.id, name: displayName, firstName: displayName, isOut, isOffDay, unavailable: isOut || isOffDay };
+                    const isDocent = (allData.docentVolunteers || []).some(d => d.id === m.id);
+                    return { id: m.id, name: displayName, firstName: displayName, isOut, isOffDay, unavailable: isOut || isOffDay, isDocent };
                 })
                 .sort((a, b) => {
                     if (a.unavailable !== b.unavailable) return a.unavailable ? 1 : -1;
+                    // Group docents after staff
+                    if (a.isDocent !== b.isDocent) return a.isDocent ? 1 : -1;
                     return a.name.localeCompare(b.name);
                 });
 
