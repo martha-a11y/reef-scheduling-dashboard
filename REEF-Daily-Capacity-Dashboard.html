@@ -2730,6 +2730,11 @@
             const syncBtn = document.getElementById('gcalSyncAllBtn');
             const status = document.getElementById('gcalStatus');
 
+            // Always attach Sync All click handler (regardless of auth state)
+            if (syncBtn) {
+                syncBtn.addEventListener('click', () => syncAllToGCal());
+            }
+
             // Check if we already have a token (e.g., from URL hash after redirect)
             const hashParams = new URLSearchParams(window.location.hash.substring(1));
             const tokenFromHash = hashParams.get('access_token');
@@ -2770,11 +2775,6 @@
                 const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=token&scope=${scope}&prompt=consent`;
                 window.location.href = authUrl;
             });
-
-            // Sync All button click handler
-            if (syncBtn) {
-                syncBtn.addEventListener('click', () => syncAllToGCal());
-            }
         }
 
         // Initialize GCal connection after page loads
