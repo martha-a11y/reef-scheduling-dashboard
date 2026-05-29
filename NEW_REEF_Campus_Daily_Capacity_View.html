@@ -6286,10 +6286,47 @@
                         }
                     }
 
+                    // If still no match, auto-create the OEC shift in Google Calendar
                     if (!gcalEventId) {
-                        console.log('[GCal SyncAll] OEC: No GCal event found for shift', shiftId, shift.fields[FIELDS.OEC_SHIFTS.shiftLabel]);
-                        oecNoMatch += memberIds.length;
-                        continue;
+                        try {
+                            const shiftLabel = shift.fields[FIELDS.OEC_SHIFTS.shiftLabel] || ('OEC ' + classifyShiftSlot(shift));
+                            const startDT = shift.fields[FIELDS.OEC_SHIFTS.startDateTime];
+                            const endDT = shift.fields[FIELDS.OEC_SHIFTS.endDateTime];
+                            const calId = encodeURIComponent(calendarId);
+                            const gcalBody = {
+                                summary: shiftLabel,
+                                start: startDT
+                                    ? { dateTime: new Date(startDT).toISOString() }
+                                    : { date: dayStr },
+                                end: endDT
+                                    ? { dateTime: new Date(endDT).toISOString() }
+                                    : startDT
+                                        ? { dateTime: new Date(new Date(startDT).getTime() + 4*3600000).toISOString() }
+                                        : { date: dayStr },
+                            };
+                            const createResp = await fetch(
+                                `https://www.googleapis.com/calendar/v3/calendars/${calId}/events?sendUpdates=none`,
+                                {
+                                    method: 'POST',
+                                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify(gcalBody),
+                                }
+                            );
+                            if (createResp.ok) {
+                                const created = await createResp.json();
+                                gcalEventId = created.id;
+                                OEC_GCAL_MAPPING[shiftId] = gcalEventId;
+                                console.log('[GCal SyncAll] OEC: Created GCal event', shiftLabel, gcalEventId);
+                            } else {
+                                console.log('[GCal SyncAll] OEC: Failed to create GCal event for', shiftLabel, createResp.status);
+                                oecFailed += memberIds.length;
+                                continue;
+                            }
+                        } catch (err) {
+                            console.error('[GCal SyncAll] OEC: Error creating event:', err);
+                            oecFailed += memberIds.length;
+                            continue;
+                        }
                     }
 
                     for (const memberId of memberIds) {
@@ -6349,10 +6386,46 @@
                         }
                     }
 
+                    // If still no match, auto-create the event in REEF Campus 2026 Google Calendar
                     if (!gcalEventId) {
-                        console.log('[GCal SyncAll] Event: No GCal event for', evt.fields[FIELDS.EVENTS.eventName], 'on', dayStr);
-                        evtNoMatch += memberIds.length;
-                        continue;
+                        try {
+                            const evtName = evt.fields[FIELDS.EVENTS.eventName] || 'REEF Event';
+                            const evtEnd = evt.fields[FIELDS.EVENTS.endDateTime];
+                            const calId = encodeURIComponent(calendarId);
+                            const gcalBody = {
+                                summary: evtName,
+                                start: evtStart
+                                    ? { dateTime: new Date(evtStart).toISOString() }
+                                    : { date: dayStr },
+                                end: evtEnd
+                                    ? { dateTime: new Date(evtEnd).toISOString() }
+                                    : evtStart
+                                        ? { dateTime: new Date(new Date(evtStart).getTime() + 3*3600000).toISOString() }
+                                        : { date: dayStr },
+                            };
+                            const createResp = await fetch(
+                                `https://www.googleapis.com/calendar/v3/calendars/${calId}/events?sendUpdates=none`,
+                                {
+                                    method: 'POST',
+                                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify(gcalBody),
+                                }
+                            );
+                            if (createResp.ok) {
+                                const created = await createResp.json();
+                                gcalEventId = created.id;
+                                if (eventsDBId) GCAL_EVENT_MAPPING[eventsDBId] = gcalEventId;
+                                console.log('[GCal SyncAll] Event: Created GCal event', evtName, gcalEventId);
+                            } else {
+                                console.log('[GCal SyncAll] Event: Failed to create GCal event for', evtName, createResp.status);
+                                evtFailed += memberIds.length;
+                                continue;
+                            }
+                        } catch (err) {
+                            console.error('[GCal SyncAll] Event: Error creating event:', err);
+                            evtFailed += memberIds.length;
+                            continue;
+                        }
                     }
 
                     for (const memberId of memberIds) {
