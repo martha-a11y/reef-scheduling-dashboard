@@ -6242,56 +6242,102 @@
             // Clear cache from any previous run
             Object.keys(_gcalEventsCache).forEach(k => delete _gcalEventsCache[k]);
 
-            let oecSynced = 0, oecSkipped = 0, oecFailed = 0, oecNoMatch = 0;
+            let oecSynced = 0, oecSkipped = 0, oecFailed = 0, oecNoMatch = 0, oecCreated = 0;
             let evtSynced = 0, evtSkipped = 0, evtFailed = 0, evtNoMatch = 0;
 
             try {
                 // --- 1. Sync OEC Shift assignments ---
+                // STRATEGY: One GCal event per day+slot (AM/PM/Evening).
+                // Multiple Airtable shift records for the same day+slot share ONE GCal event.
+                // All assigned members are added as attendees (if they have email) or
+                // listed in the event description (if they don't, e.g. docents).
+
+                const calendarId = GCAL_CONFIG.oecShiftsCalendarId;
+                const calId = encodeURIComponent(calendarId);
+
+                // Step 1a: Group ALL shifts by day+slot key
+                const oecSlotGroups = {}; // key: "YYYY-MM-DD|AM" → { shifts: [], memberIds: Set }
+                for (const shift of allData.oecShifts) {
+                    const shiftDate = shift.fields[FIELDS.OEC_SHIFTS.shiftDate];
+                    if (!shiftDate) continue;
+                    const dayStr = new Date(shiftDate).toISOString().split('T')[0];
+                    const slot = classifyShiftSlot(shift);
+                    const key = `${dayStr}|${slot}`;
+                    if (!oecSlotGroups[key]) oecSlotGroups[key] = { dayStr, slot, shifts: [], memberIds: new Set() };
+                    oecSlotGroups[key].shifts.push(shift);
+                }
+
+                // Step 1b: Collect assigned members for each slot group
                 const activeOecAssignments = allData.oecAssignments.filter(a =>
                     isAssignedOrConfirmed(a.fields[FIELDS.OEC_ASSIGNMENTS.assignmentStatus])
                 );
-
-                // Group by shift to avoid redundant GCal lookups
-                const oecByShift = {};
                 for (const assign of activeOecAssignments) {
                     const shiftLinks = assign.fields[FIELDS.OEC_ASSIGNMENTS.shiftInstance];
                     const memberLinks = assign.fields[FIELDS.OEC_ASSIGNMENTS.teamMember];
                     if (!shiftLinks || !shiftLinks.length || !memberLinks || !memberLinks.length) continue;
                     const shiftId = typeof shiftLinks[0] === 'string' ? shiftLinks[0] : shiftLinks[0].id;
                     const memberId = typeof memberLinks[0] === 'string' ? memberLinks[0] : memberLinks[0].id;
-                    if (!oecByShift[shiftId]) oecByShift[shiftId] = [];
-                    oecByShift[shiftId].push(memberId);
+                    // Find which slot group this shift belongs to
+                    const shift = allData.oecShifts.find(s => s.id === shiftId);
+                    if (!shift) continue;
+                    const shiftDate = shift.fields[FIELDS.OEC_SHIFTS.shiftDate];
+                    if (!shiftDate) continue;
+                    const dayStr = new Date(shiftDate).toISOString().split('T')[0];
+                    const slot = classifyShiftSlot(shift);
+                    const key = `${dayStr}|${slot}`;
+                    if (oecSlotGroups[key]) oecSlotGroups[key].memberIds.add(memberId);
                 }
 
-                // Helper: ensure a GCal event exists for a shift, return gcalEventId or null
-                async function ensureOecGCalEvent(shift) {
-                    const shiftId = shift.id;
-                    const shiftDate = shift.fields[FIELDS.OEC_SHIFTS.shiftDate];
-                    if (!shiftDate) return null;
-                    const dayStr = new Date(shiftDate).toISOString().split('T')[0];
-                    const calendarId = GCAL_CONFIG.oecShiftsCalendarId;
+                // Step 1c: Track GCal event IDs we've already claimed this sync
+                const claimedGCalIds = new Set();
 
-                    // First try static mapping
-                    let gcalEventId = OEC_GCAL_MAPPING[shiftId];
+                // Step 1d: Process each day+slot group — find or create exactly ONE GCal event
+                for (const [key, group] of Object.entries(oecSlotGroups)) {
+                    const { dayStr, slot, shifts, memberIds } = group;
+                    const representative = shifts[0]; // use first shift for timing
+                    const shiftLabel = `OEC ${slot} — ${new Date(dayStr + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short' })}`;
 
-                    // If not in mapping, search GCal by date + time
+                    // Check if any shift in this group already has a mapped GCal event
+                    let gcalEventId = null;
+                    for (const s of shifts) {
+                        if (OEC_GCAL_MAPPING[s.id]) { gcalEventId = OEC_GCAL_MAPPING[s.id]; break; }
+                    }
+
+                    // If not mapped, search GCal for an existing event matching this slot
                     if (!gcalEventId) {
                         const gcalEvents = await fetchGCalEventsForDate(calendarId, dayStr, token);
-                        const match = matchOecShiftToGCalEvent(shift, gcalEvents);
-                        if (match) {
-                            gcalEventId = match.id;
-                            OEC_GCAL_MAPPING[shiftId] = gcalEventId;
-                            console.log('[GCal SyncAll] OEC: Matched shift', shiftId, 'to GCal event', match.summary);
+                        // Find the FIRST unclaimed event matching this slot
+                        const slotLower = slot.toLowerCase();
+                        for (const ge of gcalEvents) {
+                            if (claimedGCalIds.has(ge.id)) continue; // already used by another slot
+                            const summary = (ge.summary || '').toLowerCase();
+                            if (summary.includes('oec') && summary.includes(slotLower)) {
+                                gcalEventId = ge.id;
+                                break;
+                            }
+                        }
+                        // Also try exact start time match
+                        if (!gcalEventId) {
+                            const startDT = representative.fields[FIELDS.OEC_SHIFTS.startDateTime];
+                            if (startDT) {
+                                const shiftStart = new Date(startDT).toISOString();
+                                for (const ge of gcalEvents) {
+                                    if (claimedGCalIds.has(ge.id)) continue;
+                                    const geStart = ge.start && (ge.start.dateTime || ge.start.date || '');
+                                    if (geStart && new Date(geStart).toISOString() === shiftStart) {
+                                        gcalEventId = ge.id;
+                                        break;
+                                    }
+                                }
+                            }
                         }
                     }
 
-                    // If still no match, auto-create the OEC shift in Google Calendar
+                    // If still no match, create exactly one GCal event for this slot
                     if (!gcalEventId) {
                         try {
-                            const shiftLabel = shift.fields[FIELDS.OEC_SHIFTS.shiftLabel] || ('OEC ' + classifyShiftSlot(shift));
-                            const startDT = shift.fields[FIELDS.OEC_SHIFTS.startDateTime];
-                            const endDT = shift.fields[FIELDS.OEC_SHIFTS.endDateTime];
-                            const calId = encodeURIComponent(calendarId);
+                            const startDT = representative.fields[FIELDS.OEC_SHIFTS.startDateTime];
+                            const endDT = representative.fields[FIELDS.OEC_SHIFTS.endDateTime];
                             const gcalBody = {
                                 summary: shiftLabel,
                                 start: startDT
@@ -6305,57 +6351,152 @@
                             };
                             const createResp = await fetch(
                                 `https://www.googleapis.com/calendar/v3/calendars/${calId}/events?sendUpdates=none`,
-                                {
-                                    method: 'POST',
-                                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                                    body: JSON.stringify(gcalBody),
-                                }
+                                { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(gcalBody) }
                             );
                             if (createResp.ok) {
                                 const created = await createResp.json();
                                 gcalEventId = created.id;
-                                OEC_GCAL_MAPPING[shiftId] = gcalEventId;
-                                console.log('[GCal SyncAll] OEC: Created GCal event', shiftLabel, gcalEventId);
+                                oecCreated++;
+                                console.log('[GCal SyncAll] OEC: Created', shiftLabel, gcalEventId);
                             } else {
-                                console.log('[GCal SyncAll] OEC: Failed to create GCal event for', shiftLabel, createResp.status);
-                                return null;
+                                console.log('[GCal SyncAll] OEC: Failed to create', shiftLabel, createResp.status);
+                                oecFailed++;
+                                continue;
                             }
                         } catch (err) {
                             console.error('[GCal SyncAll] OEC: Error creating event:', err);
-                            return null;
+                            oecFailed++;
+                            continue;
                         }
                     }
-                    return gcalEventId;
-                }
 
-                // Process shifts that have assignments
-                for (const [shiftId, memberIds] of Object.entries(oecByShift)) {
-                    const shift = allData.oecShifts.find(s => s.id === shiftId);
-                    if (!shift) { oecNoMatch += memberIds.length; continue; }
+                    // Mark this GCal event as claimed and map all shifts in this group to it
+                    claimedGCalIds.add(gcalEventId);
+                    for (const s of shifts) OEC_GCAL_MAPPING[s.id] = gcalEventId;
 
-                    const gcalEventId = await ensureOecGCalEvent(shift);
-                    if (!gcalEventId) { oecFailed += memberIds.length; continue; }
+                    // Sync assigned members: attendees (with email) + description (without email)
+                    if (memberIds.size > 0) {
+                        const emailMembers = [];
+                        const descMembers = [];
+                        for (const memberId of memberIds) {
+                            const member = allData.allTeamMembers.find(m => m.id === memberId)
+                                        || allData.teamMembers.find(m => m.id === memberId);
+                            if (!member) continue;
+                            const email = member.fields[FIELDS.TEAM_MEMBERS.email] || null;
+                            const firstName = (member.fields[FIELDS.TEAM_MEMBERS.firstName] || '').trim();
+                            const lastName = (member.fields[FIELDS.TEAM_MEMBERS.lastName] || '').trim();
+                            const fullName = `${firstName} ${lastName}`.trim();
+                            const memberType = selectVal(member.fields[FIELDS.TEAM_MEMBERS.teamMemberType]) || '';
+                            if (email) {
+                                emailMembers.push({ email, name: fullName });
+                            } else {
+                                descMembers.push(`${fullName}${memberType ? ' (' + memberType + ')' : ''}`);
+                            }
+                        }
 
-                    for (const memberId of memberIds) {
-                        const email = getMemberEmail(memberId);
-                        if (!email) { oecSkipped++; continue; }
-                        try {
-                            const result = await addAttendeeToGCalEvent(GCAL_CONFIG.oecShiftsCalendarId, gcalEventId, email, token);
-                            if (result === 'synced') { oecSynced++; console.log('[GCal SyncAll] OEC: Added', email); }
-                            else if (result === 'skipped') oecSkipped++;
-                            else oecFailed++;
-                        } catch (err) { oecFailed++; }
+                        // Add email members as GCal attendees
+                        for (const { email } of emailMembers) {
+                            try {
+                                const result = await addAttendeeToGCalEvent(calendarId, gcalEventId, email, token);
+                                if (result === 'synced') { oecSynced++; console.log('[GCal SyncAll] OEC: Added', email, 'to', shiftLabel); }
+                                else if (result === 'skipped') oecSkipped++;
+                                else oecFailed++;
+                            } catch (err) { oecFailed++; }
+                        }
+
+                        // If any members lack email, add them in the event description
+                        if (descMembers.length > 0) {
+                            try {
+                                // Fetch current event to preserve existing description
+                                const getResp = await fetch(
+                                    `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}`,
+                                    { headers: { 'Authorization': `Bearer ${token}` } }
+                                );
+                                if (getResp.ok) {
+                                    const evt = await getResp.json();
+                                    const teamLine = 'Team: ' + descMembers.join(', ');
+                                    // Replace existing Team: line or append
+                                    let desc = evt.description || '';
+                                    desc = desc.replace(/^Team:.*$/m, '').trim();
+                                    desc = desc ? desc + '\n' + teamLine : teamLine;
+                                    await fetch(
+                                        `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}?sendUpdates=none`,
+                                        {
+                                            method: 'PATCH',
+                                            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ description: desc }),
+                                        }
+                                    );
+                                    oecSynced += descMembers.length;
+                                    console.log('[GCal SyncAll] OEC: Added to description:', descMembers.join(', '));
+                                }
+                            } catch (err) {
+                                console.error('[GCal SyncAll] OEC: Error updating description:', err);
+                            }
+                        }
                     }
                 }
+                console.log(`[GCal SyncAll] OEC: ${Object.keys(oecSlotGroups).length} day+slot groups processed`);
 
-                // Ensure ALL OEC shifts have GCal events (even unassigned ones)
-                let oecCreated = 0;
-                for (const shift of allData.oecShifts) {
-                    if (oecByShift[shift.id]) continue; // already processed above
-                    const gcalEventId = await ensureOecGCalEvent(shift);
-                    if (gcalEventId) oecCreated++;
+                // --- 1e. Clean up DUPLICATE OEC GCal events ---
+                // Previous sync runs may have created multiple GCal events for the same day+slot.
+                // For each day we touched, find all OEC events per slot and delete the extras,
+                // keeping only the one we claimed in step 1d.
+                let oecDupsDeleted = 0;
+                const oecDaysProcessed = new Set(Object.values(oecSlotGroups).map(g => g.dayStr));
+                for (const dayStr of oecDaysProcessed) {
+                    try {
+                        // Force a fresh fetch (bypass cache)
+                        const cacheKey = `${calendarId}|${dayStr}`;
+                        delete _gcalEventsCache[cacheKey];
+                        const dayEvents = await fetchGCalEventsForDate(calendarId, dayStr, token);
+                        // Group by slot keyword
+                        const slotEvents = {}; // AM → [event, event, ...]
+                        for (const ge of dayEvents) {
+                            const summary = (ge.summary || '').toLowerCase();
+                            if (!summary.includes('oec')) continue;
+                            let slot = null;
+                            if (summary.includes('evening')) slot = 'evening';
+                            else if (summary.includes('pm')) slot = 'pm';
+                            else if (summary.includes('am')) slot = 'am';
+                            if (!slot) continue;
+                            if (!slotEvents[slot]) slotEvents[slot] = [];
+                            slotEvents[slot].push(ge);
+                        }
+                        // For each slot with >1 event, keep the claimed one (or the first) and delete the rest
+                        for (const [slot, events] of Object.entries(slotEvents)) {
+                            if (events.length <= 1) continue;
+                            // Prefer the event we claimed
+                            const kept = events.find(e => claimedGCalIds.has(e.id)) || events[0];
+                            for (const dup of events) {
+                                if (dup.id === kept.id) continue;
+                                try {
+                                    const delResp = await fetch(
+                                        `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${dup.id}`,
+                                        { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }
+                                    );
+                                    if (delResp.ok || delResp.status === 204) {
+                                        oecDupsDeleted++;
+                                        console.log(`[GCal SyncAll] OEC cleanup: Deleted duplicate ${slot.toUpperCase()} event ${dup.id} on ${dayStr}`);
+                                        // Also clean up any mapping references to the deleted event
+                                        for (const [sid, eid] of Object.entries(OEC_GCAL_MAPPING)) {
+                                            if (eid === dup.id) OEC_GCAL_MAPPING[sid] = kept.id;
+                                        }
+                                    } else {
+                                        console.log(`[GCal SyncAll] OEC cleanup: Failed to delete ${dup.id}`, delResp.status);
+                                    }
+                                } catch (err) {
+                                    console.error(`[GCal SyncAll] OEC cleanup error:`, err);
+                                }
+                            }
+                        }
+                    } catch (err) {
+                        console.error(`[GCal SyncAll] OEC cleanup error for ${dayStr}:`, err);
+                    }
                 }
-                if (oecCreated > 0) console.log(`[GCal SyncAll] OEC: Created ${oecCreated} GCal events for unassigned shifts`);
+                if (oecDupsDeleted > 0) {
+                    console.log(`[GCal SyncAll] OEC cleanup: Removed ${oecDupsDeleted} duplicate events`);
+                }
 
                 // --- 2. Sync Event/Program assignments ---
                 // Strategy: For each Events table record with assignments, find ALL
@@ -6601,10 +6742,11 @@
                 let msg = `GCal sync: ${totalSynced} added`;
                 if (totalSkipped > 0) msg += `, ${totalSkipped} already synced`;
                 if (oecCreated > 0 || evtCreated > 0) msg += `, ${oecCreated + evtCreated} events created`;
+                if (oecDupsDeleted > 0) msg += `, ${oecDupsDeleted} duplicates removed`;
                 if (totalNoMatch > 0) msg += `, ${totalNoMatch} no GCal event`;
                 if (totalFailed > 0) msg += `, ${totalFailed} failed`;
                 showToast(msg, totalFailed > 0 ? 'warning' : 'success');
-                console.log(`[GCal SyncAll] Done — OEC: ${oecSynced} synced, ${oecSkipped} skipped, ${oecNoMatch} no match, ${oecFailed} failed | Events: ${evtSynced} synced, ${evtSkipped} skipped, ${evtNoMatch} no match, ${evtFailed} failed`);
+                console.log(`[GCal SyncAll] Done — OEC: ${oecSynced} synced, ${oecSkipped} skipped, ${oecNoMatch} no match, ${oecFailed} failed, ${oecDupsDeleted} dups removed | Events: ${evtSynced} synced, ${evtSkipped} skipped, ${evtNoMatch} no match, ${evtFailed} failed`);
 
             } catch (err) {
                 console.error('[GCal SyncAll] Error:', err);
