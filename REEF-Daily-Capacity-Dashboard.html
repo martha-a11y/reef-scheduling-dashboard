@@ -6263,17 +6263,16 @@
                     oecByShift[shiftId].push(memberId);
                 }
 
-                for (const [shiftId, memberIds] of Object.entries(oecByShift)) {
-                    const shift = allData.oecShifts.find(s => s.id === shiftId);
-                    if (!shift) { oecNoMatch += memberIds.length; continue; }
-
+                // Helper: ensure a GCal event exists for a shift, return gcalEventId or null
+                async function ensureOecGCalEvent(shift) {
+                    const shiftId = shift.id;
                     const shiftDate = shift.fields[FIELDS.OEC_SHIFTS.shiftDate];
-                    if (!shiftDate) { oecNoMatch += memberIds.length; continue; }
+                    if (!shiftDate) return null;
                     const dayStr = new Date(shiftDate).toISOString().split('T')[0];
+                    const calendarId = GCAL_CONFIG.oecShiftsCalendarId;
 
                     // First try static mapping
                     let gcalEventId = OEC_GCAL_MAPPING[shiftId];
-                    let calendarId = GCAL_CONFIG.oecShiftsCalendarId;
 
                     // If not in mapping, search GCal by date + time
                     if (!gcalEventId) {
@@ -6281,7 +6280,7 @@
                         const match = matchOecShiftToGCalEvent(shift, gcalEvents);
                         if (match) {
                             gcalEventId = match.id;
-                            OEC_GCAL_MAPPING[shiftId] = gcalEventId; // cache for future
+                            OEC_GCAL_MAPPING[shiftId] = gcalEventId;
                             console.log('[GCal SyncAll] OEC: Matched shift', shiftId, 'to GCal event', match.summary);
                         }
                     }
@@ -6319,27 +6318,44 @@
                                 console.log('[GCal SyncAll] OEC: Created GCal event', shiftLabel, gcalEventId);
                             } else {
                                 console.log('[GCal SyncAll] OEC: Failed to create GCal event for', shiftLabel, createResp.status);
-                                oecFailed += memberIds.length;
-                                continue;
+                                return null;
                             }
                         } catch (err) {
                             console.error('[GCal SyncAll] OEC: Error creating event:', err);
-                            oecFailed += memberIds.length;
-                            continue;
+                            return null;
                         }
                     }
+                    return gcalEventId;
+                }
+
+                // Process shifts that have assignments
+                for (const [shiftId, memberIds] of Object.entries(oecByShift)) {
+                    const shift = allData.oecShifts.find(s => s.id === shiftId);
+                    if (!shift) { oecNoMatch += memberIds.length; continue; }
+
+                    const gcalEventId = await ensureOecGCalEvent(shift);
+                    if (!gcalEventId) { oecFailed += memberIds.length; continue; }
 
                     for (const memberId of memberIds) {
                         const email = getMemberEmail(memberId);
                         if (!email) { oecSkipped++; continue; }
                         try {
-                            const result = await addAttendeeToGCalEvent(calendarId, gcalEventId, email, token);
+                            const result = await addAttendeeToGCalEvent(GCAL_CONFIG.oecShiftsCalendarId, gcalEventId, email, token);
                             if (result === 'synced') { oecSynced++; console.log('[GCal SyncAll] OEC: Added', email); }
                             else if (result === 'skipped') oecSkipped++;
                             else oecFailed++;
                         } catch (err) { oecFailed++; }
                     }
                 }
+
+                // Ensure ALL OEC shifts have GCal events (even unassigned ones)
+                let oecCreated = 0;
+                for (const shift of allData.oecShifts) {
+                    if (oecByShift[shift.id]) continue; // already processed above
+                    const gcalEventId = await ensureOecGCalEvent(shift);
+                    if (gcalEventId) oecCreated++;
+                }
+                if (oecCreated > 0) console.log(`[GCal SyncAll] OEC: Created ${oecCreated} GCal events for unassigned shifts`);
 
                 // --- 2. Sync Event/Program assignments ---
                 // Strategy: For each Events table record with assignments, find ALL
@@ -6521,6 +6537,62 @@
                     }
                 }
 
+                // Ensure ALL Events/Programs have GCal events (even unassigned ones)
+                let evtCreated = 0;
+                for (const evt of allData.events) {
+                    if (evtByEvent[evt.id]) continue; // already processed above
+                    const evtName = evt.fields[FIELDS.EVENTS.eventName] || '';
+                    if (!evtName) continue; // skip nameless record
+                    const evtStart = evt.fields[FIELDS.EVENTS.startDateTime];
+                    if (!evtStart) continue;
+
+                    const calendarId = GCAL_CONFIG.reefCampus2CalendarId;
+                    const normalName = normalizeEventName(evtName);
+
+                    // Find matching EVENTS_DB instances
+                    const matchingProgs = allData.reefPrograms.filter(p => {
+                        const progName = normalizeEventName(p.fields[FIELDS.EVENTS_DB.eventName] || '');
+                        return normalName && progName && (normalName === progName || normalName.includes(progName) || progName.includes(normalName));
+                    });
+
+                    const instances = [];
+                    if (matchingProgs.length > 0) {
+                        for (const prog of matchingProgs) {
+                            const progStart = prog.fields[FIELDS.EVENTS_DB.startDateTime];
+                            if (!progStart) continue;
+                            instances.push({
+                                dayStr: new Date(progStart).toISOString().split('T')[0],
+                                name: prog.fields[FIELDS.EVENTS_DB.eventName] || evtName,
+                                startDT: progStart,
+                                endDT: prog.fields[FIELDS.EVENTS_DB.endDateTime],
+                                progId: prog.id,
+                            });
+                        }
+                    } else {
+                        instances.push({
+                            dayStr: new Date(evtStart).toISOString().split('T')[0],
+                            name: evtName,
+                            startDT: evtStart,
+                            endDT: evt.fields[FIELDS.EVENTS.endDateTime],
+                            progId: null,
+                        });
+                    }
+
+                    for (const inst of instances) {
+                        let gcalEventId = inst.progId ? GCAL_EVENT_MAPPING[inst.progId] : null;
+                        if (!gcalEventId) {
+                            gcalEventId = await findOrCreateGCalEvent(
+                                calendarId, inst.dayStr, inst.name, inst.startDT, inst.endDT
+                            );
+                            if (gcalEventId && inst.progId) {
+                                GCAL_EVENT_MAPPING[inst.progId] = gcalEventId;
+                            }
+                        }
+                        if (gcalEventId) evtCreated++;
+                    }
+                }
+                if (evtCreated > 0) console.log(`[GCal SyncAll] Events: Ensured ${evtCreated} GCal events for unassigned events`);
+
                 // --- 3. Report results ---
                 const totalSynced = oecSynced + evtSynced;
                 const totalSkipped = oecSkipped + evtSkipped;
@@ -6528,6 +6600,7 @@
                 const totalNoMatch = oecNoMatch + evtNoMatch;
                 let msg = `GCal sync: ${totalSynced} added`;
                 if (totalSkipped > 0) msg += `, ${totalSkipped} already synced`;
+                if (oecCreated > 0 || evtCreated > 0) msg += `, ${oecCreated + evtCreated} events created`;
                 if (totalNoMatch > 0) msg += `, ${totalNoMatch} no GCal event`;
                 if (totalFailed > 0) msg += `, ${totalFailed} failed`;
                 showToast(msg, totalFailed > 0 ? 'warning' : 'success');
