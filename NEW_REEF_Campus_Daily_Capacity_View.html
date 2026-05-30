@@ -6342,6 +6342,12 @@
                 }
 
                 // --- 2. Sync Event/Program assignments ---
+                // Strategy: For each Events table record with assignments, find ALL
+                // matching EVENTS_DB (reefPrograms) instances and sync attendees to
+                // the GCal event for each instance. This handles recurring programs
+                // (like "Ocean After Hours") that have one Events record but multiple
+                // EVENTS_DB instances on different dates. Assignments are added to
+                // every matching GCal event instance.
                 const activeEvtAssignments = allData.eventAssignments.filter(a =>
                     isAssignedOrConfirmed(a.fields[FIELDS.EVENT_ASSIGNMENTS.assignmentStatus])
                 );
@@ -6358,85 +6364,160 @@
                     evtByEvent[eventId].push(memberId);
                 }
 
+                // Helper: sync members to a single GCal event instance
+                async function syncMembersToGCalInstance(calendarId, gcalEventId, memberIds, instanceLabel) {
+                    let synced = 0, skipped = 0, failed = 0;
+                    for (const memberId of memberIds) {
+                        const email = getMemberEmail(memberId);
+                        if (!email) { skipped++; continue; }
+                        try {
+                            const result = await addAttendeeToGCalEvent(calendarId, gcalEventId, email, token);
+                            if (result === 'synced') { synced++; console.log('[GCal SyncAll] Event: Added', email, 'to', instanceLabel); }
+                            else if (result === 'skipped') skipped++;
+                            else failed++;
+                        } catch (err) { failed++; }
+                    }
+                    return { synced, skipped, failed };
+                }
+
+                // Helper: find or create a GCal event for a given name + date, returns gcalEventId or null
+                async function findOrCreateGCalEvent(calendarId, dayStr, eventName, startDT, endDT) {
+                    const gcalEvents = await fetchGCalEventsForDate(calendarId, dayStr, token);
+
+                    // Match by name similarity (using the same logic as matchEventToGCalEvent but with a raw name)
+                    const searchName = (eventName || '').toLowerCase().trim();
+                    const coreName = searchName.replace(/\s*-\s*\d{1,2}\/\d{1,2}\/\d{2,4}\s*$/, '').trim();
+                    // Also strip common prefixes like "OAH: " that Airtable automation adds
+                    const coreNameNoPfx = coreName.replace(/^[a-z]{2,5}:\s*/i, '').trim();
+
+                    for (const ge of gcalEvents) {
+                        const summary = (ge.summary || '').toLowerCase().trim();
+                        const coreSummary = summary.replace(/\s*-\s*\d{1,2}\/\d{1,2}\/\d{2,4}.*$/, '').trim();
+                        const coreSummaryNoPfx = coreSummary.replace(/^[a-z]{2,5}:\s*/i, '').trim();
+
+                        // Exact match
+                        if (summary === searchName || coreSummary === coreName) return ge.id;
+                        // Match without prefix (e.g., "OAH: Ocean After Hours" vs "Ocean After Hours")
+                        if (coreNameNoPfx.length > 5 && (coreSummaryNoPfx.includes(coreNameNoPfx) || coreNameNoPfx.includes(coreSummaryNoPfx))) return ge.id;
+                        // Substring match
+                        if (coreName.length > 5 && (summary.includes(coreName) || coreName.includes(coreSummary))) return ge.id;
+                        // Word overlap > 60%
+                        const evtWords = coreName.split(/\s+/).filter(w => w.length > 2);
+                        const geWords = coreSummary.split(/\s+/).filter(w => w.length > 2);
+                        if (evtWords.length > 0 && geWords.length > 0) {
+                            const overlap = evtWords.filter(w => geWords.includes(w)).length;
+                            if (overlap / Math.max(evtWords.length, geWords.length) > 0.6) return ge.id;
+                        }
+                    }
+
+                    // No match found — auto-create
+                    try {
+                        const calId = encodeURIComponent(calendarId);
+                        const gcalBody = {
+                            summary: eventName,
+                            start: startDT
+                                ? { dateTime: new Date(startDT).toISOString() }
+                                : { date: dayStr },
+                            end: endDT
+                                ? { dateTime: new Date(endDT).toISOString() }
+                                : startDT
+                                    ? { dateTime: new Date(new Date(startDT).getTime() + 3*3600000).toISOString() }
+                                    : { date: dayStr },
+                        };
+                        const createResp = await fetch(
+                            `https://www.googleapis.com/calendar/v3/calendars/${calId}/events?sendUpdates=none`,
+                            {
+                                method: 'POST',
+                                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                                body: JSON.stringify(gcalBody),
+                            }
+                        );
+                        if (createResp.ok) {
+                            const created = await createResp.json();
+                            console.log('[GCal SyncAll] Event: Created GCal event', eventName, created.id);
+                            return created.id;
+                        } else {
+                            console.log('[GCal SyncAll] Event: Failed to create', eventName, createResp.status);
+                            return null;
+                        }
+                    } catch (err) {
+                        console.error('[GCal SyncAll] Event: Error creating', eventName, err);
+                        return null;
+                    }
+                }
+
                 for (const [eventId, memberIds] of Object.entries(evtByEvent)) {
                     const evt = allData.events.find(e => e.id === eventId);
                     if (!evt) { evtNoMatch += memberIds.length; continue; }
 
-                    const evtStart = evt.fields[FIELDS.EVENTS.startDateTime];
-                    if (!evtStart) { evtNoMatch += memberIds.length; continue; }
-                    const dayStr = new Date(evtStart).toISOString().split('T')[0];
-
-                    let gcalEventId = null;
                     const calendarId = GCAL_CONFIG.reefCampus2CalendarId;
+                    const evtName = normalizeEventName(evt.fields[FIELDS.EVENTS.eventName] || '');
+                    const evtStart = evt.fields[FIELDS.EVENTS.startDateTime];
 
-                    // First try the EVENTS_DB mapping path
-                    const eventsDBId = findEventsDBRecordId(eventId);
-                    if (eventsDBId) {
-                        gcalEventId = GCAL_EVENT_MAPPING[eventsDBId];
-                    }
+                    // Find ALL matching EVENTS_DB instances for this Events record
+                    const matchingProgs = allData.reefPrograms.filter(p => {
+                        const progName = normalizeEventName(p.fields[FIELDS.EVENTS_DB.eventName] || '');
+                        return evtName && progName && (evtName === progName || evtName.includes(progName) || progName.includes(evtName));
+                    });
 
-                    // If not found via mapping, search GCal directly by date + name
-                    if (!gcalEventId) {
-                        const gcalEvents = await fetchGCalEventsForDate(calendarId, dayStr, token);
-                        const match = matchEventToGCalEvent(evt, gcalEvents);
-                        if (match) {
-                            gcalEventId = match.id;
-                            if (eventsDBId) GCAL_EVENT_MAPPING[eventsDBId] = gcalEventId;
-                            console.log('[GCal SyncAll] Event: Matched', evt.fields[FIELDS.EVENTS.eventName], 'to GCal', match.summary);
+                    // Build list of date instances to sync to
+                    const instancesToSync = [];
+
+                    if (matchingProgs.length > 0) {
+                        // Recurring program: sync to each EVENTS_DB instance's date
+                        for (const prog of matchingProgs) {
+                            const progStart = prog.fields[FIELDS.EVENTS_DB.startDateTime];
+                            if (!progStart) continue;
+                            instancesToSync.push({
+                                dayStr: new Date(progStart).toISOString().split('T')[0],
+                                name: prog.fields[FIELDS.EVENTS_DB.eventName] || evt.fields[FIELDS.EVENTS.eventName] || 'REEF Event',
+                                startDT: progStart,
+                                endDT: prog.fields[FIELDS.EVENTS_DB.endDateTime],
+                                progId: prog.id,
+                            });
                         }
+                    } else if (evtStart) {
+                        // One-off event: use the Events table date directly
+                        instancesToSync.push({
+                            dayStr: new Date(evtStart).toISOString().split('T')[0],
+                            name: evt.fields[FIELDS.EVENTS.eventName] || 'REEF Event',
+                            startDT: evtStart,
+                            endDT: evt.fields[FIELDS.EVENTS.endDateTime],
+                            progId: null,
+                        });
                     }
 
-                    // If still no match, auto-create the event in REEF Campus 2026 Google Calendar
-                    if (!gcalEventId) {
-                        try {
-                            const evtName = evt.fields[FIELDS.EVENTS.eventName] || 'REEF Event';
-                            const evtEnd = evt.fields[FIELDS.EVENTS.endDateTime];
-                            const calId = encodeURIComponent(calendarId);
-                            const gcalBody = {
-                                summary: evtName,
-                                start: evtStart
-                                    ? { dateTime: new Date(evtStart).toISOString() }
-                                    : { date: dayStr },
-                                end: evtEnd
-                                    ? { dateTime: new Date(evtEnd).toISOString() }
-                                    : evtStart
-                                        ? { dateTime: new Date(new Date(evtStart).getTime() + 3*3600000).toISOString() }
-                                        : { date: dayStr },
-                            };
-                            const createResp = await fetch(
-                                `https://www.googleapis.com/calendar/v3/calendars/${calId}/events?sendUpdates=none`,
-                                {
-                                    method: 'POST',
-                                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                                    body: JSON.stringify(gcalBody),
-                                }
+                    if (instancesToSync.length === 0) {
+                        console.log('[GCal SyncAll] Event: No dates found for', evt.fields[FIELDS.EVENTS.eventName] || eventId);
+                        evtNoMatch += memberIds.length;
+                        continue;
+                    }
+
+                    // Sync to each instance
+                    for (const instance of instancesToSync) {
+                        // Try EVENTS_DB mapping first
+                        let gcalEventId = instance.progId ? GCAL_EVENT_MAPPING[instance.progId] : null;
+
+                        if (!gcalEventId) {
+                            gcalEventId = await findOrCreateGCalEvent(
+                                calendarId, instance.dayStr, instance.name, instance.startDT, instance.endDT
                             );
-                            if (createResp.ok) {
-                                const created = await createResp.json();
-                                gcalEventId = created.id;
-                                if (eventsDBId) GCAL_EVENT_MAPPING[eventsDBId] = gcalEventId;
-                                console.log('[GCal SyncAll] Event: Created GCal event', evtName, gcalEventId);
-                            } else {
-                                console.log('[GCal SyncAll] Event: Failed to create GCal event for', evtName, createResp.status);
-                                evtFailed += memberIds.length;
-                                continue;
+                            if (gcalEventId && instance.progId) {
+                                GCAL_EVENT_MAPPING[instance.progId] = gcalEventId;
                             }
-                        } catch (err) {
-                            console.error('[GCal SyncAll] Event: Error creating event:', err);
+                        }
+
+                        if (!gcalEventId) {
                             evtFailed += memberIds.length;
                             continue;
                         }
-                    }
 
-                    for (const memberId of memberIds) {
-                        const email = getMemberEmail(memberId);
-                        if (!email) { evtSkipped++; continue; }
-                        try {
-                            const result = await addAttendeeToGCalEvent(calendarId, gcalEventId, email, token);
-                            if (result === 'synced') { evtSynced++; console.log('[GCal SyncAll] Event: Added', email); }
-                            else if (result === 'skipped') evtSkipped++;
-                            else evtFailed++;
-                        } catch (err) { evtFailed++; }
+                        const label = instance.name + ' (' + instance.dayStr + ')';
+                        console.log('[GCal SyncAll] Event: Matched', label, 'to GCal', gcalEventId.substring(0, 15));
+                        const result = await syncMembersToGCalInstance(calendarId, gcalEventId, memberIds, label);
+                        evtSynced += result.synced;
+                        evtSkipped += result.skipped;
+                        evtFailed += result.failed;
                     }
                 }
 
