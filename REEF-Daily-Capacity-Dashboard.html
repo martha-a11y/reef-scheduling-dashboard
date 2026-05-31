@@ -2896,17 +2896,23 @@
             timeZone: 'America/New_York', // REEF is in Key Largo, FL
         };
 
-        // Format a date/time string for GCal API (preserves local time, adds timezone)
-        // Airtable stores datetimes as ISO strings. We pass them to GCal with the REEF timezone
-        // so they render at the correct local time on the calendar.
+        // Format a date/time string for GCal API — converts UTC to Eastern time.
+        // Airtable datetime fields store real UTC (e.g. "2026-06-01T13:30:00.000Z" = 9:30 AM ET).
+        // We convert to actual Eastern time and send with timeZone so GCal renders correctly.
         function gcalDateTime(isoStr) {
-            // Airtable gives us strings like "2026-06-01T09:30:00.000Z"
-            // We need to send GCal: { dateTime: "2026-06-01T09:30:00", timeZone: "America/New_York" }
-            // This tells GCal "9:30 AM Eastern" rather than "9:30 AM UTC"
             const dt = new Date(isoStr);
-            // Format as local-ish ISO without the Z suffix
-            const pad = (n) => String(n).padStart(2, '0');
-            const localISO = `${dt.getUTCFullYear()}-${pad(dt.getUTCMonth()+1)}-${pad(dt.getUTCDate())}T${pad(dt.getUTCHours())}:${pad(dt.getUTCMinutes())}:${pad(dt.getUTCSeconds())}`;
+            // Use Intl to get the actual Eastern time components (handles EDT/EST automatically)
+            const parts = {};
+            new Intl.DateTimeFormat('en-US', {
+                timeZone: GCAL_CONFIG.timeZone,
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit', second: '2-digit',
+                hour12: false,
+            }).formatToParts(dt).forEach(p => { parts[p.type] = p.value; });
+            // hour12:false gives "24" for midnight in some browsers — normalize
+            const hour = parts.hour === '24' ? '00' : parts.hour;
+            const localISO = `${parts.year}-${parts.month}-${parts.day}T${hour}:${parts.minute}:${parts.second}`;
+            console.log('[GCal] gcalDateTime:', isoStr, '→', localISO, 'ET');
             return { dateTime: localISO, timeZone: GCAL_CONFIG.timeZone };
         }
         function gcalDate(isoStr) {
@@ -4360,10 +4366,18 @@
             return `${months[start.getMonth()]} ${start.getDate()} – ${months[end.getMonth()]} ${end.getDate()}, ${end.getFullYear()}`;
         }
 
+        // Convert a UTC datetime to Eastern hour (handles EDT/EST automatically)
+        function getEasternHour(isoStr) {
+            const dt = new Date(isoStr);
+            const hourStr = new Intl.DateTimeFormat('en-US', {
+                timeZone: 'America/New_York', hour: 'numeric', hour12: false
+            }).format(dt);
+            return parseInt(hourStr === '24' ? '0' : hourStr, 10);
+        }
+
         // Classify a shift as 'AM', 'PM', or 'Evening'
         // Evening detection takes priority: any shift starting at 4pm ET or later is Evening,
         // regardless of what the shiftSlot field says (Airtable marks Block 3 as "PM" but it's 4-8:30pm).
-        // Times in Airtable are UTC; ET = UTC-4 (EDT) or UTC-5 (EST).
         function classifyShiftSlot(shift) {
             // 1. EVENING DETECTION FIRST (highest priority)
             // Check explicit "evening" in slot, label, or template
@@ -4372,11 +4386,10 @@
             const tmplName = getShiftTemplateName(shift);
             if (/evening/i.test(slot) || /evening/i.test(label) || /evening/i.test(tmplName)) return 'Evening';
 
-            // Check start time: 4pm ET (20:00 UTC in EDT) or later = Evening
+            // Check start time: 4pm ET or later = Evening (uses Intl for accurate EDT/EST)
             const startDt = shift.fields[FIELDS.OEC_SHIFTS.startDateTime];
             if (startDt) {
-                const utcHour = new Date(startDt).getUTCHours();
-                const etHour = (utcHour - 4 + 24) % 24;
+                const etHour = getEasternHour(startDt);
                 if (etHour >= 16) return 'Evening';
             }
 
@@ -4394,8 +4407,7 @@
 
             // 5. Fall back to start time
             if (startDt) {
-                const utcHour = new Date(startDt).getUTCHours();
-                const etHour = (utcHour - 4 + 24) % 24;
+                const etHour = getEasternHour(startDt);
                 if (etHour < 12) return 'AM';
                 return 'PM';
             }
@@ -4967,6 +4979,29 @@
         }
 
         function renderSchedulerGrid() {
+            // Diagnostic: log ALL shifts BEFORE dedup to debug classification
+            console.log('[Scheduler] Shift classification diagnostic (ALL shifts, pre-dedup):');
+            for (let i = 0; i < 6; i++) {
+                const dayDate = new Date(schedulerWeekStart);
+                dayDate.setDate(schedulerWeekStart.getDate() + i);
+                const dayStr = dayDate.toISOString().split('T')[0];
+                const dayName = ['Mon','Tue','Wed','Thu','Fri','Sat'][i];
+                const allDayShifts = allData.oecShifts.filter(shift => {
+                    const sd = shift.fields[FIELDS.OEC_SHIFTS.shiftDate];
+                    return sd && new Date(sd).toISOString().split('T')[0] === dayStr;
+                });
+                console.log(`  ${dayName} (${dayStr}): ${allDayShifts.length} total shifts`);
+                allDayShifts.forEach(s => {
+                    const slot = selectVal(s.fields[FIELDS.OEC_SHIFTS.shiftSlot]) || '(none)';
+                    const label = s.fields[FIELDS.OEC_SHIFTS.shiftLabel] || '(none)';
+                    const startDt = s.fields[FIELDS.OEC_SHIFTS.startDateTime] || '(none)';
+                    const tmpl = getShiftTemplateName(s);
+                    const cls = classifyShiftSlot(s);
+                    console.log(`    slot="${slot}" label="${label}" tmpl="${tmpl}" start="${startDt}" → ${cls}`);
+                });
+                const deduped = getSchedulerDayShifts(i);
+                console.log(`    After dedup: ${deduped.length} shifts → [${deduped.map(s => classifyShiftSlot(s)).join(', ')}]`);
+            }
             const tbody = document.getElementById('schedulerGridBody');
             tbody.innerHTML = '';
 
