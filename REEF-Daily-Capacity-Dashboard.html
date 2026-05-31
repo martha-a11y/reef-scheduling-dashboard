@@ -2322,6 +2322,7 @@
                 <button class="btn btn-primary" id="refreshBtn">Refresh Data</button>
                 <button class="btn" id="gcalConnectBtn" style="background:#34a853;color:white;font-size:12px;padding:6px 12px;border-radius:6px;cursor:pointer;border:none;" title="Connect Google Calendar for auto-sync of staff assignments">📅 Connect GCal</button>
                 <button class="btn" id="gcalSyncAllBtn" style="background:#1a73e8;color:white;font-size:12px;padding:6px 12px;border-radius:6px;cursor:pointer;border:none;display:none;" title="Push all current assignments to Google Calendar">🔄 Sync All to GCal</button>
+                <button class="btn" id="gcalClearResyncBtn" style="background:#d93025;color:white;font-size:11px;padding:5px 10px;border-radius:6px;cursor:pointer;border:none;display:none;" title="Delete all OEC events from GCal and resync fresh with correct times">🗑️ Clear & Resync OEC</button>
                 <span id="gcalStatus" style="font-size:11px;color:#aaa;display:none;">✓ GCal syncing</span>
                 <div class="last-refreshed">
                     Last refreshed: <span id="lastRefreshed">—</span>
@@ -2719,20 +2720,26 @@
         function showGCalConnected() {
             const btn = document.getElementById('gcalConnectBtn');
             const syncBtn = document.getElementById('gcalSyncAllBtn');
+            const clearBtn = document.getElementById('gcalClearResyncBtn');
             const status = document.getElementById('gcalStatus');
             if (btn) btn.style.display = 'none';
             if (syncBtn) syncBtn.style.display = 'inline-block';
+            if (clearBtn) clearBtn.style.display = 'inline-block';
             if (status) status.style.display = 'inline';
         }
 
         function initGCalConnect() {
             const btn = document.getElementById('gcalConnectBtn');
             const syncBtn = document.getElementById('gcalSyncAllBtn');
+            const clearBtn = document.getElementById('gcalClearResyncBtn');
             const status = document.getElementById('gcalStatus');
 
             // Always attach Sync All click handler (regardless of auth state)
             if (syncBtn) {
                 syncBtn.addEventListener('click', () => syncAllToGCal());
+            }
+            if (clearBtn) {
+                clearBtn.addEventListener('click', () => clearAndResyncOEC());
             }
 
             // Check if we already have a token (e.g., from URL hash after redirect)
@@ -2886,7 +2893,25 @@
         const GCAL_CONFIG = {
             reefCampus2CalendarId: 'c_9f80e975e8a470d96d1f14286720949b779c1b1e5d62aeb3b13b5fcb7168c105@group.calendar.google.com',
             oecShiftsCalendarId: 'c_c26c00c881e3e199fd76dde88a6640709d12de9099573a8e104b771553e8a4d2@group.calendar.google.com',
+            timeZone: 'America/New_York', // REEF is in Key Largo, FL
         };
+
+        // Format a date/time string for GCal API (preserves local time, adds timezone)
+        // Airtable stores datetimes as ISO strings. We pass them to GCal with the REEF timezone
+        // so they render at the correct local time on the calendar.
+        function gcalDateTime(isoStr) {
+            // Airtable gives us strings like "2026-06-01T09:30:00.000Z"
+            // We need to send GCal: { dateTime: "2026-06-01T09:30:00", timeZone: "America/New_York" }
+            // This tells GCal "9:30 AM Eastern" rather than "9:30 AM UTC"
+            const dt = new Date(isoStr);
+            // Format as local-ish ISO without the Z suffix
+            const pad = (n) => String(n).padStart(2, '0');
+            const localISO = `${dt.getUTCFullYear()}-${pad(dt.getUTCMonth()+1)}-${pad(dt.getUTCDate())}T${pad(dt.getUTCHours())}:${pad(dt.getUTCMinutes())}:${pad(dt.getUTCSeconds())}`;
+            return { dateTime: localISO, timeZone: GCAL_CONFIG.timeZone };
+        }
+        function gcalDate(isoStr) {
+            return { date: new Date(isoStr).toISOString().split('T')[0] };
+        }
 
         // ===== PERSISTENT GCAL MAPPINGS (localStorage-backed) =====
         // These mappings link Airtable record IDs to Google Calendar event IDs.
@@ -5885,12 +5910,8 @@
                 const calId = encodeURIComponent(GCAL_CONFIG.reefCampus2CalendarId);
                 const gcalBody = {
                     summary: eventName,
-                    start: endDT
-                        ? { dateTime: new Date(startDT).toISOString() }
-                        : { date: new Date(startDT).toISOString().split('T')[0] },
-                    end: endDT
-                        ? { dateTime: new Date(endDT).toISOString() }
-                        : { date: new Date(startDT).toISOString().split('T')[0] },
+                    start: endDT ? gcalDateTime(startDT) : gcalDate(startDT),
+                    end: endDT ? gcalDateTime(endDT) : gcalDate(startDT),
                 };
 
                 const createResp = await fetch(
@@ -6171,10 +6192,13 @@
             if (_gcalEventsCache[cacheKey]) return _gcalEventsCache[cacheKey];
 
             const calId = encodeURIComponent(calendarId);
-            const timeMin = new Date(dateStr + 'T00:00:00Z').toISOString();
-            const timeMax = new Date(dateStr + 'T23:59:59Z').toISOString();
+            // Use RFC3339 with timezone offset for accurate day boundaries
+            // GCal API accepts timezone parameter to interpret these correctly
+            const timeMin = dateStr + 'T00:00:00';
+            const timeMax = dateStr + 'T23:59:59';
+            const tz = encodeURIComponent(GCAL_CONFIG.timeZone);
             const resp = await fetch(
-                `https://www.googleapis.com/calendar/v3/calendars/${calId}/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&maxResults=50`,
+                `https://www.googleapis.com/calendar/v3/calendars/${calId}/events?timeMin=${timeMin}&timeMax=${timeMax}&timeZone=${tz}&singleEvents=true&maxResults=50`,
                 { headers: { 'Authorization': `Bearer ${token}` } }
             );
             if (!resp.ok) {
@@ -6212,6 +6236,93 @@
                 }
             );
             return patchResp.ok ? 'synced' : 'failed';
+        }
+
+        // ===== CLEAR & RESYNC OEC =====
+        // Deletes ALL events from the OEC Shifts calendar, clears mappings, then runs a fresh sync.
+        // Use this to clean up after timezone bugs, duplicates, or other sync issues.
+        async function clearAndResyncOEC() {
+            const token = getGoogleAccessToken();
+            if (!token) {
+                showToast('Connect Google Calendar first', 'error');
+                return;
+            }
+
+            if (!confirm('This will DELETE all OEC shift events from Google Calendar and recreate them fresh with correct times.\n\nThis cannot be undone. Continue?')) {
+                return;
+            }
+
+            const clearBtn = document.getElementById('gcalClearResyncBtn');
+            const syncBtn = document.getElementById('gcalSyncAllBtn');
+            if (clearBtn) { clearBtn.disabled = true; clearBtn.textContent = '⏳ Clearing...'; }
+            if (syncBtn) syncBtn.disabled = true;
+
+            try {
+                const calendarId = GCAL_CONFIG.oecShiftsCalendarId;
+                const calId = encodeURIComponent(calendarId);
+                let totalDeleted = 0;
+                let pageToken = null;
+
+                // Step 1: Fetch and delete ALL events from the OEC calendar (paginated)
+                showToast('Clearing OEC calendar...', 'info');
+                do {
+                    let url = `https://www.googleapis.com/calendar/v3/calendars/${calId}/events?maxResults=250&singleEvents=false`;
+                    if (pageToken) url += `&pageToken=${pageToken}`;
+
+                    const listResp = await fetch(url, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (!listResp.ok) {
+                        console.error('[GCal Clear] Failed to list events:', listResp.status);
+                        break;
+                    }
+                    const listData = await listResp.json();
+                    const events = listData.items || [];
+                    pageToken = listData.nextPageToken || null;
+
+                    // Delete each event
+                    for (const evt of events) {
+                        if (evt.status === 'cancelled') continue;
+                        try {
+                            const delResp = await fetch(
+                                `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${evt.id}`,
+                                { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }
+                            );
+                            if (delResp.ok || delResp.status === 204) {
+                                totalDeleted++;
+                            }
+                        } catch (err) {
+                            console.error('[GCal Clear] Error deleting event:', err);
+                        }
+                    }
+
+                    console.log(`[GCal Clear] Deleted batch of ${events.length} events (${totalDeleted} total so far)`);
+                } while (pageToken);
+
+                console.log(`[GCal Clear] Finished — deleted ${totalDeleted} events total`);
+
+                // Step 2: Clear all OEC mappings
+                for (const key of Object.keys(OEC_GCAL_MAPPING)) {
+                    delete OEC_GCAL_MAPPING[key];
+                }
+                saveGCalMappings();
+                // Also clear the GCal events cache
+                Object.keys(_gcalEventsCache).forEach(k => delete _gcalEventsCache[k]);
+
+                showToast(`Cleared ${totalDeleted} OEC events. Now resyncing...`, 'info');
+
+                // Step 3: Run a fresh sync
+                if (clearBtn) clearBtn.textContent = '⏳ Resyncing...';
+                await syncAllToGCal();
+
+                showToast(`Done! Cleared ${totalDeleted} old events and resynced fresh.`, 'success');
+            } catch (err) {
+                console.error('[GCal Clear] Error:', err);
+                showToast('Clear & resync failed: ' + err.message, 'error');
+            } finally {
+                if (clearBtn) { clearBtn.disabled = false; clearBtn.textContent = '🗑️ Clear & Resync OEC'; }
+                if (syncBtn) syncBtn.disabled = false;
+            }
         }
 
         async function syncAllToGCal() {
@@ -6329,13 +6440,13 @@
                             const gcalBody = {
                                 summary: shiftLabel,
                                 start: startDT
-                                    ? { dateTime: new Date(startDT).toISOString() }
-                                    : { date: dayStr },
+                                    ? gcalDateTime(startDT)
+                                    : gcalDate(dayStr + 'T00:00:00Z'),
                                 end: endDT
-                                    ? { dateTime: new Date(endDT).toISOString() }
+                                    ? gcalDateTime(endDT)
                                     : startDT
-                                        ? { dateTime: new Date(new Date(startDT).getTime() + 4*3600000).toISOString() }
-                                        : { date: dayStr },
+                                        ? gcalDateTime(new Date(new Date(startDT).getTime() + 4*3600000).toISOString())
+                                        : gcalDate(dayStr + 'T00:00:00Z'),
                             };
                             const createResp = await fetch(
                                 `https://www.googleapis.com/calendar/v3/calendars/${calId}/events?sendUpdates=none`,
@@ -6563,13 +6674,13 @@
                         const gcalBody = {
                             summary: eventName,
                             start: startDT
-                                ? { dateTime: new Date(startDT).toISOString() }
-                                : { date: dayStr },
+                                ? gcalDateTime(startDT)
+                                : gcalDate(dayStr + 'T00:00:00Z'),
                             end: endDT
-                                ? { dateTime: new Date(endDT).toISOString() }
+                                ? gcalDateTime(endDT)
                                 : startDT
-                                    ? { dateTime: new Date(new Date(startDT).getTime() + 3*3600000).toISOString() }
-                                    : { date: dayStr },
+                                    ? gcalDateTime(new Date(new Date(startDT).getTime() + 3*3600000).toISOString())
+                                    : gcalDate(dayStr + 'T00:00:00Z'),
                         };
                         const createResp = await fetch(
                             `https://www.googleapis.com/calendar/v3/calendars/${calId}/events?sendUpdates=none`,
