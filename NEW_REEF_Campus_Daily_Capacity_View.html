@@ -2320,12 +2320,12 @@
                     <input type="date" id="dateInput">
                 </div>
                 <button class="btn btn-primary" id="refreshBtn">Refresh Data</button>
-                <button class="btn" id="gcalConnectBtn" style="background:#34a853;color:white;font-size:12px;padding:6px 12px;border-radius:6px;cursor:pointer;border:none;" title="Connect Google Calendar for auto-sync of staff assignments">📅 Connect GCal</button>
-                <button class="btn" id="gcalSyncAllBtn" style="background:#1a73e8;color:white;font-size:12px;padding:6px 12px;border-radius:6px;cursor:pointer;border:none;display:none;" title="Push all current assignments to Google Calendar">🔄 Sync All to GCal</button>
-                <button class="btn" id="gcalClearResyncBtn" style="background:#d93025;color:white;font-size:11px;padding:5px 10px;border-radius:6px;cursor:pointer;border:none;display:none;" title="Delete all OEC events from GCal and resync fresh with correct times">🗑️ Clear & Resync OEC</button>
-                <span id="gcalStatus" style="font-size:11px;color:#aaa;display:none;">✓ GCal syncing</span>
+                <button class="btn" id="gcalConnectBtn" style="background:#34a853;color:white;font-size:12px;padding:6px 12px;border-radius:6px;cursor:pointer;border:none;" title="Connect Google Calendar for auto-sync of staff assignments">\uc0\u55357 \u56517  Connect GCal</button>
+                <button class="btn" id="gcalSyncAllBtn" style="background:#1a73e8;color:white;font-size:12px;padding:6px 12px;border-radius:6px;cursor:pointer;border:none;display:none;" title="Push all current assignments to Google Calendar">\uc0\u55357 \u56580  Sync All to GCal</button>
+                <button class="btn" id="gcalClearResyncBtn" style="background:#d93025;color:white;font-size:11px;padding:5px 10px;border-radius:6px;cursor:pointer;border:none;display:none;" title="Delete all OEC events from GCal and resync fresh with correct times">\uc0\u55357 \u56785 \u65039  Clear & Resync OEC</button>
+                <span id="gcalStatus" style="font-size:11px;color:#aaa;display:none;">\uc0\u10003  GCal syncing</span>
                 <div class="last-refreshed">
-                    Last refreshed: <span id="lastRefreshed">—</span>
+                    Last refreshed: <span id="lastRefreshed">\'97</span>
                 </div>
             </div>
         </div>
@@ -2348,19 +2348,19 @@
             <div class="kpi-row">
                 <div class="kpi-card available">
                     <div class="kpi-label">Available Today</div>
-                    <div class="kpi-value" id="kpiAvailable">—</div>
+                    <div class="kpi-value" id="kpiAvailable">\'97</div>
                 </div>
                 <div class="kpi-card out">
                     <div class="kpi-label">Team Members Out</div>
-                    <div class="kpi-value" id="kpiOut">—</div>
+                    <div class="kpi-value" id="kpiOut">\'97</div>
                 </div>
                 <div class="kpi-card committed">
                     <div class="kpi-label">Programs & Events Today</div>
-                    <div class="kpi-value" id="kpiEvents">—</div>
+                    <div class="kpi-value" id="kpiEvents">\'97</div>
                 </div>
                 <div class="kpi-card">
                     <div class="kpi-label">Open Shift Gaps</div>
-                    <div class="kpi-value" id="kpiGaps">—</div>
+                    <div class="kpi-value" id="kpiGaps">\'97</div>
                 </div>
             </div>
 
@@ -2375,7 +2375,7 @@
                 <div class="collapsible-section expanded">
                     <div class="collapsible-header">
                         <div class="collapsible-header-left">
-                            <span class="collapsible-icon">▶</span>
+                            <span class="collapsible-icon">\uc0\u9654 </span>
                             <span>OEC Shift Details</span>
                             <span class="section-badge" id="oecBadge">0</span>
                         </div>
@@ -2387,7 +2387,7 @@
                 <div class="collapsible-section expanded" style="margin-top:12px;">
                     <div class="collapsible-header">
                         <div class="collapsible-header-left">
-                            <span class="collapsible-icon">▶</span>
+                            <span class="collapsible-icon">\uc0\u9654 </span>
                             <span>Program & Event Details</span>
                             <span class="section-badge" id="eventBadge">0</span>
                         </div>
@@ -2408,7 +2408,7 @@
         <!-- Error State -->
         <div id="errorState" class="container hidden">
             <div class="error-state">
-                <h3>⚠ Error Loading Dashboard</h3>
+                <h3>\uc0\u9888  Error Loading Dashboard</h3>
                 <p id="errorMessage">An error occurred while fetching data.</p>
                 <button class="btn btn-retry" id="retryBtn">Retry</button>
             </div>
@@ -2422,21 +2422,21 @@
             <div class="kpi-row">
                 <div class="kpi-card">
                     <div class="kpi-label">Campus Operational</div>
-                    <div class="kpi-value" id="planningKpiCampusOps">—</div>
+                    <div class="kpi-value" id="planningKpiCampusOps">\'97</div>
                     <div class="kpi-detail" id="planningKpiCampusDetail"></div>
                 </div>
                 <div class="kpi-card" style="border-left-color: #666;">
                     <div class="kpi-label">Remote Staff</div>
-                    <div class="kpi-value" id="planningKpiRemote" style="color: #666;">—</div>
+                    <div class="kpi-value" id="planningKpiRemote" style="color: #666;">\'97</div>
                 </div>
                 <div class="kpi-card" style="border-left-color: #00B1E3;">
                     <div class="kpi-label">Supplemental</div>
-                    <div class="kpi-value" id="planningKpiSupplemental" style="color: #00B1E3;">—</div>
+                    <div class="kpi-value" id="planningKpiSupplemental" style="color: #00B1E3;">\'97</div>
                     <div class="kpi-detail" id="planningKpiSupplementalDetail"></div>
                 </div>
                 <div class="kpi-card out">
                     <div class="kpi-label">Away This Week</div>
-                    <div class="kpi-value" id="planningKpiAwayThisWeek">—</div>
+                    <div class="kpi-value" id="planningKpiAwayThisWeek">\'97</div>
                     <div class="kpi-detail" id="planningKpiAwayDetail"></div>
                 </div>
             </div>
@@ -2460,7 +2460,7 @@
                 </div>
                 <div class="capacity-legend">
                     <span class="capacity-legend-item"><span class="capacity-legend-dot" style="background:#8CC63E;"></span> 6+ available (healthy)</span>
-                    <span class="capacity-legend-item"><span class="capacity-legend-dot" style="background:#FFDD00;"></span> 4–5 available (tight)</span>
+                    <span class="capacity-legend-item"><span class="capacity-legend-dot" style="background:#FFDD00;"></span> 4\'965 available (tight)</span>
                     <span class="capacity-legend-item"><span class="capacity-legend-dot" style="background:#AD1D22;"></span> &lt;4 available (critical)</span>
                     <span class="capacity-legend-item"><span class="capacity-legend-line"></span> Minimum safe threshold</span>
                     <span class="capacity-legend-item"><span class="capacity-legend-dot" style="background:white;border:3px solid #24408E;width:10px;height:10px;"></span> This week</span>
@@ -2500,7 +2500,7 @@
                 <!-- Week Navigation -->
                 <div class="week-nav">
                     <button id="prevWeekBtn" onclick="goToPreviousWeek()">&#8592; Prev Week</button>
-                    <div class="week-label" id="weekLabel">—</div>
+                    <div class="week-label" id="weekLabel">\'97</div>
                     <button id="nextWeekBtn" onclick="goToNextWeek()">Next Week &#8594;</button>
                     <button class="btn-copy-week" id="copyWeekBtn" onclick="openCopyWeekModal()" title="Copy OEC staff assignments from the previous week">&#128203; Copy Last Week's Staff</button>
                 </div>
@@ -2531,11 +2531,12 @@
                         <table class="scheduler-grid">
                             <colgroup>
                                 <col style="width: 110px;">
-                                <col span="6" style="width: calc((100% - 110px) / 6);">
+                                <col span="7" style="width: calc((100% - 110px) / 7);">
                             </colgroup>
                             <thead>
                                 <tr>
                                     <th class="time-col">Area</th>
+                                    <th id="dayHeaderSun">Sun</th>
                                     <th id="dayHeaderMon">Mon</th>
                                     <th id="dayHeaderTue">Tue</th>
                                     <th id="dayHeaderWed">Wed</th>
@@ -2553,7 +2554,7 @@
                     <div class="scheduler-sidebar">
                         <!-- Search -->
                         <div class="sidebar-section" style="padding:10px 12px;">
-                            <input type="text" id="dashboardSearch" placeholder="Search staff, programs, shifts…" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;outline:none;box-sizing:border-box;" oninput="handleDashboardSearch(this.value)">
+                            <input type="text" id="dashboardSearch" placeholder="Search staff, programs, shifts\'85" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;outline:none;box-sizing:border-box;" oninput="handleDashboardSearch(this.value)">
                             <div id="searchResults" style="display:none;margin-top:8px;max-height:200px;overflow-y:auto;"></div>
                         </div>
                         <!-- Utilization Metrics -->
@@ -2569,7 +2570,7 @@
                         <!-- Team Summary (collapsed by default) -->
                         <div class="sidebar-section">
                             <div class="sidebar-title" style="cursor:pointer;" onclick="toggleSidebarSection('staffSummaryList', this)">
-                                <span class="toggle-icon">▶</span> Weekly Team Summary
+                                <span class="toggle-icon">\uc0\u9654 </span> Weekly Team Summary
                             </div>
                             <div id="staffSummaryList" style="display:none;"></div>
                         </div>
@@ -2579,7 +2580,7 @@
                 <!-- Time Away Row -->
                 <div>
                     <div class="timeaway-section-label" onclick="toggleTimeAway()">
-                        <span class="toggle-icon">▼</span> Who's Out This Week
+                        <span class="toggle-icon">\uc0\u9660 </span> Who's Out This Week
                     </div>
                     <div class="timeaway-row" id="schedulerTimeAwayRow"></div>
                 </div>
@@ -2636,13 +2637,13 @@
                 const refreshBtn = document.getElementById('refreshBtn');
                 if (refreshBtn) {
                     const badge = document.createElement('span');
-                    badge.textContent = '👁 View Only';
+                    badge.textContent = '\uc0\u55357 \u56385  View Only';
                     badge.style.cssText = 'display:inline-block;background:#f0f0f0;color:#666;font-size:11px;padding:4px 10px;border-radius:12px;margin-left:8px;font-weight:600;';
                     refreshBtn.parentNode.insertBefore(badge, refreshBtn.nextSibling);
                 }
             }
 
-            // Check for saved API key — show modal if none found
+            // Check for saved API key \'97 show modal if none found
             if (apiKey) {
                 document.getElementById('apiKeyModal').classList.add('hidden');
                 loadDashboard();
@@ -2714,7 +2715,7 @@
 
         // ===== GOOGLE CALENDAR OAUTH =====
         // Uses Google's OAuth2 implicit flow for client-side apps
-        // Martha clicks "Connect GCal" → Google login popup → token stored for session
+        // Martha clicks "Connect GCal" \uc0\u8594  Google login popup \u8594  token stored for session
         const GOOGLE_CLIENT_ID = '1024810805864-jvlgo8cmk28e6vfvr6ik6cn5vs9gjjfg.apps.googleusercontent.com';
 
         function showGCalConnected() {
@@ -2764,8 +2765,8 @@
                 if (!GOOGLE_CLIENT_ID) {
                     // If no client ID configured, prompt for manual token entry
                     const token = prompt(
-                        'Google Calendar OAuth is not yet configured with a Client ID.\n\n' +
-                        'For now, you can paste a Google API access token here to enable calendar sync.\n\n' +
+                        'Google Calendar OAuth is not yet configured with a Client ID.\\n\\n' +
+                        'For now, you can paste a Google API access token here to enable calendar sync.\\n\\n' +
                         '(This will be replaced with one-click OAuth login once a GCP project is set up.)'
                     );
                     if (token && token.trim()) {
@@ -2899,7 +2900,7 @@
             travelFieldworkTypes: ['Field Survey Trip', 'Field Survey Trips & Fieldwork', 'Field Survey Trip/Fieldwork', 'Conference/Trade Show'],
         };
 
-        // Format a date/time string for GCal API — converts UTC to Eastern time.
+        // Format a date/time string for GCal API \'97 converts UTC to Eastern time.
         // Airtable datetime fields store real UTC (e.g. "2026-06-01T13:30:00.000Z" = 9:30 AM ET).
         // We convert to actual Eastern time and send with timeZone so GCal renders correctly.
         function gcalDateTime(isoStr) {
@@ -2912,10 +2913,10 @@
                 hour: '2-digit', minute: '2-digit', second: '2-digit',
                 hour12: false,
             }).formatToParts(dt).forEach(p => { parts[p.type] = p.value; });
-            // hour12:false gives "24" for midnight in some browsers — normalize
+            // hour12:false gives "24" for midnight in some browsers \'97 normalize
             const hour = parts.hour === '24' ? '00' : parts.hour;
             const localISO = `${parts.year}-${parts.month}-${parts.day}T${hour}:${parts.minute}:${parts.second}`;
-            console.log('[GCal] gcalDateTime:', isoStr, '→', localISO, 'ET');
+            console.log('[GCal] gcalDateTime:', isoStr, '\uc0\u8594 ', localISO, 'ET');
             return { dateTime: localISO, timeZone: GCAL_CONFIG.timeZone };
         }
         function gcalDate(isoStr) {
@@ -3228,7 +3229,7 @@
         }
 
         function getPersonStatus(personId) {
-            // Check time away — only "Blocks Scheduling Completely" counts as fully out
+            // Check time away \'97 only "Blocks Scheduling Completely" counts as fully out
             const timeAwayRecords = allData.timeAway.filter(ta => {
                 return linkedHas(ta.fields[FIELDS.TIME_AWAY.teamMember], personId) && isDateInRange(
                     selectedDate.toISOString(),
@@ -3309,8 +3310,7 @@
         function getWeekStartDate(weeksFromNow) {
             const date = new Date(selectedDate);
             const day = date.getDay();
-            const diff = date.getDate() - day + (day === 0 ? -6 : 1);
-            date.setDate(diff + (weeksFromNow * 7));
+            date.setDate(date.getDate() - day + (weeksFromNow * 7)); // Sunday start
             return date;
         }
 
@@ -3326,7 +3326,7 @@
             const weekEnd = new Date(weekStartDate);
             weekEnd.setDate(weekEnd.getDate() + 6);
 
-            // Check time away — "Blocks Scheduling Completely" takes priority
+            // Check time away \'97 "Blocks Scheduling Completely" takes priority
             const timeAwayRecords = allData.timeAway.filter(ta => {
                 return linkedHas(ta.fields[FIELDS.TIME_AWAY.teamMember], personId) &&
                        isDateInWeekRange(weekStartDate, ta.fields[FIELDS.TIME_AWAY.startDateTime], ta.fields[FIELDS.TIME_AWAY.endDateTime]);
@@ -3431,7 +3431,7 @@
             allData.oecShifts.forEach(shift => {
                 if (shift.fields[FIELDS.OEC_SHIFTS.shiftDate] !== todayStr) return;
                 const slot = selectVal(shift.fields[FIELDS.OEC_SHIFTS.shiftSlot]) || '';
-                // Use slot (AM/PM) as label — avoid shiftLabel formula which already contains "OEC" prefix
+                // Use slot (AM/PM) as label \'97 avoid shiftLabel formula which already contains "OEC" prefix
                 const label = slot || 'Shift';
                 const minH = shift.fields[FIELDS.OEC_SHIFTS.minHeadcount] || 0;
                 const targetH = shift.fields[FIELDS.OEC_SHIFTS.targetHeadcount] || 0;
@@ -3537,16 +3537,16 @@
             const banner = document.getElementById('todayStatusBanner');
             let statusLevel = 'green';
             let statusHeadline = 'Adequately Staffed';
-            let statusIcon = '✓';
+            let statusIcon = '\uc0\u10003 ';
 
             if (belowMinShifts.length > 0 || (available < 0)) {
                 statusLevel = 'red';
                 statusHeadline = 'Understaffed Today';
-                statusIcon = '⚠';
+                statusIcon = '\uc0\u9888 ';
             } else if (belowTargetShifts.length > 0 || totalOpenGaps > 0 || eventGaps.length > 0 || noLeadShifts.length > 0) {
                 statusLevel = 'yellow';
                 statusHeadline = 'Needs Attention';
-                statusIcon = '⚡';
+                statusIcon = '\uc0\u9889 ';
             }
 
             const isToday = todayStr === new Date().toISOString().split('T')[0];
@@ -3601,7 +3601,7 @@
                 issues.push({ icon: 'warn', text: `${g.name} understaffed (${g.assigned}/${g.needed})` });
             });
             if (outSet.size >= Math.ceil(totalTeam * 0.3)) {
-                issues.push({ icon: 'warn', text: `Heavy PTO overlap — ${outSet.size} of ${totalTeam} team members out` });
+                issues.push({ icon: 'warn', text: `Heavy PTO overlap \'97 ${outSet.size} of ${totalTeam} team members out` });
             }
 
             const issuesPanel = document.getElementById('issuesPanel');
@@ -3609,7 +3609,7 @@
                 issuesPanel.className = 'issues-panel clear';
                 issuesPanel.innerHTML = `
                     <h3>Today's Priorities</h3>
-                    <div class="clear-msg">✓ No issues — all shifts and events are adequately staffed</div>
+                    <div class="clear-msg">\uc0\u10003  No issues \'97 all shifts and events are adequately staffed</div>
                 `;
             } else {
                 issuesPanel.className = 'issues-panel';
@@ -3617,7 +3617,7 @@
                     <h3>Today's Priorities (${issues.length})</h3>
                     ${issues.map(i => `
                         <div class="issue-item">
-                            <span class="issue-icon ${i.icon}">${i.icon === 'critical' ? '🔴' : i.icon === 'warn' ? '🟡' : 'ℹ️'}</span>
+                            <span class="issue-icon ${i.icon}">${i.icon === 'critical' ? '\uc0\u55357 \u56628 ' : i.icon === 'warn' ? '\u55357 \u57313 ' : '\u8505 \u65039 '}</span>
                             <span>${i.text}</span>
                         </div>
                     `).join('')}
@@ -3725,7 +3725,7 @@
                         Staffed: ${assignments.length} / ${targetHeadcount} (min: ${minHeadcount})
                         ${assignments.map(a => {
                             const mid = linkedId(a.fields[FIELDS.OEC_ASSIGNMENTS.teamMember]);
-                            return mid ? `<div style="margin-top: 4px; padding-left: 12px; font-size: 12px; color: #666;">• ${getTeamMemberName(mid)}</div>` : '';
+                            return mid ? `<div style="margin-top: 4px; padding-left: 12px; font-size: 12px; color: #666;">\'95 ${getTeamMemberName(mid)}</div>` : '';
                         }).join('')}
                     </div>
                 </div>`;
@@ -3777,7 +3777,7 @@
                         Staffed: ${assignments.length} / ${staffingRequired}
                         ${assignments.map(a => {
                             const mid = linkedId(a.fields[FIELDS.EVENT_ASSIGNMENTS.teamMember]);
-                            return mid ? `<div style="margin-top: 4px; padding-left: 12px; font-size: 12px; color: #666;">• ${getTeamMemberName(mid)}</div>` : '';
+                            return mid ? `<div style="margin-top: 4px; padding-left: 12px; font-size: 12px; color: #666;">\'95 ${getTeamMemberName(mid)}</div>` : '';
                         }).join('')}
                     </div>
                 </div>`;
@@ -3807,7 +3807,7 @@
             const remoteCount = allData.remoteStaff.length;
             const docentCount = allData.docentVolunteers.length;
 
-            // Away this week — count campus operational staff with blocking time away
+            // Away this week \'97 count campus operational staff with blocking time away
             const weekStart = getWeekStartDate(0);
 
             const awayThisWeek = new Set();
@@ -3828,7 +3828,7 @@
             // Campus Operational card
             document.getElementById('planningKpiCampusOps').textContent = campusOps;
             document.getElementById('planningKpiCampusDetail').textContent =
-                `${campusStaffCount} Staff · ${internsFellowsCount} Interns/Fellows`;
+                `${campusStaffCount} Staff \'b7 ${internsFellowsCount} Interns/Fellows`;
 
             // Remote card
             document.getElementById('planningKpiRemote').textContent = remoteCount;
@@ -3837,11 +3837,11 @@
             document.getElementById('planningKpiSupplemental').textContent = docentCount;
             document.getElementById('planningKpiSupplementalDetail').textContent = 'Docents & Volunteers';
 
-            // Away This Week card — show campus ops away + total
+            // Away This Week card \'97 show campus ops away + total
             document.getElementById('planningKpiAwayThisWeek').textContent = awayCampusOps.size;
             const otherAway = awayThisWeek.size - awayCampusOps.size;
             document.getElementById('planningKpiAwayDetail').textContent =
-                `of ${campusOps} campus ops` + (otherAway > 0 ? ` · ${otherAway} other away` : '');
+                `of ${campusOps} campus ops` + (otherAway > 0 ? ` \'b7 ${otherAway} other away` : '');
         }
 
         function render12WeekCapacityChart() {
@@ -3850,7 +3850,7 @@
             const availableCounts = [];
             const labels = [];
 
-            // Minimum campus ops needed to cover OEC shifts (2 shifts × 2 min each = 4)
+            // Minimum campus ops needed to cover OEC shifts (2 shifts \'d7 2 min each = 4)
             const MIN_SAFE_THRESHOLD = 4;
             const WARNING_THRESHOLD = 6;
 
@@ -3858,7 +3858,7 @@
                 const weekStart = getWeekStartDate(i);
                 const monthStr = String(weekStart.getMonth() + 1).padStart(2, '0');
                 const dayStr = String(weekStart.getDate()).padStart(2, '0');
-                labels.push(`Week ${i + 1}\n${monthStr}/${dayStr}`);
+                labels.push(`Week ${i + 1}\\n${monthStr}/${dayStr}`);
 
                 // Count campus operational staff out this week (PTO / blocking time away)
                 const outThisWeek = new Set();
@@ -3975,7 +3975,7 @@
                                 title: (items) => {
                                     const idx = items[0].dataIndex;
                                     const wd = window._capacityWeekData[idx];
-                                    return `Week ${wd.weekNum} (${wd.weekLabel})${idx === 0 ? '  ← this week' : ''}`;
+                                    return `Week ${wd.weekNum} (${wd.weekLabel})${idx === 0 ? '  \uc0\u8592  this week' : ''}`;
                                 },
                                 label: (item) => {
                                     const wd = window._capacityWeekData[item.dataIndex];
@@ -4045,10 +4045,10 @@
                 <div class="risk-alerts-header" style="cursor:pointer;user-select:none;" onclick="
                     const body = this.nextElementSibling;
                     const toggle = this.querySelector('.risk-toggle');
-                    if (body.style.display === 'none') { body.style.display = 'block'; toggle.textContent = '▼'; }
-                    else { body.style.display = 'none'; toggle.textContent = '▶'; }
+                    if (body.style.display === 'none') { body.style.display = 'block'; toggle.textContent = '\uc0\u9660 '; }
+                    else { body.style.display = 'none'; toggle.textContent = '\uc0\u9654 '; }
                 ">
-                    <span class="risk-toggle">▼</span> &#9888; Staffing Risk Weeks (${riskyWeeks.length}) <span style="font-weight:400;font-size:11px;color:#999;margin-left:8px;">${summary}</span>
+                    <span class="risk-toggle">\uc0\u9660 </span> &#9888; Staffing Risk Weeks (${riskyWeeks.length}) <span style="font-weight:400;font-size:11px;color:#999;margin-left:8px;">${summary}</span>
                 </div>
                 <div class="risk-alerts-body">`;
 
@@ -4060,7 +4060,7 @@
                 let reasons = [];
                 if (w.outCount > 0) reasons.push(`${w.outCount} on leave (${w.outNames.join(', ')})`);
                 if (w.busyCount > 0) reasons.push(`${w.busyCount} off-site (${w.busyNames.join(', ')})`);
-                const reasonText = reasons.length > 0 ? reasons.join(' · ') : 'Low staffing';
+                const reasonText = reasons.length > 0 ? reasons.join(' \'b7 ') : 'Low staffing';
 
                 html += `
                     <div class="risk-alert ${level}">
@@ -4127,7 +4127,7 @@
                 const headerRow = document.createElement('tr');
                 headerRow.className = `availability-group-header ${isExpanded ? '' : 'collapsed'}`;
                 headerRow.dataset.group = group.key;
-                headerRow.innerHTML = `<td colspan="${totalCols}"><span class="group-toggle">▼</span>${group.label} (${members.length})</td>`;
+                headerRow.innerHTML = `<td colspan="${totalCols}"><span class="group-toggle">\uc0\u9660 </span>${group.label} (${members.length})</td>`;
                 headerRow.addEventListener('click', () => {
                     headerRow.classList.toggle('collapsed');
                     const rows = tbody.querySelectorAll(`.availability-group-row[data-group="${group.key}"]`);
@@ -4248,7 +4248,7 @@
                 cell.innerHTML = `
                     <div class="density-week-label">Wk ${bucket.weekNum + 1}</div>
                     <div class="density-week-date">${monthStr}/${dayStr}</div>
-                    <div class="density-count ${isEmpty ? 'zero' : ''}">${total || '—'}</div>
+                    <div class="density-count ${isEmpty ? 'zero' : ''}">${total || '\'97'}</div>
                     <div class="density-badges">${badgesHtml || '<span style="font-size:9px;color:#ccc;">none</span>'}</div>
                 `;
 
@@ -4279,7 +4279,7 @@
             const endMonthStr = String(bucket.weekEnd.getMonth() + 1).padStart(2, '0');
             const endDayStr = String(bucket.weekEnd.getDate()).padStart(2, '0');
 
-            let html = `<div class="density-detail-header">Week ${bucket.weekNum + 1}: ${monthStr}/${dayStr} – ${endMonthStr}/${endDayStr} (${bucket.events.length} events)</div>`;
+            let html = `<div class="density-detail-header">Week ${bucket.weekNum + 1}: ${monthStr}/${dayStr} \'96 ${endMonthStr}/${endDayStr} (${bucket.events.length} events)</div>`;
             html += '<div class="density-detail-list">';
 
             const sorted = [...bucket.events].sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
@@ -4293,7 +4293,7 @@
                 const endDate = new Date(evt.endDate);
                 const startStr = `${String(startDate.getMonth() + 1).padStart(2, '0')}/${String(startDate.getDate()).padStart(2, '0')}`;
                 const endStr = `${String(endDate.getMonth() + 1).padStart(2, '0')}/${String(endDate.getDate()).padStart(2, '0')}`;
-                const dateRange = startStr === endStr ? startStr : `${startStr} – ${endStr}`;
+                const dateRange = startStr === endStr ? startStr : `${startStr} \'96 ${endStr}`;
 
                 html += `
                     <div class="density-detail-item ${typeClass}">
@@ -4344,9 +4344,8 @@
         function initSchedulerWeek() {
             const today = new Date(selectedDate);
             const dayOfWeek = today.getDay();
-            const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
             schedulerWeekStart = new Date(today);
-            schedulerWeekStart.setDate(today.getDate() - daysToMonday);
+            schedulerWeekStart.setDate(today.getDate() - dayOfWeek); // Sunday start
             schedulerWeekStart.setHours(0, 0, 0, 0);
         }
 
@@ -4363,10 +4362,10 @@
         function getSchedulerWeekDateRange() {
             const start = new Date(schedulerWeekStart);
             const end = new Date(schedulerWeekStart);
-            end.setDate(start.getDate() + 5);
+            end.setDate(start.getDate() + 6);
 
             const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-            return `${months[start.getMonth()]} ${start.getDate()} – ${months[end.getMonth()]} ${end.getDate()}, ${end.getFullYear()}`;
+            return `${months[start.getMonth()]} ${start.getDate()} \'96 ${months[end.getMonth()]} ${end.getDate()}, ${end.getFullYear()}`;
         }
 
         // Convert a UTC datetime to Eastern hour (handles EDT/EST automatically)
@@ -4401,12 +4400,12 @@
             if (/^PM$/i.test(slot)) return 'PM';
 
             // 3. AM/PM from shift label
-            if (/\bAM\b/.test(label)) return 'AM';
-            if (/\bPM\b/.test(label)) return 'PM';
+            if (/\\bAM\\b/.test(label)) return 'AM';
+            if (/\\bPM\\b/.test(label)) return 'PM';
 
             // 4. AM/PM from template name
-            if (/\bAM\b/i.test(tmplName)) return 'AM';
-            if (/\bPM\b/i.test(tmplName)) return 'PM';
+            if (/\\bAM\\b/i.test(tmplName)) return 'AM';
+            if (/\\bPM\\b/i.test(tmplName)) return 'PM';
 
             // 5. Fall back to start time
             if (startDt) {
@@ -4570,7 +4569,7 @@
                 }
             });
 
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < 7; i++) {
                 const dayDate = new Date(schedulerWeekStart);
                 dayDate.setDate(schedulerWeekStart.getDate() + i);
                 dayDate.setHours(0,0,0,0);
@@ -4703,9 +4702,9 @@
             const conflicts = detectSchedulerConflicts();
             if (conflicts.length === 0) return;
 
-            const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             let html = `<div style="background:#fff3e0;border:1px solid #ff9800;border-left:4px solid #ff9800;border-radius:4px;padding:10px 14px;margin-bottom:8px;">`;
-            html += `<div style="font-weight:700;color:#e65100;margin-bottom:6px;font-size:13px;">⚠ Scheduling Conflicts Detected (${conflicts.length})</div>`;
+            html += `<div style="font-weight:700;color:#e65100;margin-bottom:6px;font-size:13px;">\uc0\u9888  Scheduling Conflicts Detected (${conflicts.length})</div>`;
             conflicts.forEach(c => {
                 const labels = c.assignments.map(a => a.label).join(' + ');
                 html += `<div style="font-size:12px;color:#333;padding:2px 0;">`;
@@ -4741,11 +4740,11 @@
             const tmplName = getShiftTemplateName(shift);
             if (!tmplName) return '';
             // Strip the day-of-week prefix ("Monday ", "Tuesday ", etc.)
-            const stripped = tmplName.replace(/^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\s*/i, '');
+            const stripped = tmplName.replace(/^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\\s*/i, '');
             // Return shortened label
-            if (/block\s*1/i.test(stripped)) return 'Entry Blk 1';
-            if (/block\s*2/i.test(stripped)) return 'Entry Blk 2';
-            if (/block\s*3/i.test(stripped)) return 'Entry Blk 3';
+            if (/block\\s*1/i.test(stripped)) return 'Entry Blk 1';
+            if (/block\\s*2/i.test(stripped)) return 'Entry Blk 2';
+            if (/block\\s*3/i.test(stripped)) return 'Entry Blk 3';
             if (/entry.*gallery.*eval.*am/i.test(stripped)) return 'Entry/Gallery';
             if (/entry.*gallery.*eval.*pm/i.test(stripped)) return 'Entry/Gallery';
             if (/^am$/i.test(stripped)) return '';
@@ -4776,14 +4775,14 @@
             if (badge) {
                 html += `<div class="shift-status-badge">${badge}</div>`;
             }
-            // Collapsed summary line — use classified slot (handles Evening detection)
+            // Collapsed summary line \'97 use classified slot (handles Evening detection)
             const classifiedSlot = classifyShiftSlot(shift);
             const summaryType = typeLabel || classifiedSlot;
             html += `<div class="shift-collapsed-summary"><strong>${summaryType}</strong> <span>${staffCount}/${target}</span></div>`;
             if (typeLabel) {
                 html += `<div class="shift-type-label">${typeLabel}</div>`;
             }
-            // Time label removed from OEC shifts — only relevant for GCal sync
+            // Time label removed from OEC shifts \'97 only relevant for GCal sync
             html += `<div class="shift-staff">`;
 
             confirmed.forEach((assign, idx) => {
@@ -4857,10 +4856,10 @@
         function normalizeEventName(name) {
             return (name || '')
                 .toLowerCase()
-                .replace(/\s*-\s*\d{1,2}\/\d{1,2}\/\d{2,4}\s*$/g, '') // strip date suffix
-                .replace(/\s*-\s*-\s*/g, ' - ')  // collapse double dashes
-                .replace(/\s*-\s*$/g, '')         // strip trailing dash
-                .replace(/\s+/g, ' ')             // collapse whitespace
+                .replace(/\\s*-\\s*\\d{1,2}\\/\\d{1,2}\\/\\d{2,4}\\s*$/g, '') // strip date suffix
+                .replace(/\\s*-\\s*-\\s*/g, ' - ')  // collapse double dashes
+                .replace(/\\s*-\\s*$/g, '')         // strip trailing dash
+                .replace(/\\s+/g, ' ')             // collapse whitespace
                 .trim();
         }
 
@@ -4960,8 +4959,8 @@
             document.getElementById('weekLabel').textContent = getSchedulerWeekDateRange();
 
             // Update day column headers
-            const dayAbbr = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-            for (let i = 0; i < 6; i++) {
+            const dayAbbr = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            for (let i = 0; i < 7; i++) {
                 const dayDate = new Date(schedulerWeekStart);
                 dayDate.setDate(schedulerWeekStart.getDate() + i);
                 const month = String(dayDate.getMonth() + 1).padStart(2, '0');
@@ -4984,11 +4983,11 @@
         function renderSchedulerGrid() {
             // Diagnostic: log ALL shifts BEFORE dedup to debug classification
             console.log('[Scheduler] Shift classification diagnostic (ALL shifts, pre-dedup):');
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < 7; i++) {
                 const dayDate = new Date(schedulerWeekStart);
                 dayDate.setDate(schedulerWeekStart.getDate() + i);
                 const dayStr = dayDate.toISOString().split('T')[0];
-                const dayName = ['Mon','Tue','Wed','Thu','Fri','Sat'][i];
+                const dayName = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][i];
                 const allDayShifts = allData.oecShifts.filter(shift => {
                     const sd = shift.fields[FIELDS.OEC_SHIFTS.shiftDate];
                     return sd && new Date(sd).toISOString().split('T')[0] === dayStr;
@@ -5000,10 +4999,10 @@
                     const startDt = s.fields[FIELDS.OEC_SHIFTS.startDateTime] || '(none)';
                     const tmpl = getShiftTemplateName(s);
                     const cls = classifyShiftSlot(s);
-                    console.log(`    slot="${slot}" label="${label}" tmpl="${tmpl}" start="${startDt}" → ${cls}`);
+                    console.log(`    slot="${slot}" label="${label}" tmpl="${tmpl}" start="${startDt}" \uc0\u8594  ${cls}`);
                 });
                 const deduped = getSchedulerDayShifts(i);
-                console.log(`    After dedup: ${deduped.length} shifts → [${deduped.map(s => classifyShiftSlot(s)).join(', ')}]`);
+                console.log(`    After dedup: ${deduped.length} shifts \uc0\u8594  [${deduped.map(s => classifyShiftSlot(s)).join(', ')}]`);
             }
             const tbody = document.getElementById('schedulerGridBody');
             tbody.innerHTML = '';
@@ -5012,7 +5011,7 @@
             const oecHeaderRow = document.createElement('tr');
             const oecHeaderTd = document.createElement('td');
             oecHeaderTd.className = 'scheduler-group-header section-header';
-            oecHeaderTd.colSpan = 7;
+            oecHeaderTd.colSpan = 8;
             oecHeaderTd.textContent = 'OEC Shifts';
             oecHeaderRow.appendChild(oecHeaderTd);
             tbody.appendChild(oecHeaderRow);
@@ -5026,14 +5025,19 @@
             amLabel.textContent = 'AM';
             amRow.appendChild(amLabel);
 
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < 7; i++) {
                 const td = document.createElement('td');
-                const dayShifts = getSchedulerDayShifts(i);
-                const amShifts = dayShifts.filter(s => classifyShiftSlot(s) === 'AM');
-                if (amShifts.length > 0) {
-                    td.innerHTML = amShifts.map(s => buildSchedulerShiftCell(s, i)).join('');
+                if (i === 0) {
+                    // Sunday - OEC closed
+                    td.innerHTML = '<div class="shift-cell empty" style="justify-content:center;align-items:center;color:#aaa;font-size:11px;font-style:italic;background:#f0f0f0;">Closed</div>';
                 } else {
-                    td.innerHTML = '<div class="shift-cell empty" style="justify-content:center;align-items:center;color:#ccc;font-size:12px;font-style:italic;">No shift</div>';
+                    const dayShifts = getSchedulerDayShifts(i);
+                    const amShifts = dayShifts.filter(s => classifyShiftSlot(s) === 'AM');
+                    if (amShifts.length > 0) {
+                        td.innerHTML = amShifts.map(s => buildSchedulerShiftCell(s, i)).join('');
+                    } else {
+                        td.innerHTML = '<div class="shift-cell empty" style="justify-content:center;align-items:center;color:#ccc;font-size:12px;font-style:italic;">No shift</div>';
+                    }
                 }
                 amRow.appendChild(td);
             }
@@ -5046,14 +5050,19 @@
             pmLabel.textContent = 'PM';
             pmRow.appendChild(pmLabel);
 
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < 7; i++) {
                 const td = document.createElement('td');
-                const dayShifts = getSchedulerDayShifts(i);
-                const pmShifts = dayShifts.filter(s => classifyShiftSlot(s) === 'PM');
-                if (pmShifts.length > 0) {
-                    td.innerHTML = pmShifts.map(s => buildSchedulerShiftCell(s, i)).join('');
+                if (i === 0) {
+                    // Sunday - OEC closed
+                    td.innerHTML = '<div class="shift-cell empty" style="justify-content:center;align-items:center;color:#aaa;font-size:11px;font-style:italic;background:#f0f0f0;">Closed</div>';
                 } else {
-                    td.innerHTML = '<div class="shift-cell empty" style="justify-content:center;align-items:center;color:#ccc;font-size:12px;font-style:italic;">No shift</div>';
+                    const dayShifts = getSchedulerDayShifts(i);
+                    const pmShifts = dayShifts.filter(s => classifyShiftSlot(s) === 'PM');
+                    if (pmShifts.length > 0) {
+                        td.innerHTML = pmShifts.map(s => buildSchedulerShiftCell(s, i)).join('');
+                    } else {
+                        td.innerHTML = '<div class="shift-cell empty" style="justify-content:center;align-items:center;color:#ccc;font-size:12px;font-style:italic;">No shift</div>';
+                    }
                 }
                 pmRow.appendChild(td);
             }
@@ -5061,7 +5070,7 @@
 
             // === OEC EVENING ROW (only shown if any Evening shifts exist this week) ===
             let hasEveningShifts = false;
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < 7; i++) {
                 const dayShifts = getSchedulerDayShifts(i);
                 if (dayShifts.some(s => classifyShiftSlot(s) === 'Evening')) {
                     hasEveningShifts = true;
@@ -5075,14 +5084,19 @@
                 eveLabel.textContent = 'Evening';
                 eveRow.appendChild(eveLabel);
 
-                for (let i = 0; i < 6; i++) {
+                for (let i = 0; i < 7; i++) {
                     const td = document.createElement('td');
-                    const dayShifts = getSchedulerDayShifts(i);
-                    const eveShifts = dayShifts.filter(s => classifyShiftSlot(s) === 'Evening');
-                    if (eveShifts.length > 0) {
-                        td.innerHTML = eveShifts.map(s => buildSchedulerShiftCell(s, i)).join('');
+                    if (i === 0) {
+                        // Sunday - OEC closed
+                        td.innerHTML = '<div class="shift-cell empty" style="justify-content:center;align-items:center;color:#aaa;font-size:11px;font-style:italic;background:#f0f0f0;">Closed</div>';
                     } else {
-                        td.innerHTML = '<div class="shift-cell empty" style="justify-content:center;align-items:center;color:#ccc;font-size:12px;font-style:italic;">—</div>';
+                        const dayShifts = getSchedulerDayShifts(i);
+                        const eveShifts = dayShifts.filter(s => classifyShiftSlot(s) === 'Evening');
+                        if (eveShifts.length > 0) {
+                            td.innerHTML = eveShifts.map(s => buildSchedulerShiftCell(s, i)).join('');
+                        } else {
+                            td.innerHTML = '<div class="shift-cell empty" style="justify-content:center;align-items:center;color:#ccc;font-size:12px;font-style:italic;">\'97</div>';
+                        }
                     }
                     eveRow.appendChild(td);
                 }
@@ -5092,7 +5106,7 @@
             // === PROGRAMS & EVENTS ROWS (Campus vs Off-Site split) ===
             // Collect all events/programs that overlap the scheduler week
             const weekEnd = new Date(schedulerWeekStart);
-            weekEnd.setDate(weekEnd.getDate() + 6);
+            weekEnd.setDate(weekEnd.getDate() + 7);
 
             const weekEvents = allData.events.filter(evt => {
                 const startDate = evt.fields[FIELDS.EVENTS.startDateTime];
@@ -5174,7 +5188,7 @@
                     labelTd.innerHTML = `<span style="font-weight:600;color:#333;display:block;overflow:hidden;text-overflow:ellipsis;word-break:break-word;line-height:1.3;font-size:11px;">${eName}</span>${typeTag}`;
                     tr.appendChild(labelTd);
 
-                    for (let i = 0; i < 6; i++) {
+                    for (let i = 0; i < 7; i++) {
                         const td = document.createElement('td');
                         const dayDate = new Date(schedulerWeekStart);
                         dayDate.setDate(schedulerWeekStart.getDate() + i);
@@ -5209,7 +5223,7 @@
             if (campusEvents.length > 0) {
                 const dividerRow = document.createElement('tr');
                 const dividerTd = document.createElement('td');
-                dividerTd.colSpan = 7;
+                dividerTd.colSpan = 8;
                 dividerTd.className = 'section-divider-row';
                 dividerRow.appendChild(dividerTd);
                 tbody.appendChild(dividerRow);
@@ -5218,8 +5232,8 @@
                 const headerRow = document.createElement('tr');
                 const headerTd = document.createElement('td');
                 headerTd.className = 'scheduler-group-header section-header';
-                headerTd.colSpan = 7;
-                headerTd.innerHTML = `Campus Programs & Events (${campusEvents.length}) <span style="font-weight:400;font-size:10px;letter-spacing:0;text-transform:none;margin-left:12px;opacity:0.85;">${campusKpis.totalAssigned} assigned · ${campusKpis.totalGaps} unstaffed</span>`;
+                headerTd.colSpan = 8;
+                headerTd.innerHTML = `Campus Programs & Events (${campusEvents.length}) <span style="font-weight:400;font-size:10px;letter-spacing:0;text-transform:none;margin-left:12px;opacity:0.85;">${campusKpis.totalAssigned} assigned \'b7 ${campusKpis.totalGaps} unstaffed</span>`;
                 headerRow.appendChild(headerTd);
                 tbody.appendChild(headerRow);
                 renderEventRows(campusEvents);
@@ -5229,7 +5243,7 @@
             {
                 const dividerRow = document.createElement('tr');
                 const dividerTd = document.createElement('td');
-                dividerTd.colSpan = 7;
+                dividerTd.colSpan = 8;
                 dividerTd.className = 'section-divider-row';
                 dividerRow.appendChild(dividerTd);
                 tbody.appendChild(dividerRow);
@@ -5238,9 +5252,9 @@
                 const headerRow = document.createElement('tr');
                 const headerTd = document.createElement('td');
                 headerTd.className = 'scheduler-group-header section-header offsite-section-header';
-                headerTd.colSpan = 7;
+                headerTd.colSpan = 8;
                 if (offSiteEvents.length > 0) {
-                    headerTd.innerHTML = `Off-Site Programs & Events (${offSiteEvents.length}) <span style="font-weight:400;font-size:10px;letter-spacing:0;text-transform:none;margin-left:12px;opacity:0.85;">${offSiteKpis.totalAssigned} assigned · ${offSiteKpis.totalGaps} unstaffed</span>`;
+                    headerTd.innerHTML = `Off-Site Programs & Events (${offSiteEvents.length}) <span style="font-weight:400;font-size:10px;letter-spacing:0;text-transform:none;margin-left:12px;opacity:0.85;">${offSiteKpis.totalAssigned} assigned \'b7 ${offSiteKpis.totalGaps} unstaffed</span>`;
                 } else {
                     headerTd.innerHTML = `Off-Site Programs & Events (0) <span style="font-weight:400;font-size:10px;letter-spacing:0;text-transform:none;margin-left:12px;opacity:0.85;">No off-site events this week</span>`;
                 }
@@ -5267,7 +5281,7 @@
                 let offDays = 0;
                 let workDaysThisWeek = 0;
 
-                for (let i = 0; i < 6; i++) {
+                for (let i = 0; i < 7; i++) {
                     const dayDate = new Date(schedulerWeekStart);
                     dayDate.setDate(schedulerWeekStart.getDate() + i);
 
@@ -5325,9 +5339,9 @@
         function renderSchedulerTimeAway() {
             const row = document.getElementById('schedulerTimeAwayRow');
             row.innerHTML = '';
-            const dayAbbr = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const dayAbbr = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < 7; i++) {
                 const dayDate = new Date(schedulerWeekStart);
                 dayDate.setDate(schedulerWeekStart.getDate() + i);
 
@@ -5339,7 +5353,7 @@
                 allData.teamMembers.forEach(member => {
                     const displayName = getDisplayName(member, allData.teamMembers);
                     if (isPersonOutOnSchedulerDate(member.id, dayDate)) {
-                        // Time-away record — find the reason
+                        // Time-away record \'97 find the reason
                         const taRecord = allData.timeAway.find(ta => {
                             if (!linkedHas(ta.fields[FIELDS.TIME_AWAY.teamMember], member.id)) return false;
                             const s = new Date(ta.fields[FIELDS.TIME_AWAY.startDateTime]); s.setHours(0,0,0,0);
@@ -5366,7 +5380,7 @@
                 } else {
                     const div = document.createElement('div');
                     div.className = 'timeaway-empty';
-                    div.textContent = '—';
+                    div.textContent = '\'97';
                     col.appendChild(div);
                 }
                 row.appendChild(col);
@@ -5395,26 +5409,26 @@
             const icon = headerEl.querySelector('.toggle-icon');
             if (target.style.display === 'none') {
                 target.style.display = '';
-                if (icon) icon.textContent = '▼';
+                if (icon) icon.textContent = '\uc0\u9660 ';
             } else {
                 target.style.display = 'none';
-                if (icon) icon.textContent = '▶';
+                if (icon) icon.textContent = '\uc0\u9654 ';
             }
         }
 
         // ===== STAFFING RISK WARNINGS (#19) =====
         function computeStaffingRisks() {
             const risks = [];
-            const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             const today = new Date();
             today.setHours(0, 0, 0, 0);
 
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < 7; i++) {
                 const dayDate = new Date(schedulerWeekStart);
                 dayDate.setDate(schedulerWeekStart.getDate() + i);
                 dayDate.setHours(0, 0, 0, 0);
 
-                // Skip past days — no point alerting about yesterday
+                // Skip past days \'97 no point alerting about yesterday
                 if (dayDate < today) continue;
 
                 const shifts = getSchedulerDayShifts(i);
@@ -5460,7 +5474,7 @@
                 if (belowMin > 0) {
                     risks.push({
                         level: 'critical',
-                        text: `${dayLabel}: ${belowMin} shift${belowMin > 1 ? 's' : ''} below minimum — ${belowMinDetails.join(', ')}`,
+                        text: `${dayLabel}: ${belowMin} shift${belowMin > 1 ? 's' : ''} below minimum \'97 ${belowMinDetails.join(', ')}`,
                         day: i
                     });
                 }
@@ -5478,7 +5492,7 @@
                 if (noLead > 0) {
                     risks.push({
                         level: 'warning',
-                        text: `${dayLabel}: No lead assigned — ${noLeadDetails.join(', ')}`,
+                        text: `${dayLabel}: No lead assigned \'97 ${noLeadDetails.join(', ')}`,
                         day: i
                     });
                 }
@@ -5488,7 +5502,7 @@
             const unassignedMembers = [];
             allData.teamMembers.forEach(member => {
                 let hasAnyAssignment = false;
-                for (let i = 0; i < 6; i++) {
+                for (let i = 0; i < 7; i++) {
                     const dayDate = new Date(schedulerWeekStart);
                     dayDate.setDate(schedulerWeekStart.getDate() + i);
                     dayDate.setHours(0, 0, 0, 0);
@@ -5506,7 +5520,7 @@
                 if (!hasAnyAssignment) {
                     const name = getDisplayName(member, allData.teamMembers);
                     let availDays = 0;
-                    for (let i = 0; i < 6; i++) {
+                    for (let i = 0; i < 7; i++) {
                         const dd = new Date(schedulerWeekStart);
                         dd.setDate(schedulerWeekStart.getDate() + i);
                         dd.setHours(0, 0, 0, 0);
@@ -5522,7 +5536,7 @@
             if (unassignedMembers.length > 0) {
                 risks.push({
                     level: 'info',
-                    text: `${unassignedMembers.length} team member${unassignedMembers.length > 1 ? 's' : ''} available but unassigned: ${unassignedMembers.slice(0, 4).join(', ')}${unassignedMembers.length > 4 ? '…' : ''}`,
+                    text: `${unassignedMembers.length} team member${unassignedMembers.length > 1 ? 's' : ''} available but unassigned: ${unassignedMembers.slice(0, 4).join(', ')}${unassignedMembers.length > 4 ? '\'85' : ''}`,
                     day: -1
                 });
             }
@@ -5540,7 +5554,7 @@
             const risks = computeStaffingRisks();
 
             if (risks.length === 0) {
-                summaryEl.innerHTML = '<div style="font-size:11px;color:#8CC63E;font-weight:600;padding:2px 0;">✓ All shifts fully staffed</div>';
+                summaryEl.innerHTML = '<div style="font-size:11px;color:#8CC63E;font-weight:600;padding:2px 0;">\uc0\u10003  All shifts fully staffed</div>';
                 detailEl.style.display = 'none';
                 detailEl.innerHTML = '';
                 return;
@@ -5551,21 +5565,21 @@
             const info = risks.filter(r => r.level === 'info').length;
 
             let summaryParts = [];
-            if (critical > 0) summaryParts.push(`<span style="color:#AD1D22;font-weight:600;">🔴 ${critical}</span>`);
-            if (warning > 0) summaryParts.push(`<span style="color:#f9a825;font-weight:600;">🟡 ${warning}</span>`);
-            if (info > 0) summaryParts.push(`<span style="color:#00B1E3;">🔵 ${info}</span>`);
+            if (critical > 0) summaryParts.push(`<span style="color:#AD1D22;font-weight:600;">\uc0\u55357 \u56628  ${critical}</span>`);
+            if (warning > 0) summaryParts.push(`<span style="color:#f9a825;font-weight:600;">\uc0\u55357 \u57313  ${warning}</span>`);
+            if (info > 0) summaryParts.push(`<span style="color:#00B1E3;">\uc0\u55357 \u56629  ${info}</span>`);
 
             const isExpanded = detailEl.style.display !== 'none';
-            const arrow = isExpanded ? '▼' : '▶';
+            const arrow = isExpanded ? '\uc0\u9660 ' : '\u9654 ';
 
             summaryEl.innerHTML = `<div style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:11px;padding:2px 0;" onclick="toggleRiskDetail()">
                 <span style="font-size:10px;color:#666;">${arrow}</span>
-                <span style="font-weight:600;color:#AD1D22;">⚠ ${risks.length} Alert${risks.length > 1 ? 's' : ''}</span>
+                <span style="font-weight:600;color:#AD1D22;">\uc0\u9888  ${risks.length} Alert${risks.length > 1 ? 's' : ''}</span>
                 <span style="display:flex;gap:6px;margin-left:auto;">${summaryParts.join(' ')}</span>
             </div>`;
 
             detailEl.innerHTML = risks.map(r => {
-                const icon = r.level === 'critical' ? '🔴' : r.level === 'warning' ? '🟡' : '🔵';
+                const icon = r.level === 'critical' ? '\uc0\u55357 \u56628 ' : r.level === 'warning' ? '\u55357 \u57313 ' : '\u55357 \u56629 ';
                 return `<div class="risk-item"><span class="risk-icon">${icon}</span><span>${r.text}</span></div>`;
             }).join('');
         }
@@ -5592,7 +5606,7 @@
             let totalAssignedDays = 0;
             const memberShiftCounts = {};
 
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < 7; i++) {
                 const shifts = getSchedulerDayShifts(i);
                 shifts.forEach(shift => {
                     const target = parseInt(shift.fields[FIELDS.OEC_SHIFTS.targetHeadcount]) || 2;
@@ -5614,7 +5628,7 @@
 
             // Calculate available capacity
             allData.teamMembers.forEach(member => {
-                for (let i = 0; i < 6; i++) {
+                for (let i = 0; i < 7; i++) {
                     const dd = new Date(schedulerWeekStart);
                     dd.setDate(schedulerWeekStart.getDate() + i);
                     if (!isPersonUnavailableOnDate(member.id, dd)) totalAvailableDays++;
@@ -5653,7 +5667,7 @@
             html += `<div class="util-stat-row"><span class="util-stat-label">Team available</span><span class="util-stat-value">${totalAvailableDays} person-days</span></div>`;
             html += `<div class="util-stat-row"><span class="util-stat-label">Assigned</span><span class="util-stat-value">${totalAssignedDays} person-shifts</span></div>`;
             if (overloaded.length > 0) {
-                html += `<div class="util-stat-row" style="color:#AD1D22;"><span class="util-stat-label">⚠ Heavy load</span><span class="util-stat-value">${overloaded.map(o => `${o.name} (${o.count})`).join(', ')}</span></div>`;
+                html += `<div class="util-stat-row" style="color:#AD1D22;"><span class="util-stat-label">\uc0\u9888  Heavy load</span><span class="util-stat-value">${overloaded.map(o => `${o.name} (${o.count})`).join(', ')}</span></div>`;
             }
             html += `</div>`;
             container.innerHTML = html;
@@ -5671,14 +5685,14 @@
             }
             const q = query.toLowerCase().trim();
             const results = [];
-            const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
             // Search team members
             allData.teamMembers.forEach(member => {
                 const name = getDisplayName(member, allData.teamMembers);
                 if (name.toLowerCase().includes(q)) {
                     let shiftCount = 0;
-                    for (let i = 0; i < 6; i++) {
+                    for (let i = 0; i < 7; i++) {
                         getSchedulerDayShifts(i).forEach(shift => {
                             const assignments = getSchedulerShiftAssignments(shift.id, true);
                             if (assignments.some(a => linkedHas(a.fields[FIELDS.OEC_ASSIGNMENTS.teamMember], member.id) &&
@@ -5692,7 +5706,7 @@
             });
 
             // Search OEC shifts
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < 7; i++) {
                 getSchedulerDayShifts(i).forEach(shift => {
                     const label = shift.fields[FIELDS.OEC_SHIFTS.shiftLabel] || '';
                     const tmplName = getShiftTemplateName(shift);
@@ -5707,7 +5721,7 @@
 
             // Search events/programs
             const weekEnd = new Date(schedulerWeekStart);
-            weekEnd.setDate(weekEnd.getDate() + 6);
+            weekEnd.setDate(weekEnd.getDate() + 7);
             allData.events.forEach(evt => {
                 const eName = evt.fields[FIELDS.EVENTS.eventName] || '';
                 const eType = selectVal(evt.fields[FIELDS.EVENTS.eventType]) || '';
@@ -5778,7 +5792,7 @@
             let totalShifts = 0, filledShifts = 0, openShifts = 0;
             const assignedStaff = new Set();
 
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < 7; i++) {
                 const shifts = getSchedulerDayShifts(i);
                 shifts.forEach(shift => {
                     totalShifts++;
@@ -5821,7 +5835,7 @@
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
             toast.innerHTML = `
-                <span class="toast-icon">${type === 'success' ? '✓' : '✕'}</span>
+                <span class="toast-icon">${type === 'success' ? '\uc0\u10003 ' : '\u10005 '}</span>
                 <span>${message}</span>
             `;
             container.appendChild(toast);
@@ -6012,7 +6026,7 @@
                 // Step 2: Look up the GCal event ID, or auto-create if missing
                 let gcalEventId = GCAL_EVENT_MAPPING[eventsDBId];
                 if (!gcalEventId) {
-                    console.log('[GCal Sync] No GCal event — auto-creating for EVENTS_DB record', eventsDBId);
+                    console.log('[GCal Sync] No GCal event \'97 auto-creating for EVENTS_DB record', eventsDBId);
                     gcalEventId = await autoCreateGCalEvent(eventsDBId);
                     if (!gcalEventId) return;
                 }
@@ -6129,13 +6143,13 @@
             delete _gcalEventsCache[`${calendarId}|${dayStr}`];
             const gcalEvents = await fetchGCalEventsForDate(calendarId, dayStr, token);
 
-            // Search by slot keyword (canonical OEC matching — ONE strategy)
+            // Search by slot keyword (canonical OEC matching \'97 ONE strategy)
             for (const ge of gcalEvents) {
                 const summary = (ge.summary || '').toLowerCase();
                 if (summary.includes('oec') && summary.includes(slot)) {
                     OEC_GCAL_MAPPING[shiftId] = ge.id;
                     saveGCalMappings();
-                    console.log('[GCal OEC] Discovered mapping:', shiftId, '→', ge.id);
+                    console.log('[GCal OEC] Discovered mapping:', shiftId, '\uc0\u8594 ', ge.id);
                     return ge.id;
                 }
             }
@@ -6149,7 +6163,7 @@
                     if (geStart && new Date(geStart).toISOString() === shiftStart) {
                         OEC_GCAL_MAPPING[shiftId] = ge.id;
                         saveGCalMappings();
-                        console.log('[GCal OEC] Discovered mapping by time:', shiftId, '→', ge.id);
+                        console.log('[GCal OEC] Discovered mapping by time:', shiftId, '\uc0\u8594 ', ge.id);
                         return ge.id;
                     }
                 }
@@ -6286,13 +6300,13 @@
                 return;
             }
 
-            if (!confirm('This will DELETE all OEC shift events from Google Calendar and recreate them fresh with correct times.\n\nThis cannot be undone. Continue?')) {
+            if (!confirm('This will DELETE all OEC shift events from Google Calendar and recreate them fresh with correct times.\\n\\nThis cannot be undone. Continue?')) {
                 return;
             }
 
             const clearBtn = document.getElementById('gcalClearResyncBtn');
             const syncBtn = document.getElementById('gcalSyncAllBtn');
-            if (clearBtn) { clearBtn.disabled = true; clearBtn.textContent = '⏳ Clearing...'; }
+            if (clearBtn) { clearBtn.disabled = true; clearBtn.textContent = '\uc0\u9203  Clearing...'; }
             if (syncBtn) syncBtn.disabled = true;
 
             try {
@@ -6337,7 +6351,7 @@
                     console.log(`[GCal Clear] Deleted batch of ${events.length} events (${totalDeleted} total so far)`);
                 } while (pageToken);
 
-                console.log(`[GCal Clear] Finished — deleted ${totalDeleted} events total`);
+                console.log(`[GCal Clear] Finished \'97 deleted ${totalDeleted} events total`);
 
                 // Step 2: Clear all OEC mappings
                 for (const key of Object.keys(OEC_GCAL_MAPPING)) {
@@ -6350,7 +6364,7 @@
                 showToast(`Cleared ${totalDeleted} OEC events. Now resyncing...`, 'info');
 
                 // Step 3: Run a fresh sync
-                if (clearBtn) clearBtn.textContent = '⏳ Resyncing...';
+                if (clearBtn) clearBtn.textContent = '\uc0\u9203  Resyncing...';
                 await syncAllToGCal();
 
                 showToast(`Done! Cleared ${totalDeleted} old events and resynced fresh.`, 'success');
@@ -6358,7 +6372,7 @@
                 console.error('[GCal Clear] Error:', err);
                 showToast('Clear & resync failed: ' + err.message, 'error');
             } finally {
-                if (clearBtn) { clearBtn.disabled = false; clearBtn.textContent = '🗑️ Clear & Resync OEC'; }
+                if (clearBtn) { clearBtn.disabled = false; clearBtn.textContent = '\uc0\u55357 \u56785 \u65039  Clear & Resync OEC'; }
                 if (syncBtn) syncBtn.disabled = false;
             }
         }
@@ -6373,7 +6387,7 @@
             const syncBtn = document.getElementById('gcalSyncAllBtn');
             if (syncBtn) {
                 syncBtn.disabled = true;
-                syncBtn.textContent = '⏳ Syncing...';
+                syncBtn.textContent = '\uc0\u9203  Syncing...';
             }
 
             // Clear cache from any previous run
@@ -6393,7 +6407,7 @@
                 const calId = encodeURIComponent(calendarId);
 
                 // Step 1a: Group ALL shifts by day+slot key
-                const oecSlotGroups = {}; // key: "YYYY-MM-DD|AM" → { shifts: [], memberIds: Set }
+                const oecSlotGroups = {}; // key: "YYYY-MM-DD|AM" \uc0\u8594  { shifts: [], memberIds: Set }
                 for (const shift of allData.oecShifts) {
                     const shiftDate = shift.fields[FIELDS.OEC_SHIFTS.shiftDate];
                     if (!shiftDate) continue;
@@ -6426,7 +6440,7 @@
                 }
 
                 // Step 1c: Pre-fetch ALL existing OEC calendar events to prevent duplicates
-                // This is the key fix — we load everything from GCal upfront so we never
+                // This is the key fix \'97 we load everything from GCal upfront so we never
                 // create a duplicate even if localStorage mapping was cleared
                 const claimedGCalIds = new Set();
                 const allOecGCalEvents = [];
@@ -6452,11 +6466,11 @@
                     console.log('[GCal SyncAll] OEC: Failed to pre-load events:', err.message);
                 }
 
-                // Step 1d: Process each day+slot group — find or create exactly ONE GCal event
+                // Step 1d: Process each day+slot group \'97 find or create exactly ONE GCal event
                 for (const [key, group] of Object.entries(oecSlotGroups)) {
                     const { dayStr, slot, shifts, memberIds } = group;
                     const representative = shifts[0]; // use first shift for timing
-                    const shiftLabel = `OEC ${slot} — ${new Date(dayStr + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short' })}`;
+                    const shiftLabel = `OEC ${slot} \'97 ${new Date(dayStr + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short' })}`;
 
                     // Check if any shift in this group already has a mapped GCal event
                     let gcalEventId = null;
@@ -6583,7 +6597,7 @@
                                     // Replace existing Team: line or append
                                     let desc = evt.description || '';
                                     desc = desc.replace(/^Team:.*$/m, '').trim();
-                                    desc = desc ? desc + '\n' + teamLine : teamLine;
+                                    desc = desc ? desc + '\\n' + teamLine : teamLine;
                                     await fetch(
                                         `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}?sendUpdates=none`,
                                         {
@@ -6616,7 +6630,7 @@
                         delete _gcalEventsCache[cacheKey];
                         const dayEvents = await fetchGCalEventsForDate(calendarId, dayStr, token);
                         // Group by slot keyword
-                        const slotEvents = {}; // AM → [event, event, ...]
+                        const slotEvents = {}; // AM \uc0\u8594  [event, event, ...]
                         for (const ge of dayEvents) {
                             const summary = (ge.summary || '').toLowerCase();
                             if (!summary.includes('oec')) continue;
@@ -6709,14 +6723,14 @@
 
                     // Match by name similarity (canonical event-to-GCal matching)
                     const searchName = (eventName || '').toLowerCase().trim();
-                    const coreName = searchName.replace(/\s*-\s*\d{1,2}\/\d{1,2}\/\d{2,4}\s*$/, '').trim();
+                    const coreName = searchName.replace(/\\s*-\\s*\\d{1,2}\\/\\d{1,2}\\/\\d{2,4}\\s*$/, '').trim();
                     // Also strip common prefixes like "OAH: " that Airtable automation adds
-                    const coreNameNoPfx = coreName.replace(/^[a-z]{2,5}:\s*/i, '').trim();
+                    const coreNameNoPfx = coreName.replace(/^[a-z]{2,5}:\\s*/i, '').trim();
 
                     for (const ge of gcalEvents) {
                         const summary = (ge.summary || '').toLowerCase().trim();
-                        const coreSummary = summary.replace(/\s*-\s*\d{1,2}\/\d{1,2}\/\d{2,4}.*$/, '').trim();
-                        const coreSummaryNoPfx = coreSummary.replace(/^[a-z]{2,5}:\s*/i, '').trim();
+                        const coreSummary = summary.replace(/\\s*-\\s*\\d{1,2}\\/\\d{1,2}\\/\\d{2,4}.*$/, '').trim();
+                        const coreSummaryNoPfx = coreSummary.replace(/^[a-z]{2,5}:\\s*/i, '').trim();
 
                         // Exact match
                         if (summary === searchName || coreSummary === coreName) return ge.id;
@@ -6725,15 +6739,15 @@
                         // Substring match
                         if (coreName.length > 5 && (summary.includes(coreName) || coreName.includes(coreSummary))) return ge.id;
                         // Word overlap > 60%
-                        const evtWords = coreName.split(/\s+/).filter(w => w.length > 2);
-                        const geWords = coreSummary.split(/\s+/).filter(w => w.length > 2);
+                        const evtWords = coreName.split(/\\s+/).filter(w => w.length > 2);
+                        const geWords = coreSummary.split(/\\s+/).filter(w => w.length > 2);
                         if (evtWords.length > 0 && geWords.length > 0) {
                             const overlap = evtWords.filter(w => geWords.includes(w)).length;
                             if (overlap / Math.max(evtWords.length, geWords.length) > 0.6) return ge.id;
                         }
                     }
 
-                    // No match found — auto-create
+                    // No match found \'97 auto-create
                     try {
                         const calId = encodeURIComponent(calendarId);
                         const gcalBody = {
@@ -6879,7 +6893,7 @@
                         : GCAL_CONFIG.reefCampus2CalendarId;
                     const normalName = normalizeEventName(evtName);
 
-                    // Find matching EVENTS_DB instances — but skip any already synced in Pass 1
+                    // Find matching EVENTS_DB instances \'97 but skip any already synced in Pass 1
                     const matchingProgs = allData.reefPrograms.filter(p => {
                         if (syncedProgIds.has(p.id)) return false; // already synced
                         const progName = normalizeEventName(p.fields[FIELDS.EVENTS_DB.eventName] || '');
@@ -6938,7 +6952,7 @@
                 if (totalNoMatch > 0) msg += `, ${totalNoMatch} no GCal event`;
                 if (totalFailed > 0) msg += `, ${totalFailed} failed`;
                 showToast(msg, totalFailed > 0 ? 'warning' : 'success');
-                console.log(`[GCal SyncAll] Done — OEC: ${oecSynced} synced, ${oecSkipped} skipped, ${oecNoMatch} no match, ${oecFailed} failed, ${oecDupsDeleted} dups removed | Events: ${evtSynced} synced, ${evtSkipped} skipped, ${evtNoMatch} no match, ${evtFailed} failed`);
+                console.log(`[GCal SyncAll] Done \'97 OEC: ${oecSynced} synced, ${oecSkipped} skipped, ${oecNoMatch} no match, ${oecFailed} failed, ${oecDupsDeleted} dups removed | Events: ${evtSynced} synced, ${evtSkipped} skipped, ${evtNoMatch} no match, ${evtFailed} failed`);
 
             } catch (err) {
                 console.error('[GCal SyncAll] Error:', err);
@@ -6946,7 +6960,7 @@
             } finally {
                 if (syncBtn) {
                     syncBtn.disabled = false;
-                    syncBtn.textContent = '🔄 Sync All to GCal';
+                    syncBtn.textContent = '\uc0\u55357 \u56580  Sync All to GCal';
                 }
             }
         }
@@ -6992,21 +7006,21 @@
             const prevWeekStart = new Date(schedulerWeekStart);
             prevWeekStart.setDate(prevWeekStart.getDate() - 7);
             const prevWeekEnd = new Date(prevWeekStart);
-            prevWeekEnd.setDate(prevWeekEnd.getDate() + 5);
+            prevWeekEnd.setDate(prevWeekEnd.getDate() + 6);
             const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-            const prevLabel = `${months[prevWeekStart.getMonth()]} ${prevWeekStart.getDate()} – ${months[prevWeekEnd.getMonth()]} ${prevWeekEnd.getDate()}`;
+            const prevLabel = `${months[prevWeekStart.getMonth()]} ${prevWeekStart.getDate()} \'96 ${months[prevWeekEnd.getMonth()]} ${prevWeekEnd.getDate()}`;
             const currLabel = getSchedulerWeekDateRange();
 
             overlay.innerHTML = `
                 <div class="copy-week-modal">
                     <div class="copy-week-header">
-                        <h3>Copy Last Week's Staff → This Week</h3>
+                        <h3>Copy Last Week's Staff \uc0\u8594  This Week</h3>
                         <button class="close-btn" onclick="closeCopyWeekModal()">&times;</button>
                     </div>
                     <div class="copy-week-body" id="copyWeekBody">
                         <div class="copy-week-loading">
-                            <div style="font-size:20px;margin-bottom:8px;">⏳</div>
-                            Analyzing ${prevLabel} assignments and checking for conflicts…
+                            <div style="font-size:20px;margin-bottom:8px;">\uc0\u9203 </div>
+                            Analyzing ${prevLabel} assignments and checking for conflicts\'85
                         </div>
                     </div>
                     <div class="copy-week-footer">
@@ -7028,7 +7042,7 @@
                 console.error('Copy week error:', err);
                 document.getElementById('copyWeekBody').innerHTML = `
                     <div style="text-align:center;padding:30px;color:#AD1D22;">
-                        <div style="font-size:18px;margin-bottom:8px;">⚠️</div>
+                        <div style="font-size:18px;margin-bottom:8px;">\uc0\u9888 \u65039 </div>
                         Error analyzing last week's assignments: ${err.message}
                     </div>
                 `;
@@ -7044,8 +7058,8 @@
         async function buildCopyWeekProposals(prevWeekStart) {
             const proposals = [];
 
-            // For each day (Mon–Sat, 0–5)
-            for (let dayOffset = 0; dayOffset < 6; dayOffset++) {
+            // For each day (Sun\'96Sat, 0\'966)
+            for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
                 // Previous week's date for this day-of-week
                 const prevDate = new Date(prevWeekStart);
                 prevDate.setDate(prevDate.getDate() + dayOffset);
@@ -7056,7 +7070,7 @@
                 currDate.setDate(currDate.getDate() + dayOffset);
                 const currDateStr = currDate.toISOString().split('T')[0];
 
-                const dayAbbr = ['Mon','Tue','Wed','Thu','Fri','Sat'][dayOffset];
+                const dayAbbr = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][dayOffset];
 
                 // Find previous week's shifts for this day
                 const prevDayShifts = allData.oecShifts.filter(s => {
@@ -7090,7 +7104,7 @@
                         if (slotMatches.length === 1) currShift = slotMatches[0];
                     }
 
-                    if (!currShift) return; // No matching shift this week — skip
+                    if (!currShift) return; // No matching shift this week \'97 skip
 
                     // Get previous assignments for this shift
                     const prevAssignments = allData.oecAssignments.filter(a =>
@@ -7178,7 +7192,7 @@
             if (copyWeekProposals.length === 0) {
                 body.innerHTML = `
                     <div style="text-align:center;padding:30px;color:#888;">
-                        <div style="font-size:18px;margin-bottom:8px;">📭</div>
+                        <div style="font-size:18px;margin-bottom:8px;">\uc0\u55357 \u56557 </div>
                         No assignments found from the previous week (${prevLabel}) to copy.
                     </div>
                 `;
@@ -7192,13 +7206,13 @@
 
             let html = `
                 <div style="font-size:13px;color:#666;margin-bottom:12px;">
-                    Copying assignments from <strong>${prevLabel}</strong> → <strong>${currLabel}</strong>
+                    Copying assignments from <strong>${prevLabel}</strong> \uc0\u8594  <strong>${currLabel}</strong>
                 </div>
                 <div class="copy-week-summary">
-                    <div class="copy-week-stat">✅ <strong>${okCount}</strong> ready</div>
-                    ${warnCount ? `<div class="copy-week-stat">⚠️ <strong>${warnCount}</strong> warnings</div>` : ''}
-                    ${conflictCount ? `<div class="copy-week-stat">🚫 <strong>${conflictCount}</strong> conflicts</div>` : ''}
-                    ${skipCount ? `<div class="copy-week-stat">⏭ <strong>${skipCount}</strong> already assigned</div>` : ''}
+                    <div class="copy-week-stat">\uc0\u9989  <strong>${okCount}</strong> ready</div>
+                    ${warnCount ? `<div class="copy-week-stat">\uc0\u9888 \u65039  <strong>${warnCount}</strong> warnings</div>` : ''}
+                    ${conflictCount ? `<div class="copy-week-stat">\uc0\u55357 \u57003  <strong>${conflictCount}</strong> conflicts</div>` : ''}
+                    ${skipCount ? `<div class="copy-week-stat">\uc0\u9197  <strong>${skipCount}</strong> already assigned</div>` : ''}
                 </div>
                 <table class="copy-preview-table">
                     <thead>
@@ -7265,7 +7279,7 @@
             const confirmBtn = document.getElementById('copyWeekConfirmBtn');
             const cancelBtn = document.querySelector('.copy-week-footer .btn-cancel');
             confirmBtn.disabled = true;
-            confirmBtn.textContent = 'Creating…';
+            confirmBtn.textContent = 'Creating\'85';
             if (cancelBtn) cancelBtn.disabled = true;
 
             try {
@@ -7306,7 +7320,7 @@
                     }
 
                     created += batch.length;
-                    confirmBtn.textContent = `Creating… (${created}/${toCreate.length})`;
+                    confirmBtn.textContent = `Creating\'85 (${created}/${toCreate.length})`;
 
                     // Rate limit: 200ms between batches
                     if (i + 10 < toCreate.length) {
@@ -7314,20 +7328,20 @@
                     }
                 }
 
-                // Success — close modal and refresh view
+                // Success \'97 close modal and refresh view
                 closeCopyWeekModal();
                 renderSchedulerView();
 
                 // Brief success toast
-                showCopyWeekToast(`✅ ${created} assignment${created !== 1 ? 's' : ''} copied from last week`);
+                showCopyWeekToast(`\uc0\u9989  ${created} assignment${created !== 1 ? 's' : ''} copied from last week`);
 
             } catch (err) {
                 console.error('Batch create error:', err);
-                confirmBtn.textContent = 'Error — Retry';
+                confirmBtn.textContent = 'Error \'97 Retry';
                 confirmBtn.disabled = false;
                 if (cancelBtn) cancelBtn.disabled = false;
                 const statsEl = document.getElementById('copyWeekStats');
-                if (statsEl) statsEl.innerHTML = `<span style="color:#AD1D22;">⚠️ ${err.message}</span>`;
+                if (statsEl) statsEl.innerHTML = `<span style="color:#AD1D22;">\uc0\u9888 \u65039  ${err.message}</span>`;
             }
         }
 
@@ -7517,7 +7531,7 @@
                             }
                         }
                     } else {
-                        // OEC shift — capture shift/member IDs for GCal sync
+                        // OEC shift \'97 capture shift/member IDs for GCal sync
                         const assign = allData.oecAssignments.find(a => a.id === assignmentId);
                         if (assign) {
                             const shiftLink = assign.fields[FIELDS.OEC_ASSIGNMENTS.shiftInstance];
@@ -7564,7 +7578,7 @@
                 return;
             }
 
-            // "+" buttons — open staff picker
+            // "+" buttons \'97 open staff picker
             document.querySelectorAll('#schedulerGridBody .cell-add-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -7579,7 +7593,7 @@
                 });
             });
 
-            // Staff pills — click to remove
+            // Staff pills \'97 click to remove
             document.querySelectorAll('#schedulerGridBody .staff-pill-interactive').forEach(pill => {
                 pill.addEventListener('click', (e) => {
                     e.stopPropagation();
