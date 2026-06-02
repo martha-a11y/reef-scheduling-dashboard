@@ -6422,8 +6422,32 @@
                     if (oecSlotGroups[key]) oecSlotGroups[key].memberIds.add(memberId);
                 }
 
-                // Step 1c: Track GCal event IDs we've already claimed this sync
+                // Step 1c: Pre-fetch ALL existing OEC calendar events to prevent duplicates
+                // This is the key fix — we load everything from GCal upfront so we never
+                // create a duplicate even if localStorage mapping was cleared
                 const claimedGCalIds = new Set();
+                const allOecGCalEvents = [];
+                try {
+                    const calIdEnc = encodeURIComponent(calendarId);
+                    const now = new Date();
+                    const eightWeeksOut = new Date(now.getTime() + 56 * 24 * 60 * 60 * 1000);
+                    const timeMin = encodeURIComponent(now.toISOString());
+                    const timeMax = encodeURIComponent(eightWeeksOut.toISOString());
+                    let pageToken = '';
+                    do {
+                        let url = `https://www.googleapis.com/calendar/v3/calendars/${calIdEnc}/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&maxResults=250`;
+                        if (pageToken) url += `&pageToken=${pageToken}`;
+                        const listResp = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+                        if (listResp.ok) {
+                            const listData = await listResp.json();
+                            allOecGCalEvents.push(...(listData.items || []));
+                            pageToken = listData.nextPageToken || '';
+                        } else { pageToken = ''; }
+                    } while (pageToken);
+                    console.log(`[GCal SyncAll] OEC: Pre-loaded ${allOecGCalEvents.length} existing GCal events`);
+                } catch (err) {
+                    console.log('[GCal SyncAll] OEC: Failed to pre-load events:', err.message);
+                }
 
                 // Step 1d: Process each day+slot group — find or create exactly ONE GCal event
                 for (const [key, group] of Object.entries(oecSlotGroups)) {
@@ -6437,13 +6461,16 @@
                         if (OEC_GCAL_MAPPING[s.id]) { gcalEventId = OEC_GCAL_MAPPING[s.id]; break; }
                     }
 
-                    // If not mapped, search GCal for an existing event matching this slot
+                    // If not mapped, search the pre-loaded GCal events for a match
                     if (!gcalEventId) {
-                        const gcalEvents = await fetchGCalEventsForDate(calendarId, dayStr, token);
-                        // Find the FIRST unclaimed event matching this slot
                         const slotLower = slot.toLowerCase();
-                        for (const ge of gcalEvents) {
-                            if (claimedGCalIds.has(ge.id)) continue; // already used by another slot
+                        const dayEvents = allOecGCalEvents.filter(ge => {
+                            const geStart = ge.start && (ge.start.dateTime || ge.start.date || '');
+                            return geStart && geStart.startsWith(dayStr);
+                        });
+                        // Find the FIRST unclaimed event matching this slot by name
+                        for (const ge of dayEvents) {
+                            if (claimedGCalIds.has(ge.id)) continue;
                             const summary = (ge.summary || '').toLowerCase();
                             if (summary.includes('oec') && summary.includes(slotLower)) {
                                 gcalEventId = ge.id;
@@ -6455,7 +6482,7 @@
                             const startDT = representative.fields[FIELDS.OEC_SHIFTS.startDateTime];
                             if (startDT) {
                                 const shiftStart = new Date(startDT).toISOString();
-                                for (const ge of gcalEvents) {
+                                for (const ge of dayEvents) {
                                     if (claimedGCalIds.has(ge.id)) continue;
                                     const geStart = ge.start && (ge.start.dateTime || ge.start.date || '');
                                     if (geStart && new Date(geStart).toISOString() === shiftStart) {
@@ -6743,6 +6770,14 @@
                     const evt = allData.events.find(e => e.id === eventId);
                     if (!evt) { evtNoMatch += memberIds.length; continue; }
 
+                    // SKIP off-site events (field surveys, conferences) — they belong on Travel/Fieldwork calendar, not Campus 2026
+                    const evtType = selectVal(evt.fields[FIELDS.EVENTS.eventType]);
+                    if (isOffSiteType(evtType)) {
+                        console.log('[GCal SyncAll] Event: Skipping off-site event:', evt.fields[FIELDS.EVENTS.eventName] || eventId);
+                        evtSkipped += memberIds.length;
+                        continue;
+                    }
+
                     const calendarId = GCAL_CONFIG.reefCampus2CalendarId;
                     const evtName = normalizeEventName(evt.fields[FIELDS.EVENTS.eventName] || '');
                     const evtStart = evt.fields[FIELDS.EVENTS.startDateTime];
@@ -6837,6 +6872,10 @@
                     if (!evtName) continue; // skip nameless record
                     const evtStart = evt.fields[FIELDS.EVENTS.startDateTime];
                     if (!evtStart) continue;
+
+                    // SKIP off-site events (field surveys, conferences) — they belong on Travel/Fieldwork calendar
+                    const evtType2 = selectVal(evt.fields[FIELDS.EVENTS.eventType]);
+                    if (isOffSiteType(evtType2)) continue;
 
                     const calendarId = GCAL_CONFIG.reefCampus2CalendarId;
                     const normalName = normalizeEventName(evtName);
