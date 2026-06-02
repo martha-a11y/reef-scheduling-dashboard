@@ -2893,7 +2893,10 @@
         const GCAL_CONFIG = {
             reefCampus2CalendarId: 'c_9f80e975e8a470d96d1f14286720949b779c1b1e5d62aeb3b13b5fcb7168c105@group.calendar.google.com',
             oecShiftsCalendarId: 'c_c26c00c881e3e199fd76dde88a6640709d12de9099573a8e104b771553e8a4d2@group.calendar.google.com',
+            travelFieldworkCalendarId: 'c_092a2b4260d18408e4ecbe864dab65f39022e0957a59edbf4d09c85830898101@group.calendar.google.com',
             timeZone: 'America/New_York', // REEF is in Key Largo, FL
+            // Event types that route to Travel/Fieldwork calendar instead of REEF Campus 2026
+            travelFieldworkTypes: ['Field Survey Trip', 'Field Survey Trips & Fieldwork', 'Field Survey Trip/Fieldwork', 'Conference/Trade Show'],
         };
 
         // Format a date/time string for GCal API — converts UTC to Eastern time.
@@ -2964,12 +2967,12 @@
             return '';
         }
 
-        // Helper: check if an event type string indicates off-site
-        // Matches: "Field Survey", "Field Survey Trips & Fieldwork", "Conference", etc.
+        // Helper: check if an event type routes to Travel/Fieldwork calendar
+        // Uses the GCAL_CONFIG.travelFieldworkTypes list for exact matching
         function isOffSiteType(eventType) {
             if (!eventType) return false;
             const t = eventType.toLowerCase();
-            return t.includes('field survey') || t.includes('conference');
+            return GCAL_CONFIG.travelFieldworkTypes.some(type => t.includes(type.toLowerCase()));
         }
 
         // Helper: check if a linked record array contains a specific record ID
@@ -6770,15 +6773,11 @@
                     const evt = allData.events.find(e => e.id === eventId);
                     if (!evt) { evtNoMatch += memberIds.length; continue; }
 
-                    // SKIP off-site events (field surveys, conferences) — they belong on Travel/Fieldwork calendar, not Campus 2026
+                    // Route off-site events (field surveys, conferences) to Travel/Fieldwork calendar
                     const evtType = selectVal(evt.fields[FIELDS.EVENTS.eventType]);
-                    if (isOffSiteType(evtType)) {
-                        console.log('[GCal SyncAll] Event: Skipping off-site event:', evt.fields[FIELDS.EVENTS.eventName] || eventId);
-                        evtSkipped += memberIds.length;
-                        continue;
-                    }
-
-                    const calendarId = GCAL_CONFIG.reefCampus2CalendarId;
+                    const calendarId = isOffSiteType(evtType)
+                        ? GCAL_CONFIG.travelFieldworkCalendarId
+                        : GCAL_CONFIG.reefCampus2CalendarId;
                     const evtName = normalizeEventName(evt.fields[FIELDS.EVENTS.eventName] || '');
                     const evtStart = evt.fields[FIELDS.EVENTS.startDateTime];
 
@@ -6873,11 +6872,11 @@
                     const evtStart = evt.fields[FIELDS.EVENTS.startDateTime];
                     if (!evtStart) continue;
 
-                    // SKIP off-site events (field surveys, conferences) — they belong on Travel/Fieldwork calendar
+                    // Route off-site events to Travel/Fieldwork calendar, everything else to Campus 2026
                     const evtType2 = selectVal(evt.fields[FIELDS.EVENTS.eventType]);
-                    if (isOffSiteType(evtType2)) continue;
-
-                    const calendarId = GCAL_CONFIG.reefCampus2CalendarId;
+                    const calendarId = isOffSiteType(evtType2)
+                        ? GCAL_CONFIG.travelFieldworkCalendarId
+                        : GCAL_CONFIG.reefCampus2CalendarId;
                     const normalName = normalizeEventName(evtName);
 
                     // Find matching EVENTS_DB instances — but skip any already synced in Pass 1
