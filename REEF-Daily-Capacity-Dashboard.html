@@ -4979,7 +4979,7 @@
             let html = `<div class="event-cell" data-event-id="${evt.id}" data-day-index="${dayIndex}" data-type="event" onclick="toggleShiftExpand(event, this)">`;
             html += `<div class="event-name" title="${eventName}">${eventName}</div>`;
             // Notes button — find EVENTS_DB id for GCal mapping
-            const _notesDbId = findEventsDBRecordId ? findEventsDBRecordId(evt) : null;
+            const _notesDbId = findEventsDBRecordId ? findEventsDBRecordId(evt.id) : null;
             const _notesGcalId = _notesDbId && GCAL_EVENT_MAPPING[_notesDbId] ? GCAL_EVENT_MAPPING[_notesDbId] : '';
             const _notesCalId = isOffSiteType(eventType) ? GCAL_CONFIG.travelFieldworkCalendarId : GCAL_CONFIG.reefCampus2CalendarId;
             let _notesBtnHtml = '';
@@ -6552,10 +6552,9 @@
             if (_gcalEventsCache[cacheKey]) return _gcalEventsCache[cacheKey];
 
             const calId = encodeURIComponent(calendarId);
-            // Use RFC3339 with timezone offset for accurate day boundaries
-            // GCal API accepts timezone parameter to interpret these correctly
-            const timeMin = dateStr + 'T00:00:00';
-            const timeMax = dateStr + 'T23:59:59';
+            // RFC3339 requires timezone offset — use Z (UTC) and let timeZone param handle display
+            const timeMin = encodeURIComponent(dateStr + 'T00:00:00Z');
+            const timeMax = encodeURIComponent(dateStr + 'T23:59:59Z');
             const tz = encodeURIComponent(GCAL_CONFIG.timeZone);
             const resp = await fetch(
                 `https://www.googleapis.com/calendar/v3/calendars/${calId}/events?timeMin=${timeMin}&timeMax=${timeMax}&timeZone=${tz}&singleEvents=true&maxResults=50`,
@@ -7247,7 +7246,9 @@
                     matchingProgs.forEach(p => syncedProgIds.add(p.id));
                 }
 
-                // Ensure ALL Events/Programs have GCal events (even unassigned ones)
+                // Ensure future Events/Programs have GCal events (even unassigned ones)
+                // ONLY sync events from today forward — past events already have GCal entries
+                const _todayStr = new Date().toISOString().split('T')[0];
                 let evtCreated = 0;
                 for (const evt of allData.events) {
                     if (evtByEvent[evt.id]) continue; // already processed above
@@ -7255,6 +7256,8 @@
                     if (!evtName) continue; // skip nameless record
                     const evtStart = evt.fields[FIELDS.EVENTS.startDateTime];
                     if (!evtStart) continue;
+                    // Skip past events — only create GCal events for today and future
+                    if (new Date(evtStart).toISOString().split('T')[0] < _todayStr) continue;
 
                     const evtType2 = selectVal(evt.fields[FIELDS.EVENTS.eventType]);
                     const calendarId = isOffSiteType(evtType2) ? GCAL_CONFIG.travelFieldworkCalendarId : GCAL_CONFIG.reefCampus2CalendarId;
@@ -7272,6 +7275,8 @@
                         for (const prog of matchingProgs) {
                             const progStart = prog.fields[FIELDS.EVENTS_DB.startDateTime];
                             if (!progStart) continue;
+                            // Skip past program instances
+                            if (new Date(progStart).toISOString().split('T')[0] < _todayStr) continue;
                             instances.push({
                                 dayStr: new Date(progStart).toISOString().split('T')[0],
                                 name: prog.fields[FIELDS.EVENTS_DB.eventName] || evtName,
