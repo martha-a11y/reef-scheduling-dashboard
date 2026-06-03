@@ -2531,11 +2531,12 @@
                         <table class="scheduler-grid">
                             <colgroup>
                                 <col style="width: 110px;">
-                                <col span="6" style="width: calc((100% - 110px) / 6);">
+                                <col span="7" style="width: calc((100% - 110px) / 7);">
                             </colgroup>
                             <thead>
                                 <tr>
                                     <th class="time-col">Area</th>
+                                    <th id="dayHeaderSun">Sun</th>
                                     <th id="dayHeaderMon">Mon</th>
                                     <th id="dayHeaderTue">Tue</th>
                                     <th id="dayHeaderWed">Wed</th>
@@ -2893,7 +2894,9 @@
         const GCAL_CONFIG = {
             reefCampus2CalendarId: 'c_9f80e975e8a470d96d1f14286720949b779c1b1e5d62aeb3b13b5fcb7168c105@group.calendar.google.com',
             oecShiftsCalendarId: 'c_c26c00c881e3e199fd76dde88a6640709d12de9099573a8e104b771553e8a4d2@group.calendar.google.com',
+            travelFieldworkCalendarId: 'c_092a2b4260d18408e4ecbe864dab65f39022e0957a59edbf4d09c85830898101@group.calendar.google.com',
             timeZone: 'America/New_York', // REEF is in Key Largo, FL
+            travelFieldworkTypes: ['Field Survey Trip', 'Field Survey Trips & Fieldwork', 'Field Survey Trip/Fieldwork', 'Conference/Trade Show'],
         };
 
         // Format a date/time string for GCal API — converts UTC to Eastern time.
@@ -2969,7 +2972,7 @@
         function isOffSiteType(eventType) {
             if (!eventType) return false;
             const t = eventType.toLowerCase();
-            return t.includes('field survey') || t.includes('conference');
+            return GCAL_CONFIG.travelFieldworkTypes.some(type => t.includes(type.toLowerCase()));
         }
 
         // Helper: check if a linked record array contains a specific record ID
@@ -3306,8 +3309,7 @@
         function getWeekStartDate(weeksFromNow) {
             const date = new Date(selectedDate);
             const day = date.getDay();
-            const diff = date.getDate() - day + (day === 0 ? -6 : 1);
-            date.setDate(diff + (weeksFromNow * 7));
+            date.setDate(date.getDate() - day + (weeksFromNow * 7));
             return date;
         }
 
@@ -4341,9 +4343,8 @@
         function initSchedulerWeek() {
             const today = new Date(selectedDate);
             const dayOfWeek = today.getDay();
-            const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
             schedulerWeekStart = new Date(today);
-            schedulerWeekStart.setDate(today.getDate() - daysToMonday);
+            schedulerWeekStart.setDate(today.getDate() - dayOfWeek);
             schedulerWeekStart.setHours(0, 0, 0, 0);
         }
 
@@ -4360,7 +4361,7 @@
         function getSchedulerWeekDateRange() {
             const start = new Date(schedulerWeekStart);
             const end = new Date(schedulerWeekStart);
-            end.setDate(start.getDate() + 5);
+            end.setDate(start.getDate() + 6);
 
             const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
             return `${months[start.getMonth()]} ${start.getDate()} – ${months[end.getMonth()]} ${end.getDate()}, ${end.getFullYear()}`;
@@ -4567,7 +4568,7 @@
                 }
             });
 
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < 7; i++) {
                 const dayDate = new Date(schedulerWeekStart);
                 dayDate.setDate(schedulerWeekStart.getDate() + i);
                 dayDate.setHours(0,0,0,0);
@@ -4700,7 +4701,7 @@
             const conflicts = detectSchedulerConflicts();
             if (conflicts.length === 0) return;
 
-            const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             let html = `<div style="background:#fff3e0;border:1px solid #ff9800;border-left:4px solid #ff9800;border-radius:4px;padding:10px 14px;margin-bottom:8px;">`;
             html += `<div style="font-weight:700;color:#e65100;margin-bottom:6px;font-size:13px;">⚠ Scheduling Conflicts Detected (${conflicts.length})</div>`;
             conflicts.forEach(c => {
@@ -4957,8 +4958,8 @@
             document.getElementById('weekLabel').textContent = getSchedulerWeekDateRange();
 
             // Update day column headers
-            const dayAbbr = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-            for (let i = 0; i < 6; i++) {
+            const dayAbbr = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            for (let i = 0; i < 7; i++) {
                 const dayDate = new Date(schedulerWeekStart);
                 dayDate.setDate(schedulerWeekStart.getDate() + i);
                 const month = String(dayDate.getMonth() + 1).padStart(2, '0');
@@ -4981,11 +4982,11 @@
         function renderSchedulerGrid() {
             // Diagnostic: log ALL shifts BEFORE dedup to debug classification
             console.log('[Scheduler] Shift classification diagnostic (ALL shifts, pre-dedup):');
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < 7; i++) {
                 const dayDate = new Date(schedulerWeekStart);
                 dayDate.setDate(schedulerWeekStart.getDate() + i);
                 const dayStr = dayDate.toISOString().split('T')[0];
-                const dayName = ['Mon','Tue','Wed','Thu','Fri','Sat'][i];
+                const dayName = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][i];
                 const allDayShifts = allData.oecShifts.filter(shift => {
                     const sd = shift.fields[FIELDS.OEC_SHIFTS.shiftDate];
                     return sd && new Date(sd).toISOString().split('T')[0] === dayStr;
@@ -5009,7 +5010,7 @@
             const oecHeaderRow = document.createElement('tr');
             const oecHeaderTd = document.createElement('td');
             oecHeaderTd.className = 'scheduler-group-header section-header';
-            oecHeaderTd.colSpan = 7;
+            oecHeaderTd.colSpan = 8;
             oecHeaderTd.textContent = 'OEC Shifts';
             oecHeaderRow.appendChild(oecHeaderTd);
             tbody.appendChild(oecHeaderRow);
@@ -5023,8 +5024,13 @@
             amLabel.textContent = 'AM';
             amRow.appendChild(amLabel);
 
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < 7; i++) {
                 const td = document.createElement('td');
+                if (i === 0) { // Sunday - OEC Closed
+                    td.innerHTML = '<div class="shift-cell empty" style="justify-content:center;align-items:center;color:#aaa;font-size:11px;font-style:italic;background:#f0f0f0;">Closed</div>';
+                    amRow.appendChild(td);
+                    continue;
+                }
                 const dayShifts = getSchedulerDayShifts(i);
                 const amShifts = dayShifts.filter(s => classifyShiftSlot(s) === 'AM');
                 if (amShifts.length > 0) {
@@ -5043,8 +5049,13 @@
             pmLabel.textContent = 'PM';
             pmRow.appendChild(pmLabel);
 
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < 7; i++) {
                 const td = document.createElement('td');
+                if (i === 0) { // Sunday - OEC Closed
+                    td.innerHTML = '<div class="shift-cell empty" style="justify-content:center;align-items:center;color:#aaa;font-size:11px;font-style:italic;background:#f0f0f0;">Closed</div>';
+                    pmRow.appendChild(td);
+                    continue;
+                }
                 const dayShifts = getSchedulerDayShifts(i);
                 const pmShifts = dayShifts.filter(s => classifyShiftSlot(s) === 'PM');
                 if (pmShifts.length > 0) {
@@ -5058,7 +5069,7 @@
 
             // === OEC EVENING ROW (only shown if any Evening shifts exist this week) ===
             let hasEveningShifts = false;
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < 7; i++) {
                 const dayShifts = getSchedulerDayShifts(i);
                 if (dayShifts.some(s => classifyShiftSlot(s) === 'Evening')) {
                     hasEveningShifts = true;
@@ -5072,8 +5083,13 @@
                 eveLabel.textContent = 'Evening';
                 eveRow.appendChild(eveLabel);
 
-                for (let i = 0; i < 6; i++) {
+                for (let i = 0; i < 7; i++) {
                     const td = document.createElement('td');
+                    if (i === 0) { // Sunday - OEC Closed
+                        td.innerHTML = '<div class="shift-cell empty" style="justify-content:center;align-items:center;color:#aaa;font-size:11px;font-style:italic;background:#f0f0f0;">Closed</div>';
+                        eveRow.appendChild(td);
+                        continue;
+                    }
                     const dayShifts = getSchedulerDayShifts(i);
                     const eveShifts = dayShifts.filter(s => classifyShiftSlot(s) === 'Evening');
                     if (eveShifts.length > 0) {
@@ -5089,7 +5105,7 @@
             // === PROGRAMS & EVENTS ROWS (Campus vs Off-Site split) ===
             // Collect all events/programs that overlap the scheduler week
             const weekEnd = new Date(schedulerWeekStart);
-            weekEnd.setDate(weekEnd.getDate() + 6);
+            weekEnd.setDate(weekEnd.getDate() + 7);
 
             const weekEvents = allData.events.filter(evt => {
                 const startDate = evt.fields[FIELDS.EVENTS.startDateTime];
@@ -5171,7 +5187,7 @@
                     labelTd.innerHTML = `<span style="font-weight:600;color:#333;display:block;overflow:hidden;text-overflow:ellipsis;word-break:break-word;line-height:1.3;font-size:11px;">${eName}</span>${typeTag}`;
                     tr.appendChild(labelTd);
 
-                    for (let i = 0; i < 6; i++) {
+                    for (let i = 0; i < 7; i++) {
                         const td = document.createElement('td');
                         const dayDate = new Date(schedulerWeekStart);
                         dayDate.setDate(schedulerWeekStart.getDate() + i);
@@ -5206,7 +5222,7 @@
             if (campusEvents.length > 0) {
                 const dividerRow = document.createElement('tr');
                 const dividerTd = document.createElement('td');
-                dividerTd.colSpan = 7;
+                dividerTd.colSpan = 8;
                 dividerTd.className = 'section-divider-row';
                 dividerRow.appendChild(dividerTd);
                 tbody.appendChild(dividerRow);
@@ -5215,7 +5231,7 @@
                 const headerRow = document.createElement('tr');
                 const headerTd = document.createElement('td');
                 headerTd.className = 'scheduler-group-header section-header';
-                headerTd.colSpan = 7;
+                headerTd.colSpan = 8;
                 headerTd.innerHTML = `Campus Programs & Events (${campusEvents.length}) <span style="font-weight:400;font-size:10px;letter-spacing:0;text-transform:none;margin-left:12px;opacity:0.85;">${campusKpis.totalAssigned} assigned · ${campusKpis.totalGaps} unstaffed</span>`;
                 headerRow.appendChild(headerTd);
                 tbody.appendChild(headerRow);
@@ -5226,7 +5242,7 @@
             {
                 const dividerRow = document.createElement('tr');
                 const dividerTd = document.createElement('td');
-                dividerTd.colSpan = 7;
+                dividerTd.colSpan = 8;
                 dividerTd.className = 'section-divider-row';
                 dividerRow.appendChild(dividerTd);
                 tbody.appendChild(dividerRow);
@@ -5235,7 +5251,7 @@
                 const headerRow = document.createElement('tr');
                 const headerTd = document.createElement('td');
                 headerTd.className = 'scheduler-group-header section-header offsite-section-header';
-                headerTd.colSpan = 7;
+                headerTd.colSpan = 8;
                 if (offSiteEvents.length > 0) {
                     headerTd.innerHTML = `Off-Site Programs & Events (${offSiteEvents.length}) <span style="font-weight:400;font-size:10px;letter-spacing:0;text-transform:none;margin-left:12px;opacity:0.85;">${offSiteKpis.totalAssigned} assigned · ${offSiteKpis.totalGaps} unstaffed</span>`;
                 } else {
@@ -5264,7 +5280,7 @@
                 let offDays = 0;
                 let workDaysThisWeek = 0;
 
-                for (let i = 0; i < 6; i++) {
+                for (let i = 0; i < 7; i++) {
                     const dayDate = new Date(schedulerWeekStart);
                     dayDate.setDate(schedulerWeekStart.getDate() + i);
 
@@ -5322,9 +5338,9 @@
         function renderSchedulerTimeAway() {
             const row = document.getElementById('schedulerTimeAwayRow');
             row.innerHTML = '';
-            const dayAbbr = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const dayAbbr = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < 7; i++) {
                 const dayDate = new Date(schedulerWeekStart);
                 dayDate.setDate(schedulerWeekStart.getDate() + i);
 
@@ -5402,11 +5418,11 @@
         // ===== STAFFING RISK WARNINGS (#19) =====
         function computeStaffingRisks() {
             const risks = [];
-            const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             const today = new Date();
             today.setHours(0, 0, 0, 0);
 
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < 7; i++) {
                 const dayDate = new Date(schedulerWeekStart);
                 dayDate.setDate(schedulerWeekStart.getDate() + i);
                 dayDate.setHours(0, 0, 0, 0);
@@ -5485,7 +5501,7 @@
             const unassignedMembers = [];
             allData.teamMembers.forEach(member => {
                 let hasAnyAssignment = false;
-                for (let i = 0; i < 6; i++) {
+                for (let i = 0; i < 7; i++) {
                     const dayDate = new Date(schedulerWeekStart);
                     dayDate.setDate(schedulerWeekStart.getDate() + i);
                     dayDate.setHours(0, 0, 0, 0);
@@ -5503,7 +5519,7 @@
                 if (!hasAnyAssignment) {
                     const name = getDisplayName(member, allData.teamMembers);
                     let availDays = 0;
-                    for (let i = 0; i < 6; i++) {
+                    for (let i = 0; i < 7; i++) {
                         const dd = new Date(schedulerWeekStart);
                         dd.setDate(schedulerWeekStart.getDate() + i);
                         dd.setHours(0, 0, 0, 0);
@@ -5589,7 +5605,7 @@
             let totalAssignedDays = 0;
             const memberShiftCounts = {};
 
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < 7; i++) {
                 const shifts = getSchedulerDayShifts(i);
                 shifts.forEach(shift => {
                     const target = parseInt(shift.fields[FIELDS.OEC_SHIFTS.targetHeadcount]) || 2;
@@ -5611,7 +5627,7 @@
 
             // Calculate available capacity
             allData.teamMembers.forEach(member => {
-                for (let i = 0; i < 6; i++) {
+                for (let i = 0; i < 7; i++) {
                     const dd = new Date(schedulerWeekStart);
                     dd.setDate(schedulerWeekStart.getDate() + i);
                     if (!isPersonUnavailableOnDate(member.id, dd)) totalAvailableDays++;
@@ -5668,14 +5684,14 @@
             }
             const q = query.toLowerCase().trim();
             const results = [];
-            const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
             // Search team members
             allData.teamMembers.forEach(member => {
                 const name = getDisplayName(member, allData.teamMembers);
                 if (name.toLowerCase().includes(q)) {
                     let shiftCount = 0;
-                    for (let i = 0; i < 6; i++) {
+                    for (let i = 0; i < 7; i++) {
                         getSchedulerDayShifts(i).forEach(shift => {
                             const assignments = getSchedulerShiftAssignments(shift.id, true);
                             if (assignments.some(a => linkedHas(a.fields[FIELDS.OEC_ASSIGNMENTS.teamMember], member.id) &&
@@ -5689,7 +5705,7 @@
             });
 
             // Search OEC shifts
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < 7; i++) {
                 getSchedulerDayShifts(i).forEach(shift => {
                     const label = shift.fields[FIELDS.OEC_SHIFTS.shiftLabel] || '';
                     const tmplName = getShiftTemplateName(shift);
@@ -5775,7 +5791,7 @@
             let totalShifts = 0, filledShifts = 0, openShifts = 0;
             const assignedStaff = new Set();
 
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < 7; i++) {
                 const shifts = getSchedulerDayShifts(i);
                 shifts.forEach(shift => {
                     totalShifts++;
@@ -6422,7 +6438,31 @@
                     if (oecSlotGroups[key]) oecSlotGroups[key].memberIds.add(memberId);
                 }
 
-                // Step 1c: Track GCal event IDs we've already claimed this sync
+                // Step 1c: Pre-load ALL existing OEC calendar events for dedup
+                const allOecGCalEvents = [];
+                try {
+                    const calIdEnc = encodeURIComponent(calendarId);
+                    const now = new Date();
+                    const eightWeeksOut = new Date(now.getTime() + 56 * 24 * 60 * 60 * 1000);
+                    const timeMin = encodeURIComponent(now.toISOString());
+                    const timeMax = encodeURIComponent(eightWeeksOut.toISOString());
+                    let pageToken = '';
+                    do {
+                        let url = `https://www.googleapis.com/calendar/v3/calendars/${calIdEnc}/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&maxResults=250`;
+                        if (pageToken) url += `&pageToken=${pageToken}`;
+                        const listResp = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+                        if (listResp.ok) {
+                            const listData = await listResp.json();
+                            allOecGCalEvents.push(...(listData.items || []));
+                            pageToken = listData.nextPageToken || '';
+                        } else { pageToken = ''; }
+                    } while (pageToken);
+                    console.log(`[GCal SyncAll] OEC: Pre-loaded ${allOecGCalEvents.length} existing GCal events`);
+                } catch (err) {
+                    console.log('[GCal SyncAll] OEC: Failed to pre-load events:', err.message);
+                }
+
+                // Track GCal event IDs we've already claimed this sync
                 const claimedGCalIds = new Set();
 
                 // Step 1d: Process each day+slot group — find or create exactly ONE GCal event
@@ -6437,12 +6477,15 @@
                         if (OEC_GCAL_MAPPING[s.id]) { gcalEventId = OEC_GCAL_MAPPING[s.id]; break; }
                     }
 
-                    // If not mapped, search GCal for an existing event matching this slot
+                    // If not mapped, search pre-loaded GCal events for an existing event matching this slot
                     if (!gcalEventId) {
-                        const gcalEvents = await fetchGCalEventsForDate(calendarId, dayStr, token);
+                        const dayEvents = allOecGCalEvents.filter(ge => {
+                            const geStart = ge.start && (ge.start.dateTime || ge.start.date || '');
+                            return geStart && geStart.startsWith(dayStr);
+                        });
                         // Find the FIRST unclaimed event matching this slot
                         const slotLower = slot.toLowerCase();
-                        for (const ge of gcalEvents) {
+                        for (const ge of dayEvents) {
                             if (claimedGCalIds.has(ge.id)) continue; // already used by another slot
                             const summary = (ge.summary || '').toLowerCase();
                             if (summary.includes('oec') && summary.includes(slotLower)) {
@@ -6455,7 +6498,7 @@
                             const startDT = representative.fields[FIELDS.OEC_SHIFTS.startDateTime];
                             if (startDT) {
                                 const shiftStart = new Date(startDT).toISOString();
-                                for (const ge of gcalEvents) {
+                                for (const ge of dayEvents) {
                                     if (claimedGCalIds.has(ge.id)) continue;
                                     const geStart = ge.start && (ge.start.dateTime || ge.start.date || '');
                                     if (geStart && new Date(geStart).toISOString() === shiftStart) {
@@ -6743,7 +6786,8 @@
                     const evt = allData.events.find(e => e.id === eventId);
                     if (!evt) { evtNoMatch += memberIds.length; continue; }
 
-                    const calendarId = GCAL_CONFIG.reefCampus2CalendarId;
+                    const evtType = selectVal(evt.fields[FIELDS.EVENTS.eventType]);
+                    const calendarId = isOffSiteType(evtType) ? GCAL_CONFIG.travelFieldworkCalendarId : GCAL_CONFIG.reefCampus2CalendarId;
                     const evtName = normalizeEventName(evt.fields[FIELDS.EVENTS.eventName] || '');
                     const evtStart = evt.fields[FIELDS.EVENTS.startDateTime];
 
@@ -6815,6 +6859,19 @@
                     }
                 }
 
+                // Track which EVENTS_DB progIds were already synced in Pass 1
+                const syncedProgIds = new Set();
+                for (const [eventId, memberIds] of Object.entries(evtByEvent)) {
+                    const evt = allData.events.find(e => e.id === eventId);
+                    if (!evt) continue;
+                    const evtName = normalizeEventName(evt.fields[FIELDS.EVENTS.eventName] || '');
+                    const matchingProgs = allData.reefPrograms.filter(p => {
+                        const progName = normalizeEventName(p.fields[FIELDS.EVENTS_DB.eventName] || '');
+                        return evtName && progName && (evtName === progName || evtName.includes(progName) || progName.includes(evtName));
+                    });
+                    matchingProgs.forEach(p => syncedProgIds.add(p.id));
+                }
+
                 // Ensure ALL Events/Programs have GCal events (even unassigned ones)
                 let evtCreated = 0;
                 for (const evt of allData.events) {
@@ -6824,11 +6881,13 @@
                     const evtStart = evt.fields[FIELDS.EVENTS.startDateTime];
                     if (!evtStart) continue;
 
-                    const calendarId = GCAL_CONFIG.reefCampus2CalendarId;
+                    const evtType2 = selectVal(evt.fields[FIELDS.EVENTS.eventType]);
+                    const calendarId = isOffSiteType(evtType2) ? GCAL_CONFIG.travelFieldworkCalendarId : GCAL_CONFIG.reefCampus2CalendarId;
                     const normalName = normalizeEventName(evtName);
 
-                    // Find matching EVENTS_DB instances
+                    // Find matching EVENTS_DB instances (skip those already synced in Pass 1)
                     const matchingProgs = allData.reefPrograms.filter(p => {
+                        if (syncedProgIds.has(p.id)) return false;
                         const progName = normalizeEventName(p.fields[FIELDS.EVENTS_DB.eventName] || '');
                         return normalName && progName && (normalName === progName || normalName.includes(progName) || progName.includes(normalName));
                     });
@@ -6938,7 +6997,7 @@
             const prevWeekStart = new Date(schedulerWeekStart);
             prevWeekStart.setDate(prevWeekStart.getDate() - 7);
             const prevWeekEnd = new Date(prevWeekStart);
-            prevWeekEnd.setDate(prevWeekEnd.getDate() + 5);
+            prevWeekEnd.setDate(prevWeekEnd.getDate() + 6);
             const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
             const prevLabel = `${months[prevWeekStart.getMonth()]} ${prevWeekStart.getDate()} – ${months[prevWeekEnd.getMonth()]} ${prevWeekEnd.getDate()}`;
             const currLabel = getSchedulerWeekDateRange();
@@ -6991,7 +7050,7 @@
             const proposals = [];
 
             // For each day (Mon–Sat, 0–5)
-            for (let dayOffset = 0; dayOffset < 6; dayOffset++) {
+            for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
                 // Previous week's date for this day-of-week
                 const prevDate = new Date(prevWeekStart);
                 prevDate.setDate(prevDate.getDate() + dayOffset);
@@ -7002,7 +7061,7 @@
                 currDate.setDate(currDate.getDate() + dayOffset);
                 const currDateStr = currDate.toISOString().split('T')[0];
 
-                const dayAbbr = ['Mon','Tue','Wed','Thu','Fri','Sat'][dayOffset];
+                const dayAbbr = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][dayOffset];
 
                 // Find previous week's shifts for this day
                 const prevDayShifts = allData.oecShifts.filter(s => {
