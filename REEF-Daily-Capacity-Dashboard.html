@@ -2286,39 +2286,41 @@
             position: absolute;
             bottom: 6px;
             right: 32px;
-            width: 20px;
-            height: 20px;
+            width: 22px;
+            height: 22px;
             border-radius: 50%;
-            background: transparent;
-            color: #999;
-            border: 1px solid transparent;
+            background: #f5f5f5;
+            color: #555;
+            border: 1px solid #ccc;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 13px;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 0;
             transition: all 0.2s ease;
-            z-index: 10;
+            z-index: 20;
             line-height: 1;
-            opacity: 0;
+            opacity: 0.8;
         }
-        .event-cell:hover .event-notes-btn,
-        .event-cell.expanded .event-notes-btn { opacity: 1; }
         .event-notes-btn:hover {
-            background: #f0f0f0;
+            background: #e0e0e0;
             color: #24408E;
-            border-color: #ccc;
+            border-color: #999;
+            opacity: 1;
         }
         .event-notes-btn.has-notes {
             color: #24408E;
-            opacity: 0.7;
+            background: #e8edf7;
+            border-color: #24408E;
+            opacity: 1;
         }
-        .event-cell:hover .event-notes-btn.has-notes,
-        .event-cell.expanded .event-notes-btn.has-notes { opacity: 1; }
         .event-notes-btn.disabled {
-            color: #ccc;
+            color: #bbb;
+            background: transparent;
+            border-color: transparent;
             cursor: not-allowed;
+            opacity: 0.5;
         }
         .event-notes-editor-overlay {
             position: fixed;
