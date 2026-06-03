@@ -3003,6 +3003,8 @@
                 staffNeeded: 'fldk8fCGP0r6DgdkN',
                 staffStillNeeded: 'fldTtMQcQVrXjPYWq',
                 assignments: 'fldSDmDZEpBV3YDsO',
+                // allDayEvent field ID will be set once the sync includes it
+                // For now, all-day detection uses isAllDayEvent() helper below
             },
         };
 
@@ -3036,6 +3038,43 @@
         }
         function gcalDate(isoStr) {
             return { date: new Date(isoStr).toISOString().split('T')[0] };
+        }
+        // Helper: detect if an event should be treated as all-day on GCal.
+        // An event is all-day if: start time is midnight (00:00), or end time is midnight,
+        // or the event spans multiple full calendar days, or there's no end time.
+        function isAllDayEvent(startDT, endDT) {
+            if (!startDT) return false;
+            if (!endDT) return true; // No end time = treat as all-day
+            const start = new Date(startDT);
+            const end = new Date(endDT);
+            const startH = start.getUTCHours();
+            const startM = start.getUTCMinutes();
+            const endH = end.getUTCHours();
+            const endM = end.getUTCMinutes();
+            // Both midnight = all-day
+            if (startH === 0 && startM === 0 && endH === 0 && endM === 0) return true;
+            // Multi-day event (more than 24 hours) with midnight start = all-day
+            const durationHours = (end - start) / (1000 * 60 * 60);
+            if (durationHours >= 24 && startH === 0 && startM === 0) return true;
+            return false;
+        }
+        // Build GCal start/end objects, using all-day format when appropriate
+        function gcalStartEnd(startDT, endDT) {
+            if (isAllDayEvent(startDT, endDT)) {
+                const startDate = new Date(startDT).toISOString().split('T')[0];
+                if (endDT) {
+                    // All-day end date in GCal is exclusive (day after last day)
+                    const end = new Date(endDT);
+                    end.setDate(end.getDate() + 1);
+                    const endDate = end.toISOString().split('T')[0];
+                    return { start: { date: startDate }, end: { date: endDate } };
+                }
+                return { start: { date: startDate }, end: { date: startDate } };
+            }
+            return {
+                start: gcalDateTime(startDT),
+                end: endDT ? gcalDateTime(endDT) : gcalDateTime(new Date(new Date(startDT).getTime() + 3*3600000).toISOString())
+            };
         }
 
         // ===== PERSISTENT GCAL MAPPINGS (localStorage-backed) =====
@@ -6228,10 +6267,11 @@
                 }
 
                 const calId = encodeURIComponent(GCAL_CONFIG.reefCampus2CalendarId);
+                const _se = gcalStartEnd(startDT, endDT);
                 const gcalBody = {
                     summary: eventName,
-                    start: endDT ? gcalDateTime(startDT) : gcalDate(startDT),
-                    end: endDT ? gcalDateTime(endDT) : gcalDate(startDT),
+                    start: _se.start,
+                    end: _se.end,
                 };
 
                 const createResp = await fetch(
@@ -7089,16 +7129,11 @@
                     // No match found — auto-create
                     try {
                         const calId = encodeURIComponent(calendarId);
+                        const _se2 = startDT ? gcalStartEnd(startDT, endDT) : { start: gcalDate(dayStr + 'T00:00:00Z'), end: gcalDate(dayStr + 'T00:00:00Z') };
                         const gcalBody = {
                             summary: eventName,
-                            start: startDT
-                                ? gcalDateTime(startDT)
-                                : gcalDate(dayStr + 'T00:00:00Z'),
-                            end: endDT
-                                ? gcalDateTime(endDT)
-                                : startDT
-                                    ? gcalDateTime(new Date(new Date(startDT).getTime() + 3*3600000).toISOString())
-                                    : gcalDate(dayStr + 'T00:00:00Z'),
+                            start: _se2.start,
+                            end: _se2.end,
                         };
                         const createResp = await fetch(
                             `https://www.googleapis.com/calendar/v3/calendars/${calId}/events?sendUpdates=none`,
