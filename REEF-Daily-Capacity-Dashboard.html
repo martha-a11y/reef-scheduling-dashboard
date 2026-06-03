@@ -2283,44 +2283,43 @@
         }
         /* ===== EVENT NOTES BUTTON & EDITOR ===== */
         .event-notes-btn {
-            position: absolute;
-            bottom: 6px;
-            right: 32px;
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            background: #f5f5f5;
-            color: #555;
-            border: 1px solid #ccc;
-            cursor: pointer;
-            font-size: 13px;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            background: #e8e8e8;
+            color: #444;
+            border: 1px solid #bbb;
+            cursor: pointer;
+            font-size: 14px;
             padding: 0;
+            margin: 4px 4px 2px 0;
             transition: all 0.2s ease;
             z-index: 20;
             line-height: 1;
-            opacity: 0.8;
+            vertical-align: middle;
         }
         .event-notes-btn:hover {
-            background: #e0e0e0;
+            background: #d0d0d0;
             color: #24408E;
-            border-color: #999;
-            opacity: 1;
+            border-color: #24408E;
         }
         .event-notes-btn.has-notes {
-            color: #24408E;
-            background: #e8edf7;
+            color: #fff;
+            background: #24408E;
             border-color: #24408E;
-            opacity: 1;
+        }
+        .event-notes-btn.has-notes:hover {
+            background: #1a3070;
         }
         .event-notes-btn.disabled {
             color: #bbb;
-            background: transparent;
-            border-color: transparent;
+            background: #f5f5f5;
+            border-color: #ddd;
             cursor: not-allowed;
-            opacity: 0.5;
+            opacity: 0.6;
         }
         .event-notes-editor-overlay {
             position: fixed;
@@ -4940,7 +4939,17 @@
 
             let html = `<div class="event-cell" data-event-id="${evt.id}" data-day-index="${dayIndex}" data-type="event" onclick="toggleShiftExpand(event, this)">`;
             html += `<div class="event-name" title="${eventName}">${eventName}</div>`;
-            html += `<div class="event-collapsed-summary"><span class="event-type-badge" style="font-size:8px;padding:1px 4px;">${eventType}</span> <span>${confirmed.length} assigned</span></div>`;
+            // Notes button — find EVENTS_DB id for GCal mapping
+            const _notesDbId = findEventsDBRecordId ? findEventsDBRecordId(evt) : null;
+            const _notesGcalId = _notesDbId && GCAL_EVENT_MAPPING[_notesDbId] ? GCAL_EVENT_MAPPING[_notesDbId] : '';
+            const _notesCalId = isOffSiteType(eventType) ? GCAL_CONFIG.travelFieldworkCalendarId : GCAL_CONFIG.reefCampus2CalendarId;
+            let _notesBtnHtml = '';
+            if (_notesGcalId) {
+                _notesBtnHtml = `<button class="event-notes-btn" title="Add/edit notes on GCal" onclick="event.stopPropagation(); openEventNotesEditor(this, '${_notesCalId.replace(/'/g,"\\'")}', '${_notesGcalId.replace(/'/g,"\\'")}', '${eventName.replace(/'/g,"\\'")}')">&#9998;</button>`;
+            } else {
+                _notesBtnHtml = `<button class="event-notes-btn disabled" title="Sync to GCal first" onclick="event.stopPropagation();">&#9998;</button>`;
+            }
+            html += `<div class="event-collapsed-summary"><span class="event-type-badge" style="font-size:8px;padding:1px 4px;">${eventType}</span> <span>${confirmed.length} assigned</span> ${_notesBtnHtml}</div>`;
             html += `<div class="event-type-badge">${eventType}</div>`;
             if (timeStr) html += `<div class="shift-time">${timeStr}</div>`;
             html += `<div class="shift-staff">`;
@@ -4963,15 +4972,6 @@
             }
             html += `</div>`;
             html += `<button class="cell-add-btn" title="Add staff to event">+</button>`;
-            // Notes button — find EVENTS_DB id for GCal mapping
-            const _notesDbId = findEventsDBRecordId ? findEventsDBRecordId(evt) : null;
-            const _notesGcalId = _notesDbId && GCAL_EVENT_MAPPING[_notesDbId] ? GCAL_EVENT_MAPPING[_notesDbId] : '';
-            const _notesCalId = isOffSiteType(eventType) ? GCAL_CONFIG.travelFieldworkCalendarId : GCAL_CONFIG.reefCampus2CalendarId;
-            if (_notesGcalId) {
-                html += `<button class="event-notes-btn" title="Event notes" onclick="event.stopPropagation(); openEventNotesEditor(this, '${_notesCalId.replace(/'/g,"\\'")}', '${_notesGcalId.replace(/'/g,"\\'")}', '${eventName.replace(/'/g,"\\'")}')">&#9998;</button>`;
-            } else {
-                html += `<button class="event-notes-btn disabled" title="Sync to GCal first" onclick="event.stopPropagation();">&#9998;</button>`;
-            }
             html += `</div>`;
             return html;
         }
@@ -5046,7 +5046,16 @@
             const assignableId = matchingEventId || '';
             let html = `<div class="event-cell" data-event-id="${assignableId}" data-day-index="${dayIndex}" data-type="event" onclick="toggleShiftExpand(event, this)">`;
             html += `<div class="event-name" title="${eventName}">${eventName}</div>`;
-            html += `<div class="event-collapsed-summary"><span class="event-type-badge" style="font-size:8px;padding:1px 4px;">${eventType}</span> <span>${confirmed.length} assigned</span></div>`;
+            // Notes button — use evt.id (EVENTS_DB id) for GCal mapping
+            const _pNotesGcalId = evt.id && GCAL_EVENT_MAPPING[evt.id] ? GCAL_EVENT_MAPPING[evt.id] : '';
+            const _pNotesCalId = isOffSiteType(eventType) ? GCAL_CONFIG.travelFieldworkCalendarId : GCAL_CONFIG.reefCampus2CalendarId;
+            let _pNotesBtnHtml = '';
+            if (_pNotesGcalId) {
+                _pNotesBtnHtml = `<button class="event-notes-btn" title="Add/edit notes on GCal" onclick="event.stopPropagation(); openEventNotesEditor(this, '${_pNotesCalId.replace(/'/g,"\\'")}', '${_pNotesGcalId.replace(/'/g,"\\'")}', '${eventName.replace(/'/g,"\\'")}')">&#9998;</button>`;
+            } else {
+                _pNotesBtnHtml = `<button class="event-notes-btn disabled" title="Sync to GCal first" onclick="event.stopPropagation();">&#9998;</button>`;
+            }
+            html += `<div class="event-collapsed-summary"><span class="event-type-badge" style="font-size:8px;padding:1px 4px;">${eventType}</span> <span>${confirmed.length} assigned</span> ${_pNotesBtnHtml}</div>`;
             html += `<div class="event-type-badge">${eventType}</div>`;
             if (timeStr) html += `<div class="shift-time">${timeStr}</div>`;
             html += `<div class="shift-staff">`;
@@ -5072,14 +5081,6 @@
                 html += `<button class="cell-add-btn" title="Add staff to program">+</button>`;
             } else {
                 html += `<div style="font-size:10px;color:#999;margin-top:4px;" title="No matching record found in Events table">No link</div>`;
-            }
-            // Notes button — use evt.id (EVENTS_DB id) for GCal mapping
-            const _pNotesGcalId = evt.id && GCAL_EVENT_MAPPING[evt.id] ? GCAL_EVENT_MAPPING[evt.id] : '';
-            const _pNotesCalId = isOffSiteType(eventType) ? GCAL_CONFIG.travelFieldworkCalendarId : GCAL_CONFIG.reefCampus2CalendarId;
-            if (_pNotesGcalId) {
-                html += `<button class="event-notes-btn" title="Event notes" onclick="event.stopPropagation(); openEventNotesEditor(this, '${_pNotesCalId.replace(/'/g,"\\'")}', '${_pNotesGcalId.replace(/'/g,"\\'")}', '${eventName.replace(/'/g,"\\'")}')">&#9998;</button>`;
-            } else {
-                html += `<button class="event-notes-btn disabled" title="Sync to GCal first" onclick="event.stopPropagation();">&#9998;</button>`;
             }
             html += `</div>`;
             return html;
