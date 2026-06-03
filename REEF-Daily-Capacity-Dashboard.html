@@ -2281,6 +2281,121 @@
             background: #fff0f0;
             border-color: #AD1D22;
         }
+        /* ===== EVENT NOTES BUTTON & EDITOR ===== */
+        .event-notes-btn {
+            position: absolute;
+            bottom: 6px;
+            right: 32px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: transparent;
+            color: #999;
+            border: 1px solid transparent;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            transition: all 0.2s ease;
+            z-index: 10;
+            line-height: 1;
+            opacity: 0;
+        }
+        .event-cell:hover .event-notes-btn,
+        .event-cell.expanded .event-notes-btn { opacity: 1; }
+        .event-notes-btn:hover {
+            background: #f0f0f0;
+            color: #24408E;
+            border-color: #ccc;
+        }
+        .event-notes-btn.has-notes {
+            color: #24408E;
+            opacity: 0.7;
+        }
+        .event-cell:hover .event-notes-btn.has-notes,
+        .event-cell.expanded .event-notes-btn.has-notes { opacity: 1; }
+        .event-notes-btn.disabled {
+            color: #ccc;
+            cursor: not-allowed;
+        }
+        .event-notes-editor-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 999;
+            background: transparent;
+        }
+        .event-notes-editor {
+            position: fixed;
+            z-index: 1000;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            padding: 12px;
+            width: 280px;
+            font-family: inherit;
+        }
+        .event-notes-editor-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: #24408E;
+            margin-bottom: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .event-notes-editor textarea {
+            width: 100%;
+            min-height: 80px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 8px;
+            font-size: 12px;
+            font-family: inherit;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s;
+            box-sizing: border-box;
+        }
+        .event-notes-editor textarea:focus {
+            border-color: #24408E;
+        }
+        .event-notes-editor-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .event-notes-editor-actions button {
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid #ddd;
+            background: #f5f5f5;
+            color: #333;
+            transition: all 0.15s;
+        }
+        .event-notes-editor-actions button.save-btn {
+            background: #24408E;
+            color: white;
+            border-color: #24408E;
+        }
+        .event-notes-editor-actions button.save-btn:hover {
+            background: #1a2d5f;
+        }
+        .event-notes-editor-actions button.cancel-btn:hover {
+            background: #eee;
+        }
+        .event-notes-editor .notes-loading {
+            text-align: center;
+            padding: 16px 0;
+            color: #999;
+            font-size: 11px;
+        }
     </style>
 </head>
 <body>
@@ -4846,6 +4961,15 @@
             }
             html += `</div>`;
             html += `<button class="cell-add-btn" title="Add staff to event">+</button>`;
+            // Notes button — find EVENTS_DB id for GCal mapping
+            const _notesDbId = findEventsDBRecordId ? findEventsDBRecordId(evt) : null;
+            const _notesGcalId = _notesDbId && GCAL_EVENT_MAPPING[_notesDbId] ? GCAL_EVENT_MAPPING[_notesDbId] : '';
+            const _notesCalId = isOffSiteType(eventType) ? GCAL_CONFIG.travelFieldworkCalendarId : GCAL_CONFIG.reefCampus2CalendarId;
+            if (_notesGcalId) {
+                html += `<button class="event-notes-btn" title="Event notes" onclick="event.stopPropagation(); openEventNotesEditor(this, '${_notesCalId.replace(/'/g,"\\'")}', '${_notesGcalId.replace(/'/g,"\\'")}', '${eventName.replace(/'/g,"\\'")}')">&#9998;</button>`;
+            } else {
+                html += `<button class="event-notes-btn disabled" title="Sync to GCal first" onclick="event.stopPropagation();">&#9998;</button>`;
+            }
             html += `</div>`;
             return html;
         }
@@ -4946,6 +5070,14 @@
                 html += `<button class="cell-add-btn" title="Add staff to program">+</button>`;
             } else {
                 html += `<div style="font-size:10px;color:#999;margin-top:4px;" title="No matching record found in Events table">No link</div>`;
+            }
+            // Notes button — use evt.id (EVENTS_DB id) for GCal mapping
+            const _pNotesGcalId = evt.id && GCAL_EVENT_MAPPING[evt.id] ? GCAL_EVENT_MAPPING[evt.id] : '';
+            const _pNotesCalId = isOffSiteType(eventType) ? GCAL_CONFIG.travelFieldworkCalendarId : GCAL_CONFIG.reefCampus2CalendarId;
+            if (_pNotesGcalId) {
+                html += `<button class="event-notes-btn" title="Event notes" onclick="event.stopPropagation(); openEventNotesEditor(this, '${_pNotesCalId.replace(/'/g,"\\'")}', '${_pNotesGcalId.replace(/'/g,"\\'")}', '${eventName.replace(/'/g,"\\'")}')">&#9998;</button>`;
+            } else {
+                html += `<button class="event-notes-btn disabled" title="Sync to GCal first" onclick="event.stopPropagation();">&#9998;</button>`;
             }
             html += `</div>`;
             return html;
@@ -5389,7 +5521,7 @@
         // Toggle expand/collapse for OEC shift cells (#9)
         function toggleShiftExpand(e, el) {
             // Don't toggle if clicking on a staff pill or add button
-            if (e.target.closest('.staff-pill-interactive') || e.target.closest('.cell-add-btn')) return;
+            if (e.target.closest('.staff-pill-interactive') || e.target.closest('.cell-add-btn') || e.target.closest('.event-notes-btn')) return;
             el.classList.toggle('expanded');
         }
 
@@ -5855,6 +5987,140 @@
 
         function closeAllPopups() {
             document.querySelectorAll('.staff-picker-container, .confirmation-tooltip, .staff-picker-overlay').forEach(el => el.remove());
+        }
+
+        // ===== EVENT NOTES EDITOR (GCal description read/write) =====
+
+        function closeEventNotesEditor() {
+            document.querySelectorAll('.event-notes-editor, .event-notes-editor-overlay').forEach(el => el.remove());
+        }
+
+        async function fetchGCalEventDescription(calendarId, gcalEventId) {
+            const token = getGoogleAccessToken();
+            if (!token) return null;
+            const calId = encodeURIComponent(calendarId);
+            const evtId = encodeURIComponent(gcalEventId);
+            try {
+                const resp = await fetch(
+                    `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${evtId}`,
+                    { headers: { 'Authorization': `Bearer ${token}` } }
+                );
+                if (!resp.ok) return null;
+                const data = await resp.json();
+                return data.description || '';
+            } catch (err) {
+                console.error('[Notes] Error fetching GCal event description:', err);
+                return null;
+            }
+        }
+
+        async function updateGCalEventNotes(calendarId, gcalEventId, notes) {
+            const token = getGoogleAccessToken();
+            if (!token) { showToast('Connect Google Calendar first', 'error'); return false; }
+            const calId = encodeURIComponent(calendarId);
+            const evtId = encodeURIComponent(gcalEventId);
+            try {
+                const resp = await fetch(
+                    `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${evtId}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ description: notes })
+                    }
+                );
+                if (resp.ok) {
+                    showToast('Notes saved to Google Calendar', 'success');
+                    return true;
+                } else {
+                    const errData = await resp.json().catch(() => ({}));
+                    console.error('[Notes] GCal PATCH failed:', resp.status, errData);
+                    showToast('Failed to save notes', 'error');
+                    return false;
+                }
+            } catch (err) {
+                console.error('[Notes] Error saving GCal event notes:', err);
+                showToast('Failed to save notes', 'error');
+                return false;
+            }
+        }
+
+        async function openEventNotesEditor(btnEl, calendarId, gcalEventId, eventName) {
+            // Close any existing notes editor
+            closeEventNotesEditor();
+
+            const token = getGoogleAccessToken();
+            if (!token) {
+                showToast('Connect Google Calendar first', 'error');
+                return;
+            }
+
+            // Position the editor near the button
+            const rect = btnEl.getBoundingClientRect();
+            const editorWidth = 280;
+            // Try to place below the button; if too close to bottom, place above
+            let top = rect.bottom + 6;
+            let left = rect.left - editorWidth + 30;
+            if (left < 8) left = 8;
+            if (left + editorWidth > window.innerWidth - 8) left = window.innerWidth - editorWidth - 8;
+            if (top + 200 > window.innerHeight) top = rect.top - 206;
+
+            // Create overlay to catch outside clicks
+            const overlay = document.createElement('div');
+            overlay.className = 'event-notes-editor-overlay';
+            overlay.addEventListener('click', () => closeEventNotesEditor());
+            document.body.appendChild(overlay);
+
+            // Create editor popover
+            const editor = document.createElement('div');
+            editor.className = 'event-notes-editor';
+            editor.style.top = top + 'px';
+            editor.style.left = left + 'px';
+            editor.innerHTML = `
+                <div class="event-notes-editor-title" title="${eventName.replace(/"/g, '&quot;')}">${eventName}</div>
+                <div class="notes-loading">Loading notes...</div>
+            `;
+            document.body.appendChild(editor);
+
+            // Fetch existing description
+            const existingNotes = await fetchGCalEventDescription(calendarId, gcalEventId);
+
+            // Replace loading with textarea + buttons
+            editor.innerHTML = `
+                <div class="event-notes-editor-title" title="${eventName.replace(/"/g, '&quot;')}">${eventName}</div>
+                <textarea id="eventNotesTextarea" placeholder="Add event notes...">${existingNotes != null ? existingNotes.replace(/</g, '&lt;').replace(/>/g, '&gt;') : ''}</textarea>
+                <div class="event-notes-editor-actions">
+                    <button class="cancel-btn" onclick="closeEventNotesEditor()">Cancel</button>
+                    <button class="save-btn" id="eventNotesSaveBtn">Save</button>
+                </div>
+            `;
+
+            // Focus the textarea
+            const textarea = document.getElementById('eventNotesTextarea');
+            if (textarea) textarea.focus();
+
+            // Save handler
+            document.getElementById('eventNotesSaveBtn').addEventListener('click', async () => {
+                const notes = document.getElementById('eventNotesTextarea').value;
+                const saveBtn = document.getElementById('eventNotesSaveBtn');
+                saveBtn.textContent = 'Saving...';
+                saveBtn.disabled = true;
+                const ok = await updateGCalEventNotes(calendarId, gcalEventId, notes);
+                if (ok) {
+                    // Mark the button as having notes
+                    if (notes.trim()) {
+                        btnEl.classList.add('has-notes');
+                    } else {
+                        btnEl.classList.remove('has-notes');
+                    }
+                    closeEventNotesEditor();
+                } else {
+                    saveBtn.textContent = 'Save';
+                    saveBtn.disabled = false;
+                }
+            });
         }
 
         // --- Airtable write functions ---
