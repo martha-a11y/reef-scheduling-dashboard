@@ -6970,17 +6970,88 @@
 
                 // Helper: sync members to a single GCal event instance
                 async function syncMembersToGCalInstance(calendarId, gcalEventId, memberIds, instanceLabel) {
-                    let synced = 0, skipped = 0, failed = 0;
+                    let synced = 0, skipped = 0, failed = 0, removed = 0;
+
+                    // Build set of emails that SHOULD be on this event
+                    const assignedEmails = new Set();
                     for (const memberId of memberIds) {
                         const email = getMemberEmail(memberId);
-                        if (!email) { skipped++; continue; }
+                        if (email) assignedEmails.add(email.toLowerCase());
+                    }
+
+                    // Fetch current GCal event to get existing attendees
+                    const calId = encodeURIComponent(calendarId);
+                    let gcalEvent;
+                    try {
+                        const getResp = await fetch(
+                            `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}`,
+                            { headers: { 'Authorization': `Bearer ${token}` } }
+                        );
+                        if (!getResp.ok) return { synced, skipped, failed: memberIds.size || memberIds.length };
+                        gcalEvent = await getResp.json();
+                    } catch (err) {
+                        return { synced, skipped, failed: memberIds.size || memberIds.length };
+                    }
+
+                    const currentAttendees = gcalEvent.attendees || [];
+
+                    // Determine who to add and who to remove
+                    const currentEmails = new Set(currentAttendees.map(a => (a.email || '').toLowerCase()));
+                    const toAdd = [...assignedEmails].filter(e => !currentEmails.has(e));
+                    const toRemove = currentAttendees.filter(a => {
+                        const email = (a.email || '').toLowerCase();
+                        // Don't remove the calendar itself (organizer) or non-REEF emails
+                        if (email.includes('group.calendar.google.com')) return false;
+                        if (a.organizer) return false;
+                        // Remove if not in assigned list AND has a REEF email
+                        return !assignedEmails.has(email) && (email.endsWith('@reef.org') || email.includes('eci'));
+                    });
+
+                    let needsUpdate = false;
+                    let updatedAttendees = [...currentAttendees];
+
+                    // Remove unassigned staff
+                    if (toRemove.length > 0) {
+                        updatedAttendees = updatedAttendees.filter(a => {
+                            const email = (a.email || '').toLowerCase();
+                            return !toRemove.some(r => (r.email || '').toLowerCase() === email);
+                        });
+                        removed = toRemove.length;
+                        needsUpdate = true;
+                        for (const r of toRemove) {
+                            console.log('[GCal SyncAll] Event: Removed', r.email, 'from', instanceLabel);
+                        }
+                    }
+
+                    // Add newly assigned staff
+                    for (const email of toAdd) {
+                        updatedAttendees.push({ email, responseStatus: 'accepted' });
+                        synced++;
+                        needsUpdate = true;
+                        console.log('[GCal SyncAll] Event: Added', email, 'to', instanceLabel);
+                    }
+
+                    skipped = assignedEmails.size - toAdd.length;
+
+                    // Patch if anything changed
+                    if (needsUpdate) {
                         try {
-                            const result = await addAttendeeToGCalEvent(calendarId, gcalEventId, email, token);
-                            if (result === 'synced') { synced++; console.log('[GCal SyncAll] Event: Added', email, 'to', instanceLabel); }
-                            else if (result === 'skipped') skipped++;
-                            else failed++;
+                            const patchResp = await fetch(
+                                `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}?sendUpdates=none`,
+                                {
+                                    method: 'PATCH',
+                                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ attendees: updatedAttendees }),
+                                }
+                            );
+                            if (!patchResp.ok) {
+                                console.log('[GCal SyncAll] Event: Failed to update attendees for', instanceLabel, patchResp.status);
+                                failed++;
+                            }
                         } catch (err) { failed++; }
                     }
+
+                    if (removed > 0) console.log('[GCal SyncAll] Event:', instanceLabel, '— removed', removed, 'unassigned attendees');
                     return { synced, skipped, failed };
                 }
 
