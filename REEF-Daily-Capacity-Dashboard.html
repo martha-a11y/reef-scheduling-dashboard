@@ -6663,8 +6663,113 @@
                 // instance maps to exactly the right GCal event and exactly the right
                 // assignment list. Dashboard assignment records are authoritative.
 
-                // Helper: reconcile attendees on a GCal event to exactly the Airtable list
-                async function reconcileGCalAttendees(gcalEventId, memberIds, instanceLabel) {
+                // ── Helper: write a refreshed GCal Event ID back to the Scheduling base Events record ──
+                async function writeRefreshedGCalId(evtRecordId, newGcalId) {
+                    try {
+                        const resp = await fetch(
+                            `https://api.airtable.com/v0/${BASE_ID}/${TABLES.EVENTS}/${evtRecordId}`,
+                            {
+                                method: 'PATCH',
+                                headers: {
+                                    'Authorization': `Bearer ${apiKey}`,
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({ fields: { [FIELDS.EVENTS.gcalEventId]: newGcalId } }),
+                            }
+                        );
+                        if (resp.ok) {
+                            console.log('[GCal SyncAll] Fallback: Wrote refreshed GCal ID to Scheduling base record', evtRecordId, '→', newGcalId.substring(0, 15));
+                        } else {
+                            console.warn('[GCal SyncAll] Fallback: Failed to write refreshed GCal ID', resp.status);
+                        }
+                    } catch (err) {
+                        console.warn('[GCal SyncAll] Fallback: Error writing refreshed GCal ID', err);
+                    }
+                }
+
+                // ── Helper: fallback search for a GCal event by exact date + high-confidence title match ──
+                // Used only when the stored GCal ID returns 404 (stale).
+                // Rules: must match this exact date only; title match must be high-confidence (≥80% word overlap
+                // or exact substring); exactly one match required — if 0 or >1 match, skip and log.
+                async function fallbackFindGCalId(evtName, evtStartISO) {
+                    try {
+                        const dayStr = new Date(evtStartISO).toISOString().split('T')[0];
+                        const calId = encodeURIComponent(GCAL_CONFIG.reefCampus2CalendarId);
+
+                        // Fetch all GCal events on this exact date
+                        const timeMin = encodeURIComponent(dayStr + 'T00:00:00Z');
+                        const timeMax = encodeURIComponent(dayStr + 'T23:59:59Z');
+                        const listResp = await fetch(
+                            `https://www.googleapis.com/calendar/v3/calendars/${calId}/events?singleEvents=true&timeMin=${timeMin}&timeMax=${timeMax}&maxResults=50`,
+                            { headers: { 'Authorization': `Bearer ${token}` } }
+                        );
+                        if (!listResp.ok) {
+                            console.log('[GCal SyncAll] Fallback: Could not list GCal events for', dayStr, listResp.status);
+                            return null;
+                        }
+                        const listData = await listResp.json();
+                        const dayEvents = (listData.items || []).filter(e => e.status !== 'cancelled');
+
+                        if (dayEvents.length === 0) {
+                            console.log('[GCal SyncAll] Fallback: No GCal events found on', dayStr, 'for', evtName);
+                            return null;
+                        }
+
+                        // High-confidence title matching — strip date suffixes and prefixes, then check:
+                        // 1. Exact match (after normalization)
+                        // 2. One is a substring of the other (min 8 chars)
+                        // 3. Word overlap ≥ 80% (ignoring short stop words)
+                        const normalize = s => (s || '').toLowerCase()
+                            .replace(/\s*[-–]\s*\d{1,2}\/\d{1,2}\/\d{2,4}\s*$/, '')  // strip trailing date
+                            .replace(/^[a-z]{2,6}:\s*/i, '')                                 // strip prefix like "OAH: "
+                            .trim();
+                        const words = s => normalize(s).split(/\s+/).filter(w => w.length > 3);
+
+                        const searchNorm = normalize(evtName);
+                        const searchWords = words(evtName);
+
+                        const matches = [];
+                        for (const ge of dayEvents) {
+                            const geNorm = normalize(ge.summary);
+                            const geWords = words(ge.summary);
+
+                            // Rule 1: exact after normalization
+                            if (searchNorm === geNorm) { matches.push(ge); continue; }
+                            // Rule 2: substring (both directions, min 8 chars to avoid false positives)
+                            if (searchNorm.length >= 8 && geNorm.includes(searchNorm)) { matches.push(ge); continue; }
+                            if (geNorm.length >= 8 && searchNorm.includes(geNorm)) { matches.push(ge); continue; }
+                            // Rule 3: word overlap ≥ 80%
+                            if (searchWords.length > 0 && geWords.length > 0) {
+                                const overlap = searchWords.filter(w => geWords.includes(w)).length;
+                                const ratio = overlap / Math.max(searchWords.length, geWords.length);
+                                if (ratio >= 0.8) { matches.push(ge); continue; }
+                            }
+                        }
+
+                        if (matches.length === 1) {
+                            console.log('[GCal SyncAll] Fallback: Found exactly 1 high-confidence match on', dayStr,
+                                '— "' + matches[0].summary + '" (' + matches[0].id.substring(0, 15) + ')');
+                            return matches[0].id;
+                        } else if (matches.length === 0) {
+                            console.log('[GCal SyncAll] Fallback: No high-confidence match found on', dayStr,
+                                'for "' + evtName + '". Available GCal events:',
+                                dayEvents.map(e => '"' + e.summary + '"').join(', '));
+                            return null;
+                        } else {
+                            console.log('[GCal SyncAll] Fallback: Multiple matches (' + matches.length + ') found on', dayStr,
+                                'for "' + evtName + '" — refusing to guess. Matches:',
+                                matches.map(e => '"' + e.summary + '"').join(', '));
+                            return null;
+                        }
+                    } catch (err) {
+                        console.error('[GCal SyncAll] Fallback: Error searching GCal', err);
+                        return null;
+                    }
+                }
+
+                // ── Helper: reconcile attendees on a GCal event to exactly the Airtable list ──
+                // evtRecordId is used only if a fallback ID refresh is needed (written back to Airtable).
+                async function reconcileGCalAttendees(gcalEventId, memberIds, instanceLabel, evtRecordId, evtName, evtStartISO) {
                     let synced = 0, skipped = 0, failed = 0;
                     try {
                         // Build authoritative email list from active Airtable assignments only
@@ -6675,10 +6780,31 @@
                         }
 
                         const calId = encodeURIComponent(GCAL_CONFIG.reefCampus2CalendarId);
-                        const getResp = await fetch(
+                        let getResp = await fetch(
                             `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}`,
                             { headers: { 'Authorization': `Bearer ${token}` } }
                         );
+
+                        // ── 404 fallback: stored ID is stale — search by date + title ──
+                        if (getResp.status === 404) {
+                            console.log('[GCal SyncAll] Fallback triggered: stored ID', gcalEventId.substring(0, 15),
+                                'returned 404 for', instanceLabel, '— searching by date+title...');
+                            const freshId = await fallbackFindGCalId(evtName, evtStartISO);
+                            if (!freshId) {
+                                console.log('[GCal SyncAll] Fallback: Could not find current GCal event for', instanceLabel, '— skipping.');
+                                failed++;
+                                return { synced, skipped, failed };
+                            }
+                            // Write refreshed ID back to Scheduling base so next sync uses it directly
+                            if (evtRecordId) await writeRefreshedGCalId(evtRecordId, freshId);
+                            // Re-fetch using the fresh ID
+                            gcalEventId = freshId;
+                            getResp = await fetch(
+                                `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}`,
+                                { headers: { 'Authorization': `Bearer ${token}` } }
+                            );
+                        }
+
                         if (!getResp.ok) {
                             console.log('[GCal SyncAll] Event: Could not fetch GCal event', gcalEventId, getResp.status);
                             failed++;
@@ -6754,8 +6880,13 @@
                         + ' (' + new Date(evtStart).toISOString().split('T')[0] + ')';
 
                     if (storedGcalId) {
-                        // Use stored ID directly — exact 1:1 match, no name matching
-                        const result = await reconcileGCalAttendees(storedGcalId, memberIds, label);
+                        // Use stored ID directly — 404 fallback will search by date+title if stale
+                        const result = await reconcileGCalAttendees(
+                            storedGcalId, memberIds, label,
+                            evt.id,                                  // for Airtable write-back if ID is refreshed
+                            evt.fields[FIELDS.EVENTS.eventName],     // for fallback title search
+                            evtStart                                  // for fallback date search
+                        );
                         evtSynced += result.synced;
                         evtSkipped += result.skipped;
                         evtFailed += result.failed;
