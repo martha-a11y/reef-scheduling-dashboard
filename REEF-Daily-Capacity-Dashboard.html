@@ -3089,6 +3089,17 @@
 
         // Helper: check if an event type string indicates off-site
         // Matches: "Field Survey", "Field Survey Trips & Fieldwork", "Conference", etc.
+        // Determine which GCal calendar an Events record belongs to.
+        // Field Survey Trips & Fieldwork → Travel, Fieldwork and Research calendar
+        // Everything else → REEF Campus 2026 calendar
+        function getEventCalendarId(evt) {
+            const evtType = selectVal(evt.fields[FIELDS.EVENTS.eventType]) || '';
+            if (evtType === 'Field Survey Trips & Fieldwork' || evtType === 'Field Survey') {
+                return GCAL_CONFIG.travelFieldworkCalendarId;
+            }
+            return GCAL_CONFIG.reefCampus2CalendarId;
+        }
+
         function isOffSiteType(eventType) {
             if (!eventType) return false;
             const t = eventType.toLowerCase();
@@ -6807,17 +6818,6 @@
                 // We use that ID directly — no fuzzy name matching — to ensure each dated
                 // instance maps to exactly the right GCal event and exactly the right
                 // assignment list. Dashboard assignment records are authoritative.
-
-                // ── Helper: determine which GCal calendar an Events record belongs to ──
-                // Field Survey Trips & Fieldwork → Travel, Fieldwork and Research calendar
-                // Everything else → REEF Campus 2026 calendar
-                function getEventCalendarId(evt) {
-                    const evtType = selectVal(evt.fields[FIELDS.EVENTS.eventType]) || '';
-                    if (evtType === 'Field Survey Trips & Fieldwork' || evtType === 'Field Survey') {
-                        return GCAL_CONFIG.travelFieldworkCalendarId;
-                    }
-                    return GCAL_CONFIG.reefCampus2CalendarId;
-                }
 
                 // ── Helper: write a refreshed GCal Event ID back to the Scheduling base Events record ──
                 async function writeRefreshedGCalId(evtRecordId, newGcalId) {
