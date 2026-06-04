@@ -2281,122 +2281,6 @@
             background: #fff0f0;
             border-color: #AD1D22;
         }
-        /* ===== EVENT NOTES BUTTON & EDITOR ===== */
-        .event-notes-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 24px;
-            height: 24px;
-            border-radius: 4px;
-            background: #e8e8e8;
-            color: #444;
-            border: 1px solid #bbb;
-            cursor: pointer;
-            font-size: 14px;
-            padding: 0;
-            margin: 4px 4px 2px 0;
-            transition: all 0.2s ease;
-            z-index: 20;
-            line-height: 1;
-            vertical-align: middle;
-        }
-        .event-notes-btn:hover {
-            background: #d0d0d0;
-            color: #24408E;
-            border-color: #24408E;
-        }
-        .event-notes-btn.has-notes {
-            color: #fff;
-            background: #24408E;
-            border-color: #24408E;
-        }
-        .event-notes-btn.has-notes:hover {
-            background: #1a3070;
-        }
-        .event-notes-btn.disabled {
-            color: #bbb;
-            background: #f5f5f5;
-            border-color: #ddd;
-            cursor: not-allowed;
-            opacity: 0.6;
-        }
-        .event-notes-editor-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            z-index: 999;
-            background: transparent;
-        }
-        .event-notes-editor {
-            position: fixed;
-            z-index: 1000;
-            background: #fff;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-            padding: 12px;
-            width: 280px;
-            font-family: inherit;
-        }
-        .event-notes-editor-title {
-            font-size: 11px;
-            font-weight: 700;
-            color: #24408E;
-            margin-bottom: 8px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .event-notes-editor textarea {
-            width: 100%;
-            min-height: 80px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 8px;
-            font-size: 12px;
-            font-family: inherit;
-            resize: vertical;
-            outline: none;
-            transition: border-color 0.2s;
-            box-sizing: border-box;
-        }
-        .event-notes-editor textarea:focus {
-            border-color: #24408E;
-        }
-        .event-notes-editor-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 6px;
-            margin-top: 8px;
-        }
-        .event-notes-editor-actions button {
-            padding: 4px 12px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-            border: 1px solid #ddd;
-            background: #f5f5f5;
-            color: #333;
-            transition: all 0.15s;
-        }
-        .event-notes-editor-actions button.save-btn {
-            background: #24408E;
-            color: white;
-            border-color: #24408E;
-        }
-        .event-notes-editor-actions button.save-btn:hover {
-            background: #1a2d5f;
-        }
-        .event-notes-editor-actions button.cancel-btn:hover {
-            background: #eee;
-        }
-        .event-notes-editor .notes-loading {
-            text-align: center;
-            padding: 16px 0;
-            color: #999;
-            font-size: 11px;
-        }
     </style>
 </head>
 <body>
@@ -2647,12 +2531,11 @@
                         <table class="scheduler-grid">
                             <colgroup>
                                 <col style="width: 110px;">
-                                <col span="7" style="width: calc((100% - 110px) / 7);">
+                                <col span="6" style="width: calc((100% - 110px) / 6);">
                             </colgroup>
                             <thead>
                                 <tr>
                                     <th class="time-col">Area</th>
-                                    <th id="dayHeaderSun">Sun</th>
                                     <th id="dayHeaderMon">Mon</th>
                                     <th id="dayHeaderTue">Tue</th>
                                     <th id="dayHeaderWed">Wed</th>
@@ -3003,8 +2886,6 @@
                 staffNeeded: 'fldk8fCGP0r6DgdkN',
                 staffStillNeeded: 'fldTtMQcQVrXjPYWq',
                 assignments: 'fldSDmDZEpBV3YDsO',
-                // allDayEvent field ID will be set once the sync includes it
-                // For now, all-day detection uses isAllDayEvent() helper below
             },
         };
 
@@ -3012,9 +2893,7 @@
         const GCAL_CONFIG = {
             reefCampus2CalendarId: 'c_9f80e975e8a470d96d1f14286720949b779c1b1e5d62aeb3b13b5fcb7168c105@group.calendar.google.com',
             oecShiftsCalendarId: 'c_c26c00c881e3e199fd76dde88a6640709d12de9099573a8e104b771553e8a4d2@group.calendar.google.com',
-            travelFieldworkCalendarId: 'c_092a2b4260d18408e4ecbe864dab65f39022e0957a59edbf4d09c85830898101@group.calendar.google.com',
             timeZone: 'America/New_York', // REEF is in Key Largo, FL
-            travelFieldworkTypes: ['Field Survey Trip', 'Field Survey Trips & Fieldwork', 'Field Survey Trip/Fieldwork', 'Conference/Trade Show'],
         };
 
         // Format a date/time string for GCal API — converts UTC to Eastern time.
@@ -3038,43 +2917,6 @@
         }
         function gcalDate(isoStr) {
             return { date: new Date(isoStr).toISOString().split('T')[0] };
-        }
-        // Helper: detect if an event should be treated as all-day on GCal.
-        // An event is all-day if: start time is midnight (00:00), or end time is midnight,
-        // or the event spans multiple full calendar days, or there's no end time.
-        function isAllDayEvent(startDT, endDT) {
-            if (!startDT) return false;
-            if (!endDT) return true; // No end time = treat as all-day
-            const start = new Date(startDT);
-            const end = new Date(endDT);
-            const startH = start.getUTCHours();
-            const startM = start.getUTCMinutes();
-            const endH = end.getUTCHours();
-            const endM = end.getUTCMinutes();
-            // Both midnight = all-day
-            if (startH === 0 && startM === 0 && endH === 0 && endM === 0) return true;
-            // Multi-day event (more than 24 hours) with midnight start = all-day
-            const durationHours = (end - start) / (1000 * 60 * 60);
-            if (durationHours >= 24 && startH === 0 && startM === 0) return true;
-            return false;
-        }
-        // Build GCal start/end objects, using all-day format when appropriate
-        function gcalStartEnd(startDT, endDT) {
-            if (isAllDayEvent(startDT, endDT)) {
-                const startDate = new Date(startDT).toISOString().split('T')[0];
-                if (endDT) {
-                    // All-day end date in GCal is exclusive (day after last day)
-                    const end = new Date(endDT);
-                    end.setDate(end.getDate() + 1);
-                    const endDate = end.toISOString().split('T')[0];
-                    return { start: { date: startDate }, end: { date: endDate } };
-                }
-                return { start: { date: startDate }, end: { date: startDate } };
-            }
-            return {
-                start: gcalDateTime(startDT),
-                end: endDT ? gcalDateTime(endDT) : gcalDateTime(new Date(new Date(startDT).getTime() + 3*3600000).toISOString())
-            };
         }
 
         // ===== PERSISTENT GCAL MAPPINGS (localStorage-backed) =====
@@ -3127,7 +2969,7 @@
         function isOffSiteType(eventType) {
             if (!eventType) return false;
             const t = eventType.toLowerCase();
-            return GCAL_CONFIG.travelFieldworkTypes.some(type => t.includes(type.toLowerCase()));
+            return t.includes('field survey') || t.includes('conference');
         }
 
         // Helper: check if a linked record array contains a specific record ID
@@ -3464,7 +3306,8 @@
         function getWeekStartDate(weeksFromNow) {
             const date = new Date(selectedDate);
             const day = date.getDay();
-            date.setDate(date.getDate() - day + (weeksFromNow * 7));
+            const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+            date.setDate(diff + (weeksFromNow * 7));
             return date;
         }
 
@@ -4498,8 +4341,9 @@
         function initSchedulerWeek() {
             const today = new Date(selectedDate);
             const dayOfWeek = today.getDay();
+            const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
             schedulerWeekStart = new Date(today);
-            schedulerWeekStart.setDate(today.getDate() - dayOfWeek);
+            schedulerWeekStart.setDate(today.getDate() - daysToMonday);
             schedulerWeekStart.setHours(0, 0, 0, 0);
         }
 
@@ -4516,7 +4360,7 @@
         function getSchedulerWeekDateRange() {
             const start = new Date(schedulerWeekStart);
             const end = new Date(schedulerWeekStart);
-            end.setDate(start.getDate() + 6);
+            end.setDate(start.getDate() + 5);
 
             const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
             return `${months[start.getMonth()]} ${start.getDate()} – ${months[end.getMonth()]} ${end.getDate()}, ${end.getFullYear()}`;
@@ -4723,7 +4567,7 @@
                 }
             });
 
-            for (let i = 0; i < 7; i++) {
+            for (let i = 0; i < 6; i++) {
                 const dayDate = new Date(schedulerWeekStart);
                 dayDate.setDate(schedulerWeekStart.getDate() + i);
                 dayDate.setHours(0,0,0,0);
@@ -4856,7 +4700,7 @@
             const conflicts = detectSchedulerConflicts();
             if (conflicts.length === 0) return;
 
-            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             let html = `<div style="background:#fff3e0;border:1px solid #ff9800;border-left:4px solid #ff9800;border-radius:4px;padding:10px 14px;margin-bottom:8px;">`;
             html += `<div style="font-weight:700;color:#e65100;margin-bottom:6px;font-size:13px;">⚠ Scheduling Conflicts Detected (${conflicts.length})</div>`;
             conflicts.forEach(c => {
@@ -4978,17 +4822,7 @@
 
             let html = `<div class="event-cell" data-event-id="${evt.id}" data-day-index="${dayIndex}" data-type="event" onclick="toggleShiftExpand(event, this)">`;
             html += `<div class="event-name" title="${eventName}">${eventName}</div>`;
-            // Notes button — find EVENTS_DB id for GCal mapping
-            const _notesDbId = findEventsDBRecordId ? findEventsDBRecordId(evt.id) : null;
-            const _notesGcalId = _notesDbId && GCAL_EVENT_MAPPING[_notesDbId] ? GCAL_EVENT_MAPPING[_notesDbId] : '';
-            const _notesCalId = isOffSiteType(eventType) ? GCAL_CONFIG.travelFieldworkCalendarId : GCAL_CONFIG.reefCampus2CalendarId;
-            let _notesBtnHtml = '';
-            if (_notesGcalId) {
-                _notesBtnHtml = `<button class="event-notes-btn" title="Add/edit notes on GCal" onclick="event.stopPropagation(); openEventNotesEditor(this, '${_notesCalId.replace(/'/g,"\\'")}', '${_notesGcalId.replace(/'/g,"\\'")}', '${eventName.replace(/'/g,"\\'")}')">&#9998;</button>`;
-            } else {
-                _notesBtnHtml = `<button class="event-notes-btn disabled" title="Sync to GCal first" onclick="event.stopPropagation();">&#9998;</button>`;
-            }
-            html += `<div class="event-collapsed-summary"><span class="event-type-badge" style="font-size:8px;padding:1px 4px;">${eventType}</span> <span>${confirmed.length} assigned</span> ${_notesBtnHtml}</div>`;
+            html += `<div class="event-collapsed-summary"><span class="event-type-badge" style="font-size:8px;padding:1px 4px;">${eventType}</span> <span>${confirmed.length} assigned</span></div>`;
             html += `<div class="event-type-badge">${eventType}</div>`;
             if (timeStr) html += `<div class="shift-time">${timeStr}</div>`;
             html += `<div class="shift-staff">`;
@@ -5085,16 +4919,7 @@
             const assignableId = matchingEventId || '';
             let html = `<div class="event-cell" data-event-id="${assignableId}" data-day-index="${dayIndex}" data-type="event" onclick="toggleShiftExpand(event, this)">`;
             html += `<div class="event-name" title="${eventName}">${eventName}</div>`;
-            // Notes button — use evt.id (EVENTS_DB id) for GCal mapping
-            const _pNotesGcalId = evt.id && GCAL_EVENT_MAPPING[evt.id] ? GCAL_EVENT_MAPPING[evt.id] : '';
-            const _pNotesCalId = isOffSiteType(eventType) ? GCAL_CONFIG.travelFieldworkCalendarId : GCAL_CONFIG.reefCampus2CalendarId;
-            let _pNotesBtnHtml = '';
-            if (_pNotesGcalId) {
-                _pNotesBtnHtml = `<button class="event-notes-btn" title="Add/edit notes on GCal" onclick="event.stopPropagation(); openEventNotesEditor(this, '${_pNotesCalId.replace(/'/g,"\\'")}', '${_pNotesGcalId.replace(/'/g,"\\'")}', '${eventName.replace(/'/g,"\\'")}')">&#9998;</button>`;
-            } else {
-                _pNotesBtnHtml = `<button class="event-notes-btn disabled" title="Sync to GCal first" onclick="event.stopPropagation();">&#9998;</button>`;
-            }
-            html += `<div class="event-collapsed-summary"><span class="event-type-badge" style="font-size:8px;padding:1px 4px;">${eventType}</span> <span>${confirmed.length} assigned</span> ${_pNotesBtnHtml}</div>`;
+            html += `<div class="event-collapsed-summary"><span class="event-type-badge" style="font-size:8px;padding:1px 4px;">${eventType}</span> <span>${confirmed.length} assigned</span></div>`;
             html += `<div class="event-type-badge">${eventType}</div>`;
             if (timeStr) html += `<div class="shift-time">${timeStr}</div>`;
             html += `<div class="shift-staff">`;
@@ -5132,8 +4957,8 @@
             document.getElementById('weekLabel').textContent = getSchedulerWeekDateRange();
 
             // Update day column headers
-            const dayAbbr = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-            for (let i = 0; i < 7; i++) {
+            const dayAbbr = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            for (let i = 0; i < 6; i++) {
                 const dayDate = new Date(schedulerWeekStart);
                 dayDate.setDate(schedulerWeekStart.getDate() + i);
                 const month = String(dayDate.getMonth() + 1).padStart(2, '0');
@@ -5156,11 +4981,11 @@
         function renderSchedulerGrid() {
             // Diagnostic: log ALL shifts BEFORE dedup to debug classification
             console.log('[Scheduler] Shift classification diagnostic (ALL shifts, pre-dedup):');
-            for (let i = 0; i < 7; i++) {
+            for (let i = 0; i < 6; i++) {
                 const dayDate = new Date(schedulerWeekStart);
                 dayDate.setDate(schedulerWeekStart.getDate() + i);
                 const dayStr = dayDate.toISOString().split('T')[0];
-                const dayName = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][i];
+                const dayName = ['Mon','Tue','Wed','Thu','Fri','Sat'][i];
                 const allDayShifts = allData.oecShifts.filter(shift => {
                     const sd = shift.fields[FIELDS.OEC_SHIFTS.shiftDate];
                     return sd && new Date(sd).toISOString().split('T')[0] === dayStr;
@@ -5184,7 +5009,7 @@
             const oecHeaderRow = document.createElement('tr');
             const oecHeaderTd = document.createElement('td');
             oecHeaderTd.className = 'scheduler-group-header section-header';
-            oecHeaderTd.colSpan = 8;
+            oecHeaderTd.colSpan = 7;
             oecHeaderTd.textContent = 'OEC Shifts';
             oecHeaderRow.appendChild(oecHeaderTd);
             tbody.appendChild(oecHeaderRow);
@@ -5198,13 +5023,8 @@
             amLabel.textContent = 'AM';
             amRow.appendChild(amLabel);
 
-            for (let i = 0; i < 7; i++) {
+            for (let i = 0; i < 6; i++) {
                 const td = document.createElement('td');
-                if (i === 0) { // Sunday - OEC Closed
-                    td.innerHTML = '<div class="shift-cell empty" style="justify-content:center;align-items:center;color:#aaa;font-size:11px;font-style:italic;background:#f0f0f0;">Closed</div>';
-                    amRow.appendChild(td);
-                    continue;
-                }
                 const dayShifts = getSchedulerDayShifts(i);
                 const amShifts = dayShifts.filter(s => classifyShiftSlot(s) === 'AM');
                 if (amShifts.length > 0) {
@@ -5223,13 +5043,8 @@
             pmLabel.textContent = 'PM';
             pmRow.appendChild(pmLabel);
 
-            for (let i = 0; i < 7; i++) {
+            for (let i = 0; i < 6; i++) {
                 const td = document.createElement('td');
-                if (i === 0) { // Sunday - OEC Closed
-                    td.innerHTML = '<div class="shift-cell empty" style="justify-content:center;align-items:center;color:#aaa;font-size:11px;font-style:italic;background:#f0f0f0;">Closed</div>';
-                    pmRow.appendChild(td);
-                    continue;
-                }
                 const dayShifts = getSchedulerDayShifts(i);
                 const pmShifts = dayShifts.filter(s => classifyShiftSlot(s) === 'PM');
                 if (pmShifts.length > 0) {
@@ -5243,7 +5058,7 @@
 
             // === OEC EVENING ROW (only shown if any Evening shifts exist this week) ===
             let hasEveningShifts = false;
-            for (let i = 0; i < 7; i++) {
+            for (let i = 0; i < 6; i++) {
                 const dayShifts = getSchedulerDayShifts(i);
                 if (dayShifts.some(s => classifyShiftSlot(s) === 'Evening')) {
                     hasEveningShifts = true;
@@ -5257,13 +5072,8 @@
                 eveLabel.textContent = 'Evening';
                 eveRow.appendChild(eveLabel);
 
-                for (let i = 0; i < 7; i++) {
+                for (let i = 0; i < 6; i++) {
                     const td = document.createElement('td');
-                    if (i === 0) { // Sunday - OEC Closed
-                        td.innerHTML = '<div class="shift-cell empty" style="justify-content:center;align-items:center;color:#aaa;font-size:11px;font-style:italic;background:#f0f0f0;">Closed</div>';
-                        eveRow.appendChild(td);
-                        continue;
-                    }
                     const dayShifts = getSchedulerDayShifts(i);
                     const eveShifts = dayShifts.filter(s => classifyShiftSlot(s) === 'Evening');
                     if (eveShifts.length > 0) {
@@ -5279,7 +5089,7 @@
             // === PROGRAMS & EVENTS ROWS (Campus vs Off-Site split) ===
             // Collect all events/programs that overlap the scheduler week
             const weekEnd = new Date(schedulerWeekStart);
-            weekEnd.setDate(weekEnd.getDate() + 7);
+            weekEnd.setDate(weekEnd.getDate() + 6);
 
             const weekEvents = allData.events.filter(evt => {
                 const startDate = evt.fields[FIELDS.EVENTS.startDateTime];
@@ -5361,7 +5171,7 @@
                     labelTd.innerHTML = `<span style="font-weight:600;color:#333;display:block;overflow:hidden;text-overflow:ellipsis;word-break:break-word;line-height:1.3;font-size:11px;">${eName}</span>${typeTag}`;
                     tr.appendChild(labelTd);
 
-                    for (let i = 0; i < 7; i++) {
+                    for (let i = 0; i < 6; i++) {
                         const td = document.createElement('td');
                         const dayDate = new Date(schedulerWeekStart);
                         dayDate.setDate(schedulerWeekStart.getDate() + i);
@@ -5396,7 +5206,7 @@
             if (campusEvents.length > 0) {
                 const dividerRow = document.createElement('tr');
                 const dividerTd = document.createElement('td');
-                dividerTd.colSpan = 8;
+                dividerTd.colSpan = 7;
                 dividerTd.className = 'section-divider-row';
                 dividerRow.appendChild(dividerTd);
                 tbody.appendChild(dividerRow);
@@ -5405,7 +5215,7 @@
                 const headerRow = document.createElement('tr');
                 const headerTd = document.createElement('td');
                 headerTd.className = 'scheduler-group-header section-header';
-                headerTd.colSpan = 8;
+                headerTd.colSpan = 7;
                 headerTd.innerHTML = `Campus Programs & Events (${campusEvents.length}) <span style="font-weight:400;font-size:10px;letter-spacing:0;text-transform:none;margin-left:12px;opacity:0.85;">${campusKpis.totalAssigned} assigned · ${campusKpis.totalGaps} unstaffed</span>`;
                 headerRow.appendChild(headerTd);
                 tbody.appendChild(headerRow);
@@ -5416,7 +5226,7 @@
             {
                 const dividerRow = document.createElement('tr');
                 const dividerTd = document.createElement('td');
-                dividerTd.colSpan = 8;
+                dividerTd.colSpan = 7;
                 dividerTd.className = 'section-divider-row';
                 dividerRow.appendChild(dividerTd);
                 tbody.appendChild(dividerRow);
@@ -5425,7 +5235,7 @@
                 const headerRow = document.createElement('tr');
                 const headerTd = document.createElement('td');
                 headerTd.className = 'scheduler-group-header section-header offsite-section-header';
-                headerTd.colSpan = 8;
+                headerTd.colSpan = 7;
                 if (offSiteEvents.length > 0) {
                     headerTd.innerHTML = `Off-Site Programs & Events (${offSiteEvents.length}) <span style="font-weight:400;font-size:10px;letter-spacing:0;text-transform:none;margin-left:12px;opacity:0.85;">${offSiteKpis.totalAssigned} assigned · ${offSiteKpis.totalGaps} unstaffed</span>`;
                 } else {
@@ -5454,7 +5264,7 @@
                 let offDays = 0;
                 let workDaysThisWeek = 0;
 
-                for (let i = 0; i < 7; i++) {
+                for (let i = 0; i < 6; i++) {
                     const dayDate = new Date(schedulerWeekStart);
                     dayDate.setDate(schedulerWeekStart.getDate() + i);
 
@@ -5512,9 +5322,9 @@
         function renderSchedulerTimeAway() {
             const row = document.getElementById('schedulerTimeAwayRow');
             row.innerHTML = '';
-            const dayAbbr = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const dayAbbr = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-            for (let i = 0; i < 7; i++) {
+            for (let i = 0; i < 6; i++) {
                 const dayDate = new Date(schedulerWeekStart);
                 dayDate.setDate(schedulerWeekStart.getDate() + i);
 
@@ -5563,7 +5373,7 @@
         // Toggle expand/collapse for OEC shift cells (#9)
         function toggleShiftExpand(e, el) {
             // Don't toggle if clicking on a staff pill or add button
-            if (e.target.closest('.staff-pill-interactive') || e.target.closest('.cell-add-btn') || e.target.closest('.event-notes-btn')) return;
+            if (e.target.closest('.staff-pill-interactive') || e.target.closest('.cell-add-btn')) return;
             el.classList.toggle('expanded');
         }
 
@@ -5592,11 +5402,11 @@
         // ===== STAFFING RISK WARNINGS (#19) =====
         function computeStaffingRisks() {
             const risks = [];
-            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             const today = new Date();
             today.setHours(0, 0, 0, 0);
 
-            for (let i = 0; i < 7; i++) {
+            for (let i = 0; i < 6; i++) {
                 const dayDate = new Date(schedulerWeekStart);
                 dayDate.setDate(schedulerWeekStart.getDate() + i);
                 dayDate.setHours(0, 0, 0, 0);
@@ -5675,7 +5485,7 @@
             const unassignedMembers = [];
             allData.teamMembers.forEach(member => {
                 let hasAnyAssignment = false;
-                for (let i = 0; i < 7; i++) {
+                for (let i = 0; i < 6; i++) {
                     const dayDate = new Date(schedulerWeekStart);
                     dayDate.setDate(schedulerWeekStart.getDate() + i);
                     dayDate.setHours(0, 0, 0, 0);
@@ -5693,7 +5503,7 @@
                 if (!hasAnyAssignment) {
                     const name = getDisplayName(member, allData.teamMembers);
                     let availDays = 0;
-                    for (let i = 0; i < 7; i++) {
+                    for (let i = 0; i < 6; i++) {
                         const dd = new Date(schedulerWeekStart);
                         dd.setDate(schedulerWeekStart.getDate() + i);
                         dd.setHours(0, 0, 0, 0);
@@ -5779,7 +5589,7 @@
             let totalAssignedDays = 0;
             const memberShiftCounts = {};
 
-            for (let i = 0; i < 7; i++) {
+            for (let i = 0; i < 6; i++) {
                 const shifts = getSchedulerDayShifts(i);
                 shifts.forEach(shift => {
                     const target = parseInt(shift.fields[FIELDS.OEC_SHIFTS.targetHeadcount]) || 2;
@@ -5801,7 +5611,7 @@
 
             // Calculate available capacity
             allData.teamMembers.forEach(member => {
-                for (let i = 0; i < 7; i++) {
+                for (let i = 0; i < 6; i++) {
                     const dd = new Date(schedulerWeekStart);
                     dd.setDate(schedulerWeekStart.getDate() + i);
                     if (!isPersonUnavailableOnDate(member.id, dd)) totalAvailableDays++;
@@ -5858,14 +5668,14 @@
             }
             const q = query.toLowerCase().trim();
             const results = [];
-            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
             // Search team members
             allData.teamMembers.forEach(member => {
                 const name = getDisplayName(member, allData.teamMembers);
                 if (name.toLowerCase().includes(q)) {
                     let shiftCount = 0;
-                    for (let i = 0; i < 7; i++) {
+                    for (let i = 0; i < 6; i++) {
                         getSchedulerDayShifts(i).forEach(shift => {
                             const assignments = getSchedulerShiftAssignments(shift.id, true);
                             if (assignments.some(a => linkedHas(a.fields[FIELDS.OEC_ASSIGNMENTS.teamMember], member.id) &&
@@ -5879,7 +5689,7 @@
             });
 
             // Search OEC shifts
-            for (let i = 0; i < 7; i++) {
+            for (let i = 0; i < 6; i++) {
                 getSchedulerDayShifts(i).forEach(shift => {
                     const label = shift.fields[FIELDS.OEC_SHIFTS.shiftLabel] || '';
                     const tmplName = getShiftTemplateName(shift);
@@ -5965,7 +5775,7 @@
             let totalShifts = 0, filledShifts = 0, openShifts = 0;
             const assignedStaff = new Set();
 
-            for (let i = 0; i < 7; i++) {
+            for (let i = 0; i < 6; i++) {
                 const shifts = getSchedulerDayShifts(i);
                 shifts.forEach(shift => {
                     totalShifts++;
@@ -6029,140 +5839,6 @@
 
         function closeAllPopups() {
             document.querySelectorAll('.staff-picker-container, .confirmation-tooltip, .staff-picker-overlay').forEach(el => el.remove());
-        }
-
-        // ===== EVENT NOTES EDITOR (GCal description read/write) =====
-
-        function closeEventNotesEditor() {
-            document.querySelectorAll('.event-notes-editor, .event-notes-editor-overlay').forEach(el => el.remove());
-        }
-
-        async function fetchGCalEventDescription(calendarId, gcalEventId) {
-            const token = getGoogleAccessToken();
-            if (!token) return null;
-            const calId = encodeURIComponent(calendarId);
-            const evtId = encodeURIComponent(gcalEventId);
-            try {
-                const resp = await fetch(
-                    `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${evtId}`,
-                    { headers: { 'Authorization': `Bearer ${token}` } }
-                );
-                if (!resp.ok) return null;
-                const data = await resp.json();
-                return data.description || '';
-            } catch (err) {
-                console.error('[Notes] Error fetching GCal event description:', err);
-                return null;
-            }
-        }
-
-        async function updateGCalEventNotes(calendarId, gcalEventId, notes) {
-            const token = getGoogleAccessToken();
-            if (!token) { showToast('Connect Google Calendar first', 'error'); return false; }
-            const calId = encodeURIComponent(calendarId);
-            const evtId = encodeURIComponent(gcalEventId);
-            try {
-                const resp = await fetch(
-                    `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${evtId}`,
-                    {
-                        method: 'PATCH',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ description: notes })
-                    }
-                );
-                if (resp.ok) {
-                    showToast('Notes saved to Google Calendar', 'success');
-                    return true;
-                } else {
-                    const errData = await resp.json().catch(() => ({}));
-                    console.error('[Notes] GCal PATCH failed:', resp.status, errData);
-                    showToast('Failed to save notes', 'error');
-                    return false;
-                }
-            } catch (err) {
-                console.error('[Notes] Error saving GCal event notes:', err);
-                showToast('Failed to save notes', 'error');
-                return false;
-            }
-        }
-
-        async function openEventNotesEditor(btnEl, calendarId, gcalEventId, eventName) {
-            // Close any existing notes editor
-            closeEventNotesEditor();
-
-            const token = getGoogleAccessToken();
-            if (!token) {
-                showToast('Connect Google Calendar first', 'error');
-                return;
-            }
-
-            // Position the editor near the button
-            const rect = btnEl.getBoundingClientRect();
-            const editorWidth = 280;
-            // Try to place below the button; if too close to bottom, place above
-            let top = rect.bottom + 6;
-            let left = rect.left - editorWidth + 30;
-            if (left < 8) left = 8;
-            if (left + editorWidth > window.innerWidth - 8) left = window.innerWidth - editorWidth - 8;
-            if (top + 200 > window.innerHeight) top = rect.top - 206;
-
-            // Create overlay to catch outside clicks
-            const overlay = document.createElement('div');
-            overlay.className = 'event-notes-editor-overlay';
-            overlay.addEventListener('click', () => closeEventNotesEditor());
-            document.body.appendChild(overlay);
-
-            // Create editor popover
-            const editor = document.createElement('div');
-            editor.className = 'event-notes-editor';
-            editor.style.top = top + 'px';
-            editor.style.left = left + 'px';
-            editor.innerHTML = `
-                <div class="event-notes-editor-title" title="${eventName.replace(/"/g, '&quot;')}">${eventName}</div>
-                <div class="notes-loading">Loading notes...</div>
-            `;
-            document.body.appendChild(editor);
-
-            // Fetch existing description
-            const existingNotes = await fetchGCalEventDescription(calendarId, gcalEventId);
-
-            // Replace loading with textarea + buttons
-            editor.innerHTML = `
-                <div class="event-notes-editor-title" title="${eventName.replace(/"/g, '&quot;')}">${eventName}</div>
-                <textarea id="eventNotesTextarea" placeholder="Add event notes...">${existingNotes != null ? existingNotes.replace(/</g, '&lt;').replace(/>/g, '&gt;') : ''}</textarea>
-                <div class="event-notes-editor-actions">
-                    <button class="cancel-btn" onclick="closeEventNotesEditor()">Cancel</button>
-                    <button class="save-btn" id="eventNotesSaveBtn">Save</button>
-                </div>
-            `;
-
-            // Focus the textarea
-            const textarea = document.getElementById('eventNotesTextarea');
-            if (textarea) textarea.focus();
-
-            // Save handler
-            document.getElementById('eventNotesSaveBtn').addEventListener('click', async () => {
-                const notes = document.getElementById('eventNotesTextarea').value;
-                const saveBtn = document.getElementById('eventNotesSaveBtn');
-                saveBtn.textContent = 'Saving...';
-                saveBtn.disabled = true;
-                const ok = await updateGCalEventNotes(calendarId, gcalEventId, notes);
-                if (ok) {
-                    // Mark the button as having notes
-                    if (notes.trim()) {
-                        btnEl.classList.add('has-notes');
-                    } else {
-                        btnEl.classList.remove('has-notes');
-                    }
-                    closeEventNotesEditor();
-                } else {
-                    saveBtn.textContent = 'Save';
-                    saveBtn.disabled = false;
-                }
-            });
         }
 
         // --- Airtable write functions ---
@@ -6267,11 +5943,10 @@
                 }
 
                 const calId = encodeURIComponent(GCAL_CONFIG.reefCampus2CalendarId);
-                const _se = gcalStartEnd(startDT, endDT);
                 const gcalBody = {
                     summary: eventName,
-                    start: _se.start,
-                    end: _se.end,
+                    start: endDT ? gcalDateTime(startDT) : gcalDate(startDT),
+                    end: endDT ? gcalDateTime(endDT) : gcalDate(startDT),
                 };
 
                 const createResp = await fetch(
@@ -6552,9 +6227,10 @@
             if (_gcalEventsCache[cacheKey]) return _gcalEventsCache[cacheKey];
 
             const calId = encodeURIComponent(calendarId);
-            // RFC3339 requires timezone offset — use Z (UTC) and let timeZone param handle display
-            const timeMin = encodeURIComponent(dateStr + 'T00:00:00Z');
-            const timeMax = encodeURIComponent(dateStr + 'T23:59:59Z');
+            // Use RFC3339 with timezone offset for accurate day boundaries
+            // GCal API accepts timezone parameter to interpret these correctly
+            const timeMin = dateStr + 'T00:00:00';
+            const timeMax = dateStr + 'T23:59:59';
             const tz = encodeURIComponent(GCAL_CONFIG.timeZone);
             const resp = await fetch(
                 `https://www.googleapis.com/calendar/v3/calendars/${calId}/events?timeMin=${timeMin}&timeMax=${timeMax}&timeZone=${tz}&singleEvents=true&maxResults=50`,
@@ -6713,12 +6389,14 @@
                 const calendarId = GCAL_CONFIG.oecShiftsCalendarId;
                 const calId = encodeURIComponent(calendarId);
 
-                // Step 1a: Group ALL shifts by day+slot key
+                // Step 1a: Group FUTURE shifts by day+slot key (skip past — no point syncing history)
+                const todayStr = new Date().toISOString().split('T')[0];
                 const oecSlotGroups = {}; // key: "YYYY-MM-DD|AM" → { shifts: [], memberIds: Set }
                 for (const shift of allData.oecShifts) {
                     const shiftDate = shift.fields[FIELDS.OEC_SHIFTS.shiftDate];
                     if (!shiftDate) continue;
                     const dayStr = new Date(shiftDate).toISOString().split('T')[0];
+                    if (dayStr < todayStr) continue; // Fix 3: future-only — skip past shifts
                     const slot = classifyShiftSlot(shift);
                     const key = `${dayStr}|${slot}`;
                     if (!oecSlotGroups[key]) oecSlotGroups[key] = { dayStr, slot, shifts: [], memberIds: new Set() };
@@ -6746,31 +6424,7 @@
                     if (oecSlotGroups[key]) oecSlotGroups[key].memberIds.add(memberId);
                 }
 
-                // Step 1c: Pre-load ALL existing OEC calendar events for dedup
-                const allOecGCalEvents = [];
-                try {
-                    const calIdEnc = encodeURIComponent(calendarId);
-                    const now = new Date();
-                    const eightWeeksOut = new Date(now.getTime() + 56 * 24 * 60 * 60 * 1000);
-                    const timeMin = encodeURIComponent(now.toISOString());
-                    const timeMax = encodeURIComponent(eightWeeksOut.toISOString());
-                    let pageToken = '';
-                    do {
-                        let url = `https://www.googleapis.com/calendar/v3/calendars/${calIdEnc}/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&maxResults=250`;
-                        if (pageToken) url += `&pageToken=${pageToken}`;
-                        const listResp = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
-                        if (listResp.ok) {
-                            const listData = await listResp.json();
-                            allOecGCalEvents.push(...(listData.items || []));
-                            pageToken = listData.nextPageToken || '';
-                        } else { pageToken = ''; }
-                    } while (pageToken);
-                    console.log(`[GCal SyncAll] OEC: Pre-loaded ${allOecGCalEvents.length} existing GCal events`);
-                } catch (err) {
-                    console.log('[GCal SyncAll] OEC: Failed to pre-load events:', err.message);
-                }
-
-                // Track GCal event IDs we've already claimed this sync
+                // Step 1c: Track GCal event IDs we've already claimed this sync
                 const claimedGCalIds = new Set();
 
                 // Step 1d: Process each day+slot group — find or create exactly ONE GCal event
@@ -6785,15 +6439,12 @@
                         if (OEC_GCAL_MAPPING[s.id]) { gcalEventId = OEC_GCAL_MAPPING[s.id]; break; }
                     }
 
-                    // If not mapped, search pre-loaded GCal events for an existing event matching this slot
+                    // If not mapped, search GCal for an existing event matching this slot
                     if (!gcalEventId) {
-                        const dayEvents = allOecGCalEvents.filter(ge => {
-                            const geStart = ge.start && (ge.start.dateTime || ge.start.date || '');
-                            return geStart && geStart.startsWith(dayStr);
-                        });
+                        const gcalEvents = await fetchGCalEventsForDate(calendarId, dayStr, token);
                         // Find the FIRST unclaimed event matching this slot
                         const slotLower = slot.toLowerCase();
-                        for (const ge of dayEvents) {
+                        for (const ge of gcalEvents) {
                             if (claimedGCalIds.has(ge.id)) continue; // already used by another slot
                             const summary = (ge.summary || '').toLowerCase();
                             if (summary.includes('oec') && summary.includes(slotLower)) {
@@ -6806,7 +6457,7 @@
                             const startDT = representative.fields[FIELDS.OEC_SHIFTS.startDateTime];
                             if (startDT) {
                                 const shiftStart = new Date(startDT).toISOString();
-                                for (const ge of dayEvents) {
+                                for (const ge of gcalEvents) {
                                     if (claimedGCalIds.has(ge.id)) continue;
                                     const geStart = ge.start && (ge.start.dateTime || ge.start.date || '');
                                     if (geStart && new Date(geStart).toISOString() === shiftStart) {
@@ -6860,8 +6511,9 @@
                     for (const s of shifts) OEC_GCAL_MAPPING[s.id] = gcalEventId;
                     saveGCalMappings();
 
-                    // Sync assigned members: attendees (with email) + description (without email)
-                    if (memberIds.size > 0) {
+                    // Fix 1: RECONCILE — build the authoritative attendee list from Airtable assignments,
+                    // then REPLACE GCal attendees entirely. This removes anyone no longer assigned.
+                    {
                         const emailMembers = [];
                         const descMembers = [];
                         for (const memberId of memberIds) {
@@ -6880,45 +6532,63 @@
                             }
                         }
 
-                        // Add email members as GCal attendees
-                        for (const { email } of emailMembers) {
-                            try {
-                                const result = await addAttendeeToGCalEvent(calendarId, gcalEventId, email, token);
-                                if (result === 'synced') { oecSynced++; console.log('[GCal SyncAll] OEC: Added', email, 'to', shiftLabel); }
-                                else if (result === 'skipped') oecSkipped++;
-                                else oecFailed++;
-                            } catch (err) { oecFailed++; }
-                        }
+                        // Fetch current GCal event once (to preserve description + other fields)
+                        try {
+                            const getResp = await fetch(
+                                `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}`,
+                                { headers: { 'Authorization': `Bearer ${token}` } }
+                            );
+                            if (getResp.ok) {
+                                const gcalEvt = await getResp.json();
 
-                        // If any members lack email, add them in the event description
-                        if (descMembers.length > 0) {
-                            try {
-                                // Fetch current event to preserve existing description
-                                const getResp = await fetch(
-                                    `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}`,
-                                    { headers: { 'Authorization': `Bearer ${token}` } }
-                                );
-                                if (getResp.ok) {
-                                    const evt = await getResp.json();
+                                // Build AUTHORITATIVE attendee list — Airtable assignments only
+                                const authoritativeAttendees = emailMembers.map(({ email }) => ({
+                                    email,
+                                    responseStatus: 'accepted'
+                                }));
+
+                                // Log any attendees being removed (previously on GCal but not in Airtable)
+                                const prevAttendees = gcalEvt.attendees || [];
+                                const prevEmails = prevAttendees.map(a => (a.email || '').toLowerCase());
+                                const newEmails = authoritativeAttendees.map(a => a.email.toLowerCase());
+                                const removed = prevEmails.filter(e => !newEmails.includes(e));
+                                const added = newEmails.filter(e => !prevEmails.includes(e));
+                                if (removed.length) console.log('[GCal SyncAll] OEC: Removing stale attendees from', shiftLabel + ':', removed.join(', '));
+                                if (added.length) console.log('[GCal SyncAll] OEC: Adding new attendees to', shiftLabel + ':', added.join(', '));
+
+                                // Update description: replace Team: line with current no-email members
+                                let desc = gcalEvt.description || '';
+                                desc = desc.replace(/^Team:.*$/m, '').trim();
+                                if (descMembers.length > 0) {
                                     const teamLine = 'Team: ' + descMembers.join(', ');
-                                    // Replace existing Team: line or append
-                                    let desc = evt.description || '';
-                                    desc = desc.replace(/^Team:.*$/m, '').trim();
                                     desc = desc ? desc + '\n' + teamLine : teamLine;
-                                    await fetch(
-                                        `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}?sendUpdates=none`,
-                                        {
-                                            method: 'PATCH',
-                                            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ description: desc }),
-                                        }
-                                    );
-                                    oecSynced += descMembers.length;
-                                    console.log('[GCal SyncAll] OEC: Added to description:', descMembers.join(', '));
                                 }
-                            } catch (err) {
-                                console.error('[GCal SyncAll] OEC: Error updating description:', err);
+
+                                // Single PATCH: replace attendees + description atomically
+                                const patchResp = await fetch(
+                                    `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}?sendUpdates=none`,
+                                    {
+                                        method: 'PATCH',
+                                        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            attendees: authoritativeAttendees,
+                                            description: desc
+                                        }),
+                                    }
+                                );
+                                if (patchResp.ok) {
+                                    oecSynced += added.length;
+                                    oecSkipped += newEmails.filter(e => prevEmails.includes(e)).length;
+                                    console.log('[GCal SyncAll] OEC: Reconciled attendees for', shiftLabel,
+                                        '— now:', authoritativeAttendees.map(a => a.email).join(', ') || '(none)');
+                                } else {
+                                    oecFailed++;
+                                    console.log('[GCal SyncAll] OEC: PATCH failed for', shiftLabel, patchResp.status);
+                                }
                             }
+                        } catch (err) {
+                            console.error('[GCal SyncAll] OEC: Error reconciling attendees for', shiftLabel, err);
+                            oecFailed++;
                         }
                     }
                 }
@@ -7008,90 +6678,65 @@
                     evtByEvent[eventId].push(memberId);
                 }
 
-                // Helper: sync members to a single GCal event instance
+                // Helper: RECONCILE members on a single GCal event instance.
+                // Fix 1: Replaces the full attendee list rather than appending.
+                // Removes stale attendees not in the current Airtable assignment list.
                 async function syncMembersToGCalInstance(calendarId, gcalEventId, memberIds, instanceLabel) {
-                    let synced = 0, skipped = 0, failed = 0, removed = 0;
-
-                    // Build set of emails that SHOULD be on this event
-                    const assignedEmails = new Set();
-                    for (const memberId of memberIds) {
-                        const email = getMemberEmail(memberId);
-                        if (email) assignedEmails.add(email.toLowerCase());
-                    }
-
-                    // Fetch current GCal event to get existing attendees
-                    const calId = encodeURIComponent(calendarId);
-                    let gcalEvent;
+                    let synced = 0, skipped = 0, failed = 0;
                     try {
+                        // Build authoritative email list from Airtable member IDs
+                        const authEmails = [];
+                        for (const memberId of memberIds) {
+                            const email = getMemberEmail(memberId);
+                            if (email) authEmails.push(email.toLowerCase());
+                        }
+
+                        // Fetch current GCal event to get existing attendees + description
+                        const calId = encodeURIComponent(calendarId);
                         const getResp = await fetch(
                             `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}`,
                             { headers: { 'Authorization': `Bearer ${token}` } }
                         );
-                        if (!getResp.ok) return { synced, skipped, failed: memberIds.size || memberIds.length };
-                        gcalEvent = await getResp.json();
-                    } catch (err) {
-                        return { synced, skipped, failed: memberIds.size || memberIds.length };
-                    }
+                        if (!getResp.ok) { failed++; return { synced, skipped, failed }; }
+                        const gcalEvt = await getResp.json();
 
-                    const currentAttendees = gcalEvent.attendees || [];
+                        const prevAttendees = gcalEvt.attendees || [];
+                        const prevEmails = prevAttendees.map(a => (a.email || '').toLowerCase());
 
-                    // Determine who to add and who to remove
-                    const currentEmails = new Set(currentAttendees.map(a => (a.email || '').toLowerCase()));
-                    const toAdd = [...assignedEmails].filter(e => !currentEmails.has(e));
-                    const toRemove = currentAttendees.filter(a => {
-                        const email = (a.email || '').toLowerCase();
-                        // Don't remove the calendar itself (organizer) or non-REEF emails
-                        if (email.includes('group.calendar.google.com')) return false;
-                        if (a.organizer) return false;
-                        // Remove if not in assigned list AND has a REEF email
-                        return !assignedEmails.has(email) && (email.endsWith('@reef.org') || email.includes('eci'));
-                    });
+                        const removed = prevEmails.filter(e => !authEmails.includes(e));
+                        const added = authEmails.filter(e => !prevEmails.includes(e));
+                        skipped = authEmails.filter(e => prevEmails.includes(e)).length;
 
-                    let needsUpdate = false;
-                    let updatedAttendees = [...currentAttendees];
+                        if (removed.length) console.log('[GCal SyncAll] Event: Removing stale attendees from', instanceLabel + ':', removed.join(', '));
+                        if (added.length) console.log('[GCal SyncAll] Event: Adding new attendees to', instanceLabel + ':', added.join(', '));
 
-                    // Remove unassigned staff
-                    if (toRemove.length > 0) {
-                        updatedAttendees = updatedAttendees.filter(a => {
-                            const email = (a.email || '').toLowerCase();
-                            return !toRemove.some(r => (r.email || '').toLowerCase() === email);
-                        });
-                        removed = toRemove.length;
-                        needsUpdate = true;
-                        for (const r of toRemove) {
-                            console.log('[GCal SyncAll] Event: Removed', r.email, 'from', instanceLabel);
-                        }
-                    }
+                        // Build replacement attendee list
+                        const authoritativeAttendees = authEmails.map(email => ({
+                            email,
+                            responseStatus: 'accepted'
+                        }));
 
-                    // Add newly assigned staff
-                    for (const email of toAdd) {
-                        updatedAttendees.push({ email, responseStatus: 'accepted' });
-                        synced++;
-                        needsUpdate = true;
-                        console.log('[GCal SyncAll] Event: Added', email, 'to', instanceLabel);
-                    }
-
-                    skipped = assignedEmails.size - toAdd.length;
-
-                    // Patch if anything changed
-                    if (needsUpdate) {
-                        try {
-                            const patchResp = await fetch(
-                                `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}?sendUpdates=none`,
-                                {
-                                    method: 'PATCH',
-                                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ attendees: updatedAttendees }),
-                                }
-                            );
-                            if (!patchResp.ok) {
-                                console.log('[GCal SyncAll] Event: Failed to update attendees for', instanceLabel, patchResp.status);
-                                failed++;
+                        // Single PATCH with full replacement
+                        const patchResp = await fetch(
+                            `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}?sendUpdates=none`,
+                            {
+                                method: 'PATCH',
+                                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ attendees: authoritativeAttendees }),
                             }
-                        } catch (err) { failed++; }
+                        );
+                        if (patchResp.ok) {
+                            synced = added.length;
+                            console.log('[GCal SyncAll] Event: Reconciled attendees for', instanceLabel,
+                                '— now:', authoritativeAttendees.map(a => a.email).join(', ') || '(none)');
+                        } else {
+                            failed++;
+                            console.log('[GCal SyncAll] Event: PATCH failed for', instanceLabel, patchResp.status);
+                        }
+                    } catch (err) {
+                        console.error('[GCal SyncAll] Event: Error reconciling', instanceLabel, err);
+                        failed++;
                     }
-
-                    if (removed > 0) console.log('[GCal SyncAll] Event:', instanceLabel, '— removed', removed, 'unassigned attendees');
                     return { synced, skipped, failed };
                 }
 
@@ -7128,11 +6773,16 @@
                     // No match found — auto-create
                     try {
                         const calId = encodeURIComponent(calendarId);
-                        const _se2 = startDT ? gcalStartEnd(startDT, endDT) : { start: gcalDate(dayStr + 'T00:00:00Z'), end: gcalDate(dayStr + 'T00:00:00Z') };
                         const gcalBody = {
                             summary: eventName,
-                            start: _se2.start,
-                            end: _se2.end,
+                            start: startDT
+                                ? gcalDateTime(startDT)
+                                : gcalDate(dayStr + 'T00:00:00Z'),
+                            end: endDT
+                                ? gcalDateTime(endDT)
+                                : startDT
+                                    ? gcalDateTime(new Date(new Date(startDT).getTime() + 3*3600000).toISOString())
+                                    : gcalDate(dayStr + 'T00:00:00Z'),
                         };
                         const createResp = await fetch(
                             `https://www.googleapis.com/calendar/v3/calendars/${calId}/events?sendUpdates=none`,
@@ -7160,10 +6810,11 @@
                     const evt = allData.events.find(e => e.id === eventId);
                     if (!evt) { evtNoMatch += memberIds.length; continue; }
 
-                    const evtType = selectVal(evt.fields[FIELDS.EVENTS.eventType]);
-                    const calendarId = isOffSiteType(evtType) ? GCAL_CONFIG.travelFieldworkCalendarId : GCAL_CONFIG.reefCampus2CalendarId;
+                    const calendarId = GCAL_CONFIG.reefCampus2CalendarId;
                     const evtName = normalizeEventName(evt.fields[FIELDS.EVENTS.eventName] || '');
                     const evtStart = evt.fields[FIELDS.EVENTS.startDateTime];
+                    // Fix 3b: skip past events — only sync future events
+                    if (evtStart && new Date(evtStart).toISOString().split('T')[0] < todayStr) continue;
 
                     // Find ALL matching EVENTS_DB instances for this Events record
                     const matchingProgs = allData.reefPrograms.filter(p => {
@@ -7233,22 +6884,7 @@
                     }
                 }
 
-                // Track which EVENTS_DB progIds were already synced in Pass 1
-                const syncedProgIds = new Set();
-                for (const [eventId, memberIds] of Object.entries(evtByEvent)) {
-                    const evt = allData.events.find(e => e.id === eventId);
-                    if (!evt) continue;
-                    const evtName = normalizeEventName(evt.fields[FIELDS.EVENTS.eventName] || '');
-                    const matchingProgs = allData.reefPrograms.filter(p => {
-                        const progName = normalizeEventName(p.fields[FIELDS.EVENTS_DB.eventName] || '');
-                        return evtName && progName && (evtName === progName || evtName.includes(progName) || progName.includes(evtName));
-                    });
-                    matchingProgs.forEach(p => syncedProgIds.add(p.id));
-                }
-
-                // Ensure future Events/Programs have GCal events (even unassigned ones)
-                // ONLY sync events from today forward — past events already have GCal entries
-                const _todayStr = new Date().toISOString().split('T')[0];
+                // Ensure ALL future Events/Programs have GCal events (even unassigned ones)
                 let evtCreated = 0;
                 for (const evt of allData.events) {
                     if (evtByEvent[evt.id]) continue; // already processed above
@@ -7256,16 +6892,14 @@
                     if (!evtName) continue; // skip nameless record
                     const evtStart = evt.fields[FIELDS.EVENTS.startDateTime];
                     if (!evtStart) continue;
-                    // Skip past events — only create GCal events for today and future
-                    if (new Date(evtStart).toISOString().split('T')[0] < _todayStr) continue;
+                    // Fix 3c: skip past events
+                    if (new Date(evtStart).toISOString().split('T')[0] < todayStr) continue;
 
-                    const evtType2 = selectVal(evt.fields[FIELDS.EVENTS.eventType]);
-                    const calendarId = isOffSiteType(evtType2) ? GCAL_CONFIG.travelFieldworkCalendarId : GCAL_CONFIG.reefCampus2CalendarId;
+                    const calendarId = GCAL_CONFIG.reefCampus2CalendarId;
                     const normalName = normalizeEventName(evtName);
 
-                    // Find matching EVENTS_DB instances (skip those already synced in Pass 1)
+                    // Find matching EVENTS_DB instances
                     const matchingProgs = allData.reefPrograms.filter(p => {
-                        if (syncedProgIds.has(p.id)) return false;
                         const progName = normalizeEventName(p.fields[FIELDS.EVENTS_DB.eventName] || '');
                         return normalName && progName && (normalName === progName || normalName.includes(progName) || progName.includes(normalName));
                     });
@@ -7275,8 +6909,6 @@
                         for (const prog of matchingProgs) {
                             const progStart = prog.fields[FIELDS.EVENTS_DB.startDateTime];
                             if (!progStart) continue;
-                            // Skip past program instances
-                            if (new Date(progStart).toISOString().split('T')[0] < _todayStr) continue;
                             instances.push({
                                 dayStr: new Date(progStart).toISOString().split('T')[0],
                                 name: prog.fields[FIELDS.EVENTS_DB.eventName] || evtName,
@@ -7339,6 +6971,33 @@
         async function cancelAssignment(assignmentId, isEvent = false) {
             const tableId = isEvent ? TABLES.EVENT_ASSIGNMENTS : TABLES.OEC_ASSIGNMENTS;
             const statusField = isEvent ? FIELDS.EVENT_ASSIGNMENTS.assignmentStatus : FIELDS.OEC_ASSIGNMENTS.assignmentStatus;
+
+            // Fix 2: Before cancelling, capture the member+event IDs so we can
+            // remove the attendee from GCal after the Airtable update succeeds.
+            let memberIdToRemove = null;
+            let eventOrShiftIdToRemove = null;
+            try {
+                const assignRecord = isEvent
+                    ? allData.eventAssignments.find(a => a.id === assignmentId)
+                    : allData.oecAssignments.find(a => a.id === assignmentId);
+                if (assignRecord) {
+                    const memberLinks = isEvent
+                        ? assignRecord.fields[FIELDS.EVENT_ASSIGNMENTS.teamMember]
+                        : assignRecord.fields[FIELDS.OEC_ASSIGNMENTS.teamMember];
+                    const targetLinks = isEvent
+                        ? assignRecord.fields[FIELDS.EVENT_ASSIGNMENTS.event]
+                        : assignRecord.fields[FIELDS.OEC_ASSIGNMENTS.shiftInstance];
+                    if (memberLinks && memberLinks.length) {
+                        memberIdToRemove = typeof memberLinks[0] === 'string' ? memberLinks[0] : memberLinks[0].id;
+                    }
+                    if (targetLinks && targetLinks.length) {
+                        eventOrShiftIdToRemove = typeof targetLinks[0] === 'string' ? targetLinks[0] : targetLinks[0].id;
+                    }
+                }
+            } catch (lookupErr) {
+                console.warn('[cancelAssignment] Could not pre-fetch assignment for GCal removal:', lookupErr);
+            }
+
             const response = await fetch(
                 `https://api.airtable.com/v0/${BASE_ID}/${tableId}/${assignmentId}`,
                 {
@@ -7358,7 +7017,25 @@
                 const err = await response.json();
                 throw new Error(err.error?.message || `API error ${response.status}`);
             }
-            return await response.json();
+            const result = await response.json();
+
+            // Fix 2: After Airtable is updated, remove the attendee from GCal (fire-and-forget)
+            if (memberIdToRemove && eventOrShiftIdToRemove && getGoogleAccessToken()) {
+                try {
+                    if (isEvent) {
+                        await removeAttendeeFromGCal(eventOrShiftIdToRemove, memberIdToRemove);
+                        console.log('[cancelAssignment] Removed attendee from GCal event:', eventOrShiftIdToRemove);
+                    } else {
+                        await removeOecAttendeeFromGCal(eventOrShiftIdToRemove, memberIdToRemove);
+                        console.log('[cancelAssignment] Removed attendee from GCal OEC shift:', eventOrShiftIdToRemove);
+                    }
+                } catch (gcalErr) {
+                    // Non-fatal: Airtable is already updated; GCal will reconcile on next Sync All
+                    console.warn('[cancelAssignment] GCal remove failed (will reconcile on next sync):', gcalErr);
+                }
+            }
+
+            return result;
         }
 
         // ===== COPY LAST WEEK'S STAFF =====
@@ -7377,7 +7054,7 @@
             const prevWeekStart = new Date(schedulerWeekStart);
             prevWeekStart.setDate(prevWeekStart.getDate() - 7);
             const prevWeekEnd = new Date(prevWeekStart);
-            prevWeekEnd.setDate(prevWeekEnd.getDate() + 6);
+            prevWeekEnd.setDate(prevWeekEnd.getDate() + 5);
             const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
             const prevLabel = `${months[prevWeekStart.getMonth()]} ${prevWeekStart.getDate()} – ${months[prevWeekEnd.getMonth()]} ${prevWeekEnd.getDate()}`;
             const currLabel = getSchedulerWeekDateRange();
@@ -7430,7 +7107,7 @@
             const proposals = [];
 
             // For each day (Mon–Sat, 0–5)
-            for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
+            for (let dayOffset = 0; dayOffset < 6; dayOffset++) {
                 // Previous week's date for this day-of-week
                 const prevDate = new Date(prevWeekStart);
                 prevDate.setDate(prevDate.getDate() + dayOffset);
@@ -7441,7 +7118,7 @@
                 currDate.setDate(currDate.getDate() + dayOffset);
                 const currDateStr = currDate.toISOString().split('T')[0];
 
-                const dayAbbr = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][dayOffset];
+                const dayAbbr = ['Mon','Tue','Wed','Thu','Fri','Sat'][dayOffset];
 
                 // Find previous week's shifts for this day
                 const prevDayShifts = allData.oecShifts.filter(s => {
