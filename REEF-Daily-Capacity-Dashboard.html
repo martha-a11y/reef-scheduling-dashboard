@@ -6591,13 +6591,58 @@
         }
 
         // Reconcile GCal attendees to exactly the current Airtable list (full replace, not append).
+        // Build a structured GCal event description for program/event records.
+        // Staff with email appear as GCal guests; staff without email are listed here.
+        // Notes added via pencil button are preserved (they start with [Note ...]).
+        function buildEventDescription_(evtRecord, allNamesList, existingDescription) {
+            const lines = [];
+            if (evtRecord) {
+                const evtType = selectVal(evtRecord.fields[FIELDS.EVENTS.eventType]) || '';
+                const evtStatus = selectVal(evtRecord.fields[FIELDS.EVENTS.status]) || '';
+                const staffRequired = evtRecord.fields[FIELDS.EVENTS.staffingRequired] || '';
+                if (evtType) lines.push('Type: ' + evtType);
+                if (evtStatus) lines.push('Status: ' + evtStatus);
+                if (staffRequired !== '') lines.push('Staff Required: ' + staffRequired);
+            }
+            if (allNamesList && allNamesList.length > 0) {
+                lines.push('Staff Assigned: ' + allNamesList.join(', '));
+            } else {
+                lines.push('Staff Assigned: None assigned yet — assign in Scheduling Dashboard');
+            }
+            lines.push('');
+            lines.push('──────────────────────────────');
+            lines.push('[Managed by REEF Scheduling System — edit in Airtable]');
+            const baseDesc = lines.join('\n');
+
+            // Preserve any [Note ...] lines appended by the pencil button
+            const noteLines = (existingDescription || '').split('\n').filter(l => l.trim().startsWith('[Note '));
+            return noteLines.length > 0 ? baseDesc + '\n' + noteLines.join('\n') : baseDesc;
+        }
+
         async function reconcileGCalAttendees(gcalEventId, memberIds, label, evtRecordId, evtName, evtStartISO, calendarId) {
             calendarId = calendarId || GCAL_CONFIG.reefCampus2CalendarId;
             let synced = 0, skipped = 0, failed = 0;
             const token = getGoogleAccessToken();
             if (!token) { failed++; return { synced, skipped, failed }; }
             try {
-                const authEmails = memberIds.map(id => getMemberEmail(id)).filter(Boolean).map(e => e.toLowerCase());
+                // Split members into email (guests) and no-email (description only)
+                const emailAttendees = [];
+                const noEmailNames = [];
+                for (const memberId of memberIds) {
+                    const email = getMemberEmail(memberId);
+                    const member = allData.allTeamMembers.find(m => m.id === memberId) || allData.teamMembers.find(m => m.id === memberId);
+                    const firstName = member ? (member.fields[FIELDS.TEAM_MEMBERS.firstName] || '').trim() : '';
+                    const lastName = member ? (member.fields[FIELDS.TEAM_MEMBERS.lastName] || '').trim() : '';
+                    const fullName = (firstName + ' ' + lastName).trim() || memberId;
+                    if (email) {
+                        emailAttendees.push({ email: email.toLowerCase(), name: fullName });
+                    } else {
+                        const memberType = member ? (selectVal(member.fields[FIELDS.TEAM_MEMBERS.teamMemberType]) || '') : '';
+                        noEmailNames.push(fullName + (memberType ? ` (${memberType})` : ''));
+                    }
+                }
+                const authEmails = emailAttendees.map(a => a.email);
+
                 const calId = encodeURIComponent(calendarId);
                 let getResp = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}`, { headers: { 'Authorization': `Bearer ${token}` } });
                 if (getResp.status === 404) {
@@ -6608,16 +6653,39 @@
                     getResp = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}`, { headers: { 'Authorization': `Bearer ${token}` } });
                 }
                 if (!getResp.ok) { failed++; return { synced, skipped, failed }; }
-                const prev = ((await getResp.json()).attendees || []).map(a => (a.email || '').toLowerCase());
+                const gcalEvt = await getResp.json();
+
+                // Attendee diff
+                const prev = (gcalEvt.attendees || []).map(a => (a.email || '').toLowerCase());
                 const removed = prev.filter(e => !authEmails.includes(e));
                 const added = authEmails.filter(e => !prev.includes(e));
                 skipped = authEmails.filter(e => prev.includes(e)).length;
                 if (removed.length) console.log('[GCal] Removing from', label + ':', removed.join(', '));
+
+                // Build description — look up event record for metadata
+                const evtRecord = evtRecordId ? allData.events.find(e => e.id === evtRecordId) : null;
+                const allNames = [...emailAttendees.map(a => a.name), ...noEmailNames];
+                const newDescription = buildEventDescription_(evtRecord, allNames, gcalEvt.description || '');
+
                 const patchResp = await fetch(
                     `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}?sendUpdates=none`,
-                    { method: 'PATCH', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ attendees: authEmails.map(email => ({ email, responseStatus: 'accepted' })) }) }
+                    {
+                        method: 'PATCH',
+                        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            attendees: authEmails.map(email => ({ email, responseStatus: 'accepted' })),
+                            description: newDescription
+                        })
+                    }
                 );
-                if (patchResp.ok) { synced = added.length; console.log('[GCal] Reconciled', label); } else { failed++; }
+                if (patchResp.ok) {
+                    synced = added.length;
+                    console.log('[GCal] Reconciled', label,
+                        '— guests:', authEmails.join(', ') || '(none)',
+                        '| in description:', noEmailNames.join(', ') || '(none)');
+                } else {
+                    failed++;
+                }
             } catch (err) { console.error('[GCal] reconcileGCalAttendees error:', err); failed++; }
             return { synced, skipped, failed };
         }
@@ -6773,10 +6841,13 @@
                     for (const s of shifts) OEC_GCAL_MAPPING[s.id] = gcalEventId;
                     saveGCalMappings();
 
-                    // Sync assigned members: attendees (with email) + description (without email)
-                    if (memberIds.size > 0) {
+                    // Build full description + reconcile attendees for this OEC slot.
+                    // Staff with email → GCal attendees (guests).
+                    // Staff without email → listed in description under "Staff Assigned".
+                    // Unassigned slots → placeholder text in description.
+                    {
                         const emailMembers = [];
-                        const descMembers = [];
+                        const noEmailNames = [];
                         for (const memberId of memberIds) {
                             const member = allData.allTeamMembers.find(m => m.id === memberId)
                                         || allData.teamMembers.find(m => m.id === memberId);
@@ -6786,52 +6857,78 @@
                             const lastName = (member.fields[FIELDS.TEAM_MEMBERS.lastName] || '').trim();
                             const fullName = `${firstName} ${lastName}`.trim();
                             const memberType = selectVal(member.fields[FIELDS.TEAM_MEMBERS.teamMemberType]) || '';
+                            const displayName = fullName + (memberType ? ` (${memberType})` : '');
                             if (email) {
                                 emailMembers.push({ email, name: fullName });
                             } else {
-                                descMembers.push(`${fullName}${memberType ? ' (' + memberType + ')' : ''}`);
+                                noEmailNames.push(displayName);
                             }
                         }
 
-                        // Add email members as GCal attendees
-                        for (const { email } of emailMembers) {
-                            try {
-                                const result = await addAttendeeToGCalEvent(calendarId, gcalEventId, email, token);
-                                if (result === 'synced') { oecSynced++; console.log('[GCal SyncAll] OEC: Added', email, 'to', shiftLabel); }
-                                else if (result === 'skipped') oecSkipped++;
-                                else oecFailed++;
-                            } catch (err) { oecFailed++; }
-                        }
+                        // All assigned names for description (email + no-email combined)
+                        const allNames = [
+                            ...emailMembers.map(m => m.name),
+                            ...noEmailNames
+                        ];
 
-                        // If any members lack email, add them in the event description
-                        if (descMembers.length > 0) {
-                            try {
-                                // Fetch current event to preserve existing description
-                                const getResp = await fetch(
-                                    `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}`,
-                                    { headers: { 'Authorization': `Bearer ${token}` } }
+                        // Build structured description
+                        const descLines = [];
+                        descLines.push(`Shift: ${shiftLabel}`);
+                        if (allNames.length > 0) {
+                            descLines.push('Staff Assigned: ' + allNames.join(', '));
+                        } else {
+                            descLines.push('Staff Assigned: None assigned yet — assign in Scheduling Dashboard');
+                        }
+                        descLines.push('');
+                        descLines.push('──────────────────────────────');
+                        descLines.push('[Managed by REEF Scheduling System — edit in Airtable]');
+                        const newDescription = descLines.join('\n');
+
+                        try {
+                            // Fetch current event to preserve any notes appended by pencil button
+                            const getResp = await fetch(
+                                `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}`,
+                                { headers: { 'Authorization': `Bearer ${token}` } }
+                            );
+                            if (getResp.ok) {
+                                const gcalEvt = await getResp.json();
+                                const existingDesc = gcalEvt.description || '';
+
+                                // Preserve any [Note ...] lines appended by the pencil button
+                                const noteLines = existingDesc.split('\n').filter(l => l.startsWith('[Note '));
+                                const finalDesc = noteLines.length > 0
+                                    ? newDescription + '\n' + noteLines.join('\n')
+                                    : newDescription;
+
+                                // Build authoritative attendee list (email members only)
+                                const authAttendees = emailMembers.map(m => ({ email: m.email, responseStatus: 'accepted' }));
+                                const prevAttendees = (gcalEvt.attendees || []).map(a => (a.email || '').toLowerCase());
+                                const newEmails = authAttendees.map(a => a.email.toLowerCase());
+                                const removed = prevAttendees.filter(e => !newEmails.includes(e));
+                                if (removed.length) console.log('[GCal SyncAll] OEC: Removing stale attendees:', removed.join(', '));
+
+                                // Single PATCH: attendees + description
+                                const patchResp = await fetch(
+                                    `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}?sendUpdates=none`,
+                                    {
+                                        method: 'PATCH',
+                                        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ attendees: authAttendees, description: finalDesc }),
+                                    }
                                 );
-                                if (getResp.ok) {
-                                    const evt = await getResp.json();
-                                    const teamLine = 'Team: ' + descMembers.join(', ');
-                                    // Replace existing Team: line or append
-                                    let desc = evt.description || '';
-                                    desc = desc.replace(/^Team:.*$/m, '').trim();
-                                    desc = desc ? desc + '\n' + teamLine : teamLine;
-                                    await fetch(
-                                        `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}?sendUpdates=none`,
-                                        {
-                                            method: 'PATCH',
-                                            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ description: desc }),
-                                        }
-                                    );
-                                    oecSynced += descMembers.length;
-                                    console.log('[GCal SyncAll] OEC: Added to description:', descMembers.join(', '));
+                                if (patchResp.ok) {
+                                    oecSynced += emailMembers.length;
+                                    console.log('[GCal SyncAll] OEC: Reconciled', shiftLabel,
+                                        '— guests:', emailMembers.map(m => m.email).join(', ') || '(none)',
+                                        '| in description:', noEmailNames.join(', ') || '(none)');
+                                } else {
+                                    oecFailed++;
+                                    console.log('[GCal SyncAll] OEC: PATCH failed', shiftLabel, patchResp.status);
                                 }
-                            } catch (err) {
-                                console.error('[GCal SyncAll] OEC: Error updating description:', err);
                             }
+                        } catch (err) {
+                            console.error('[GCal SyncAll] OEC: Error reconciling', shiftLabel, err);
+                            oecFailed++;
                         }
                     }
                 }
