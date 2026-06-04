@@ -5548,8 +5548,8 @@
 
         // Toggle expand/collapse for OEC shift cells (#9)
         function toggleShiftExpand(e, el) {
-            // Don't toggle if clicking on a staff pill or add button
-            if (e.target.closest('.staff-pill-interactive') || e.target.closest('.cell-add-btn')) return;
+            // Don't toggle if clicking on a staff pill, add button, or note button
+            if (e.target.closest('.staff-pill-interactive') || e.target.closest('.cell-add-btn') || e.target.closest('.event-note-btn') || e.target.closest('.event-note-ui')) return;
             el.classList.toggle('expanded');
         }
 
