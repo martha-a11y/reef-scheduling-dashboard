@@ -2894,6 +2894,7 @@
         const GCAL_CONFIG = {
             reefCampus2CalendarId: 'c_9f80e975e8a470d96d1f14286720949b779c1b1e5d62aeb3b13b5fcb7168c105@group.calendar.google.com',
             oecShiftsCalendarId: 'c_c26c00c881e3e199fd76dde88a6640709d12de9099573a8e104b771553e8a4d2@group.calendar.google.com',
+            travelFieldworkCalendarId: 'c_092a2b4260d18408e4ecbe864dab65f39022e0957a59edbf4d09c85830898101@group.calendar.google.com',
             timeZone: 'America/New_York', // REEF is in Key Largo, FL
         };
 
@@ -6663,6 +6664,17 @@
                 // instance maps to exactly the right GCal event and exactly the right
                 // assignment list. Dashboard assignment records are authoritative.
 
+                // ── Helper: determine which GCal calendar an Events record belongs to ──
+                // Field Survey Trips & Fieldwork → Travel, Fieldwork and Research calendar
+                // Everything else → REEF Campus 2026 calendar
+                function getEventCalendarId(evt) {
+                    const evtType = selectVal(evt.fields[FIELDS.EVENTS.eventType]) || '';
+                    if (evtType === 'Field Survey Trips & Fieldwork' || evtType === 'Field Survey') {
+                        return GCAL_CONFIG.travelFieldworkCalendarId;
+                    }
+                    return GCAL_CONFIG.reefCampus2CalendarId;
+                }
+
                 // ── Helper: write a refreshed GCal Event ID back to the Scheduling base Events record ──
                 async function writeRefreshedGCalId(evtRecordId, newGcalId) {
                     try {
@@ -6691,10 +6703,11 @@
                 // Used only when the stored GCal ID returns 404 (stale).
                 // Rules: must match this exact date only; title match must be high-confidence (≥80% word overlap
                 // or exact substring); exactly one match required — if 0 or >1 match, skip and log.
-                async function fallbackFindGCalId(evtName, evtStartISO) {
+                async function fallbackFindGCalId(evtName, evtStartISO, calendarId) {
+                    calendarId = calendarId || GCAL_CONFIG.reefCampus2CalendarId;
                     try {
                         const dayStr = new Date(evtStartISO).toISOString().split('T')[0];
-                        const calId = encodeURIComponent(GCAL_CONFIG.reefCampus2CalendarId);
+                        const calId = encodeURIComponent(calendarId);
 
                         // Fetch all GCal events on this exact date
                         const timeMin = encodeURIComponent(dayStr + 'T00:00:00Z');
@@ -6769,7 +6782,9 @@
 
                 // ── Helper: reconcile attendees on a GCal event to exactly the Airtable list ──
                 // evtRecordId is used only if a fallback ID refresh is needed (written back to Airtable).
-                async function reconcileGCalAttendees(gcalEventId, memberIds, instanceLabel, evtRecordId, evtName, evtStartISO) {
+                // calendarId defaults to reefCampus2CalendarId if not provided (backward compat).
+                async function reconcileGCalAttendees(gcalEventId, memberIds, instanceLabel, evtRecordId, evtName, evtStartISO, calendarId) {
+                    calendarId = calendarId || GCAL_CONFIG.reefCampus2CalendarId;
                     let synced = 0, skipped = 0, failed = 0;
                     try {
                         // Build authoritative email list from active Airtable assignments only
@@ -6779,7 +6794,7 @@
                             if (email) authEmails.push(email.toLowerCase());
                         }
 
-                        const calId = encodeURIComponent(GCAL_CONFIG.reefCampus2CalendarId);
+                        const calId = encodeURIComponent(calendarId);
                         let getResp = await fetch(
                             `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}`,
                             { headers: { 'Authorization': `Bearer ${token}` } }
@@ -6789,7 +6804,7 @@
                         if (getResp.status === 404) {
                             console.log('[GCal SyncAll] Fallback triggered: stored ID', gcalEventId.substring(0, 15),
                                 'returned 404 for', instanceLabel, '— searching by date+title...');
-                            const freshId = await fallbackFindGCalId(evtName, evtStartISO);
+                            const freshId = await fallbackFindGCalId(evtName, evtStartISO, calendarId);
                             if (!freshId) {
                                 console.log('[GCal SyncAll] Fallback: Could not find current GCal event for', instanceLabel, '— skipping.');
                                 failed++;
@@ -6835,7 +6850,7 @@
                         );
                         if (patchResp.ok) {
                             synced = added.length;
-                            console.log('[GCal SyncAll] Event: Reconciled', instanceLabel,
+                            console.log('[GCal SyncAll] Event: Reconciled [' + calendarId.substring(0,8) + '...]', instanceLabel,
                                 '— now:', authoritativeAttendees.map(a => a.email).join(', ') || '(none)');
                         } else {
                             failed++;
@@ -6881,11 +6896,13 @@
 
                     if (storedGcalId) {
                         // Use stored ID directly — 404 fallback will search by date+title if stale
+                        const evtCalendarId = getEventCalendarId(evt); // Route FST → Travel cal, others → Campus 2026
                         const result = await reconcileGCalAttendees(
                             storedGcalId, memberIds, label,
                             evt.id,                                  // for Airtable write-back if ID is refreshed
                             evt.fields[FIELDS.EVENTS.eventName],     // for fallback title search
-                            evtStart                                  // for fallback date search
+                            evtStart,                                // for fallback date search
+                            evtCalendarId                            // correct calendar per event type
                         );
                         evtSynced += result.synced;
                         evtSkipped += result.skipped;
