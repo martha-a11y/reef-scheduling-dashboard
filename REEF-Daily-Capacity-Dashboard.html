@@ -2870,6 +2870,7 @@
                 endDateTime: 'fld7Gki4H0jINuh7e',
                 staffingRequired: 'fldzyOwrlCvSoiXi7',
                 assignments: 'fldR4zI3TdwFNNibj',
+                gcalEventId: 'fldBgWWT1Hh1dQa7B',
             },
             EVENT_ASSIGNMENTS: {
                 event: 'fldC8Vm44WJHMgmMU',
@@ -2893,6 +2894,7 @@
         const GCAL_CONFIG = {
             reefCampus2CalendarId: 'c_9f80e975e8a470d96d1f14286720949b779c1b1e5d62aeb3b13b5fcb7168c105@group.calendar.google.com',
             oecShiftsCalendarId: 'c_c26c00c881e3e199fd76dde88a6640709d12de9099573a8e104b771553e8a4d2@group.calendar.google.com',
+            travelCalendarId: 'c_092a2b4260d18408e4ecbe864dab65f39022e0957a59edbf4d09c85830898101@group.calendar.google.com',
             timeZone: 'America/New_York', // REEF is in Key Largo, FL
         };
 
@@ -2962,6 +2964,165 @@
             if (typeof field === 'string') return field;
             if (field.name) return field.name;
             return '';
+        }
+
+        // Helper: return the correct GCal calendar ID for an event based on its type.
+        // Field Survey Trip, Fieldwork, Conference/Trade Show → Travel, Fieldwork and Research calendar.
+        // Everything else → Campus 2026.
+        function getEventCalendarId(evt) {
+            const eventType = selectVal(
+                evt.fields[FIELDS.EVENTS.eventType] || evt.fields[FIELDS.EVENTS_DB.eventType]
+            ) || '';
+            const t = eventType.toLowerCase();
+            const isTravelType = t.includes('field survey') || t.includes('fieldwork') || t.includes('conference');
+            if (isTravelType) {
+                return GCAL_CONFIG.travelCalendarId || GCAL_CONFIG.reefCampus2CalendarId;
+            }
+            return GCAL_CONFIG.reefCampus2CalendarId;
+        }
+
+        // Save an operational note to a GCal event description (append with timestamp).
+        // Returns 'ok', 'no-id', or 'error'.
+        async function saveEventNoteToGCal(gcalEventId, calendarId, noteText) {
+            if (!gcalEventId) return 'no-id';
+            const token = getGoogleAccessToken();
+            if (!token) return 'error';
+            try {
+                const calId = encodeURIComponent(calendarId);
+                // Fetch current event to preserve existing description
+                const getResp = await fetch(
+                    `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}`,
+                    { headers: { 'Authorization': `Bearer ${token}` } }
+                );
+                if (!getResp.ok) return 'error';
+                const gcalEvent = await getResp.json();
+                const existing = gcalEvent.description || '';
+                // Build timestamped note prefix
+                const now = new Date();
+                const pad = n => String(n).padStart(2, '0');
+                const month = now.getMonth() + 1;
+                const day = now.getDate();
+                let hours = now.getHours();
+                const minutes = pad(now.getMinutes());
+                const ampm = hours >= 12 ? 'pm' : 'am';
+                hours = hours % 12 || 12;
+                const timestamp = `${month}/${day} ${hours}:${minutes}${ampm}`;
+                const noteEntry = `[Note ${timestamp}] ${noteText.trim()}`;
+                const newDescription = existing ? existing + '\n' + noteEntry : noteEntry;
+                // PATCH only description
+                const patchResp = await fetch(
+                    `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}?sendUpdates=none`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ description: newDescription }),
+                    }
+                );
+                if (patchResp.ok) {
+                    console.log('[GCal Note] Saved note to event', gcalEventId);
+                    return 'ok';
+                } else {
+                    console.error('[GCal Note] PATCH failed', patchResp.status);
+                    return 'error';
+                }
+            } catch (err) {
+                console.error('[GCal Note] Error saving note:', err);
+                return 'error';
+            }
+        }
+
+        // Handler: open inline note input on an event card.
+        // Called by the pencil button via onclick — pass event as first arg: onclick="openEventNoteInput(event, this, ...)"
+        function openEventNoteInput(clickEvent, btn, gcalEventId, calendarId) {
+            // Prevent card expand from firing
+            if (clickEvent) clickEvent.stopPropagation();
+
+            const card = btn.closest('.event-cell');
+            if (!card) return;
+
+            // If a note UI already open on this card, remove it
+            const existing = card.querySelector('.event-note-ui');
+            if (existing) { existing.remove(); return; }
+
+            // Build inline note UI
+            const ui = document.createElement('div');
+            ui.className = 'event-note-ui';
+            ui.style.cssText = 'margin-top:6px;padding:4px 0;';
+            ui.onclick = e => e.stopPropagation();
+
+            if (!gcalEventId) {
+                ui.innerHTML = '<div style="font-size:10px;color:#e57373;padding:2px 0;">No GCal event linked — sync first</div>';
+                card.appendChild(ui);
+                return;
+            }
+
+            const textarea = document.createElement('textarea');
+            textarea.placeholder = 'Add operational note…';
+            textarea.rows = 2;
+            textarea.style.cssText = 'width:100%;box-sizing:border-box;font-size:11px;padding:4px;border:1px solid #90caf9;border-radius:4px;resize:none;background:#1a2a3a;color:#e0e0e0;';
+
+            const statusEl = document.createElement('div');
+            statusEl.style.cssText = 'font-size:10px;margin-top:2px;min-height:14px;';
+
+            const btnRow = document.createElement('div');
+            btnRow.style.cssText = 'display:flex;gap:4px;margin-top:4px;';
+
+            const saveBtn = document.createElement('button');
+            saveBtn.textContent = 'Save';
+            saveBtn.style.cssText = 'font-size:10px;padding:2px 8px;background:#1e88e5;color:#fff;border:none;border-radius:3px;cursor:pointer;';
+
+            const cancelBtn = document.createElement('button');
+            cancelBtn.textContent = 'Cancel';
+            cancelBtn.style.cssText = 'font-size:10px;padding:2px 8px;background:#444;color:#ddd;border:none;border-radius:3px;cursor:pointer;';
+
+            saveBtn.onclick = async (e) => {
+                e.stopPropagation();
+                const note = textarea.value.trim();
+                if (!note) return;
+                saveBtn.disabled = true;
+                saveBtn.textContent = 'Saving…';
+                statusEl.textContent = '';
+                const result = await saveEventNoteToGCal(gcalEventId, calendarId, note);
+                if (result === 'ok') {
+                    statusEl.style.color = '#66bb6a';
+                    statusEl.textContent = '✓ Note saved';
+                    saveBtn.textContent = 'Save';
+                    saveBtn.disabled = false;
+                    setTimeout(() => { if (ui.parentNode) ui.remove(); }, 1800);
+                } else if (result === 'no-id') {
+                    statusEl.style.color = '#e57373';
+                    statusEl.textContent = 'No GCal event linked — sync first';
+                    saveBtn.textContent = 'Save';
+                    saveBtn.disabled = false;
+                } else {
+                    statusEl.style.color = '#e57373';
+                    statusEl.textContent = 'Could not save — check GCal connection';
+                    saveBtn.textContent = 'Save';
+                    saveBtn.disabled = false;
+                }
+            };
+
+            cancelBtn.onclick = (e) => { e.stopPropagation(); ui.remove(); };
+
+            // Save on Enter (without Shift)
+            textarea.onkeydown = (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    saveBtn.click();
+                }
+                if (e.key === 'Escape') { ui.remove(); }
+            };
+
+            btnRow.appendChild(saveBtn);
+            btnRow.appendChild(cancelBtn);
+            ui.appendChild(textarea);
+            ui.appendChild(btnRow);
+            ui.appendChild(statusEl);
+            card.appendChild(ui);
+            textarea.focus();
         }
 
         // Helper: check if an event type string indicates off-site
@@ -3780,40 +3941,6 @@
                 </div>`;
             });
 
-            // Also render REEF Database programs (GAFC, Fish & Friends, OXP, etc.)
-            const programsOnDate = (allData.reefPrograms || []).filter(prog => {
-                return isDateInRange(
-                    selectedDate.toISOString(),
-                    prog.fields[FIELDS.EVENTS_DB.startDateTime],
-                    prog.fields[FIELDS.EVENTS_DB.endDateTime]
-                );
-            });
-            programsOnDate.forEach(prog => {
-                const eventName = prog.fields[FIELDS.EVENTS_DB.eventName] || 'Unnamed Program';
-                const eventType = selectVal(prog.fields[FIELDS.EVENTS_DB.eventType]) || 'Program';
-                const staffingRequired = prog.fields[FIELDS.EVENTS_DB.staffNeeded] || 0;
-                const linkedAssignmentIds = (prog.fields[FIELDS.EVENTS_DB.assignments] || [])
-                    .map(a => typeof a === 'object' ? a.id : a);
-                const assignments = allData.eventAssignments.filter(ea =>
-                    linkedAssignmentIds.includes(ea.id) &&
-                    isAssignedOrConfirmed(ea.fields[FIELDS.EVENT_ASSIGNMENTS.assignmentStatus])
-                );
-                assignments.forEach(a => {
-                    const mid = linkedId(a.fields[FIELDS.EVENT_ASSIGNMENTS.teamMember]);
-                    if (mid) assignedPeople.add(mid);
-                });
-                html += `<div class="detail-item">
-                    <div class="detail-person">${eventName}</div>
-                    <div class="detail-meta">
-                        <span class="detail-badge">${eventType}</span>
-                        Staffed: ${assignments.length} / ${staffingRequired}
-                        ${assignments.map(a => {
-                            const mid = linkedId(a.fields[FIELDS.EVENT_ASSIGNMENTS.teamMember]);
-                            return mid ? `<div style="margin-top: 4px; padding-left: 12px; font-size: 12px; color: #666;">• ${getTeamMemberName(mid)}</div>` : '';
-                        }).join('')}
-                    </div>
-                </div>`;
-            });
             badge.textContent = assignedPeople.size;
 
             if (html === '') {
@@ -4854,6 +4981,10 @@
                 isAssignedOrConfirmed(a.fields[FIELDS.EVENT_ASSIGNMENTS.assignmentStatus])
             );
 
+            // GCal Event ID stored in fldBgWWT1Hh1dQa7B on this record
+            const storedGcalId = evt.fields[FIELDS.EVENTS.gcalEventId] || '';
+            const calId = JSON.stringify(getEventCalendarId(evt));
+
             let html = `<div class="event-cell" data-event-id="${evt.id}" data-day-index="${dayIndex}" data-type="event" onclick="toggleShiftExpand(event, this)">`;
             html += `<div class="event-name" title="${eventName}">${eventName}</div>`;
             html += `<div class="event-collapsed-summary"><span class="event-type-badge" style="font-size:8px;padding:1px 4px;">${eventType}</span> <span>${confirmed.length} assigned</span></div>`;
@@ -4878,7 +5009,10 @@
                 html += `<div class="staff-pill">+${confirmed.length - 5}</div>`;
             }
             html += `</div>`;
+            html += `<div style="display:flex;align-items:center;gap:4px;margin-top:4px;position:relative;z-index:10;">`;
             html += `<button class="cell-add-btn" title="Add staff to event">+</button>`;
+            html += `<button class="event-note-btn" title="Add operational note" onclick="openEventNoteInput(event, this, ${JSON.stringify(storedGcalId)}, ${calId})" style="background:none;border:none;cursor:pointer;font-size:13px;padding:2px 4px;opacity:0.8;line-height:1;position:relative;z-index:11;pointer-events:all;">✏️</button>`;
+            html += `</div>`;
             html += `</div>`;
             return html;
         }
@@ -4951,6 +5085,11 @@
 
             // Use the matching Events table ID for assignment creation; if none found, disable + button
             const assignableId = matchingEventId || '';
+
+            // GCal Event ID for programs: look up GCAL_EVENT_MAPPING by EVENTS_DB record ID
+            const storedGcalId = GCAL_EVENT_MAPPING[evt.id] || '';
+            const calId = JSON.stringify(getEventCalendarId(evt));
+
             let html = `<div class="event-cell" data-event-id="${assignableId}" data-day-index="${dayIndex}" data-type="event" onclick="toggleShiftExpand(event, this)">`;
             html += `<div class="event-name" title="${eventName}">${eventName}</div>`;
             html += `<div class="event-collapsed-summary"><span class="event-type-badge" style="font-size:8px;padding:1px 4px;">${eventType}</span> <span>${confirmed.length} assigned</span></div>`;
@@ -4975,11 +5114,14 @@
                 html += `<div class="staff-pill">+${confirmed.length - 5}</div>`;
             }
             html += `</div>`;
+            html += `<div style="display:flex;align-items:center;gap:4px;margin-top:4px;position:relative;z-index:10;">`;
             if (assignableId) {
                 html += `<button class="cell-add-btn" title="Add staff to program">+</button>`;
             } else {
-                html += `<div style="font-size:10px;color:#999;margin-top:4px;" title="No matching record found in Events table">No link</div>`;
+                html += `<div style="font-size:10px;color:#999;" title="No matching record found in Events table">No link</div>`;
             }
+            html += `<button class="event-note-btn" title="Add operational note" onclick="openEventNoteInput(event, this, ${JSON.stringify(storedGcalId)}, ${calId})" style="background:none;border:none;cursor:pointer;font-size:13px;padding:2px 4px;opacity:0.8;line-height:1;position:relative;z-index:11;pointer-events:all;">✏️</button>`;
+            html += `</div>`;
             html += `</div>`;
             return html;
         }
@@ -5406,8 +5548,8 @@
 
         // Toggle expand/collapse for OEC shift cells (#9)
         function toggleShiftExpand(e, el) {
-            // Don't toggle if clicking on a staff pill or add button
-            if (e.target.closest('.staff-pill-interactive') || e.target.closest('.cell-add-btn')) return;
+            // Don't toggle if clicking on a staff pill, add button, or note button
+            if (e.target.closest('.staff-pill-interactive') || e.target.closest('.cell-add-btn') || e.target.closest('.event-note-btn') || e.target.closest('.event-note-ui')) return;
             el.classList.toggle('expanded');
         }
 
