@@ -5011,7 +5011,7 @@
             html += `</div>`;
             html += `<div style="display:flex;align-items:center;gap:4px;margin-top:4px;position:relative;z-index:10;">`;
             html += `<button class="cell-add-btn" title="Add staff to event">+</button>`;
-            html += `<button class="event-note-btn" title="Add operational note" onclick="openEventNoteInput(event, this, ${JSON.stringify(storedGcalId)}, ${calId})" style="background:none;border:none;cursor:pointer;font-size:13px;padding:2px 4px;opacity:0.8;line-height:1;position:relative;z-index:11;pointer-events:all;">✏️</button>`;
+            html += `<button class="event-note-btn" title="Add operational note" data-gcal-id="${storedGcalId}" data-cal-id="${getEventCalendarId(evt)}" style="background:none;border:none;cursor:pointer;font-size:13px;padding:2px 4px;opacity:0.8;line-height:1;position:relative;z-index:11;pointer-events:all;">✏️</button>`;
             html += `</div>`;
             html += `</div>`;
             return html;
@@ -5120,7 +5120,7 @@
             } else {
                 html += `<div style="font-size:10px;color:#999;" title="No matching record found in Events table">No link</div>`;
             }
-            html += `<button class="event-note-btn" title="Add operational note" onclick="openEventNoteInput(event, this, ${JSON.stringify(storedGcalId)}, ${calId})" style="background:none;border:none;cursor:pointer;font-size:13px;padding:2px 4px;opacity:0.8;line-height:1;position:relative;z-index:11;pointer-events:all;">✏️</button>`;
+            html += `<button class="event-note-btn" title="Add operational note" data-gcal-id="${storedGcalId}" data-cal-id="${getEventCalendarId(evt)}" style="background:none;border:none;cursor:pointer;font-size:13px;padding:2px 4px;opacity:0.8;line-height:1;position:relative;z-index:11;pointer-events:all;">✏️</button>`;
             html += `</div>`;
             html += `</div>`;
             return html;
@@ -7711,6 +7711,16 @@
                     if (assignmentId) {
                         showRemoveConfirmation(pill, assignmentId, memberName, isEvent);
                     }
+                });
+            });
+
+            // Pencil buttons — open inline note input
+            document.querySelectorAll('#schedulerGridBody .event-note-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const gcalEventId = btn.dataset.gcalId || '';
+                    const calendarId = btn.dataset.calId || '';
+                    openEventNoteInput(e, btn, gcalEventId, calendarId);
                 });
             });
         }
