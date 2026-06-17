@@ -4995,7 +4995,7 @@
             html += `<div class="event-type-badge">${eventType}</div>`;
             if (timeStr) html += `<div class="shift-time">${timeStr}</div>`;
             html += `<div class="shift-staff">`;
-            confirmed.slice(0, 5).forEach(assign => {
+            confirmed.forEach(assign => {
                 const memberLink = assign.fields[FIELDS.EVENT_ASSIGNMENTS.teamMember];
                 let memberId = null;
                 if (Array.isArray(memberLink) && memberLink.length > 0) {
@@ -5009,9 +5009,7 @@
                     html += `<div class="staff-pill staff-pill-interactive${isLead ? ' lead' : ''}" data-assignment-id="${assign.id}" data-member-name="${displayName}" data-is-event="true">${displayName}${roleTag}</div>`;
                 }
             });
-            if (confirmed.length > 5) {
-                html += `<div class="staff-pill">+${confirmed.length - 5}</div>`;
-            }
+            // Full assignee list renders here; collapsed cells hide it and show the "X assigned" summary.
             html += `</div>`;
             html += `<div style="display:flex;align-items:center;gap:4px;margin-top:4px;position:relative;z-index:10;">`;
             html += `<button class="cell-add-btn" title="Add staff to event">+</button>`;
@@ -5100,7 +5098,7 @@
             html += `<div class="event-type-badge">${eventType}</div>`;
             if (timeStr) html += `<div class="shift-time">${timeStr}</div>`;
             html += `<div class="shift-staff">`;
-            confirmed.slice(0, 5).forEach(assign => {
+            confirmed.forEach(assign => {
                 const memberLink = assign.fields[FIELDS.EVENT_ASSIGNMENTS.teamMember];
                 let memberId = null;
                 if (Array.isArray(memberLink) && memberLink.length > 0) {
@@ -5114,9 +5112,7 @@
                     html += `<div class="staff-pill staff-pill-interactive${isLead ? ' lead' : ''}" data-assignment-id="${assign.id}" data-member-name="${displayName}" data-is-event="true">${displayName}${roleTag}</div>`;
                 }
             });
-            if (confirmed.length > 5) {
-                html += `<div class="staff-pill">+${confirmed.length - 5}</div>`;
-            }
+            // Full assignee list renders here; collapsed cells hide it and show the "X assigned" summary.
             html += `</div>`;
             html += `<div style="display:flex;align-items:center;gap:4px;margin-top:4px;position:relative;z-index:10;">`;
             if (assignableId) {
@@ -6113,6 +6109,84 @@
             return null;
         }
 
+        // Build a description label for a team member, e.g. "Docent TBD (Docent)".
+        function getMemberDescLabel(memberId) {
+            const member = allData.allTeamMembers.find(m => m.id === memberId)
+                        || allData.teamMembers.find(m => m.id === memberId);
+            if (!member) return '';
+            const firstName = (member.fields[FIELDS.TEAM_MEMBERS.firstName] || '').trim();
+            const lastName = (member.fields[FIELDS.TEAM_MEMBERS.lastName] || '').trim();
+            const fullName = `${firstName} ${lastName}`.trim();
+            const memberType = selectVal(member.fields[FIELDS.TEAM_MEMBERS.teamMemberType]) || '';
+            return `${fullName}${memberType ? ' (' + memberType + ')' : ''}`.trim();
+        }
+
+        // Maintain a "Team:" line in a GCal event description listing assignees who have NO email
+        // (docents, volunteers, etc.), so they still appear on the event even though they can't be
+        // added as Google Calendar guests. Idempotent add/remove of a single label.
+        async function addTeamMemberToDescription(calendarId, gcalEventId, label, token) {
+            if (!label || !gcalEventId || !token) return;
+            try {
+                const calId = encodeURIComponent(calendarId);
+                const getResp = await fetch(
+                    `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}`,
+                    { headers: { 'Authorization': `Bearer ${token}` } }
+                );
+                if (!getResp.ok) return;
+                const evt = await getResp.json();
+                let desc = evt.description || '';
+                const m = desc.match(/^Team:\s*(.*)$/m);
+                const names = m ? m[1].split(',').map(s => s.trim()).filter(Boolean) : [];
+                if (names.includes(label)) return; // already listed — idempotent
+                names.push(label);
+                const teamLine = 'Team: ' + names.join(', ');
+                desc = m ? desc.replace(/^Team:.*$/m, teamLine) : (desc ? desc + '\n' + teamLine : teamLine);
+                await fetch(
+                    `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}?sendUpdates=none`,
+                    {
+                        method: 'PATCH',
+                        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ description: desc }),
+                    }
+                );
+                console.log('[GCal] Listed non-email assignee in description:', label);
+            } catch (err) {
+                console.error('[GCal] Error adding non-email assignee to description:', err);
+            }
+        }
+        async function removeTeamMemberFromDescription(calendarId, gcalEventId, label, token) {
+            if (!label || !gcalEventId || !token) return;
+            try {
+                const calId = encodeURIComponent(calendarId);
+                const getResp = await fetch(
+                    `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}`,
+                    { headers: { 'Authorization': `Bearer ${token}` } }
+                );
+                if (!getResp.ok) return;
+                const evt = await getResp.json();
+                let desc = evt.description || '';
+                const m = desc.match(/^Team:\s*(.*)$/m);
+                if (!m) return;
+                const names = m[1].split(',').map(s => s.trim()).filter(Boolean).filter(n => n !== label);
+                if (names.length) {
+                    desc = desc.replace(/^Team:.*$/m, 'Team: ' + names.join(', '));
+                } else {
+                    desc = desc.replace(/\n?^Team:.*$/m, '').replace(/\n{3,}/g, '\n\n').trim();
+                }
+                await fetch(
+                    `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}?sendUpdates=none`,
+                    {
+                        method: 'PATCH',
+                        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ description: desc }),
+                    }
+                );
+                console.log('[GCal] Removed non-email assignee from description:', label);
+            } catch (err) {
+                console.error('[GCal] Error removing non-email assignee from description:', err);
+            }
+        }
+
         async function syncAttendeeToGCal(eventsTableRecordId, memberId) {
             try {
                 // Step 1: Find the EVENTS_DB record for this Events table record
@@ -6134,7 +6208,8 @@
                 // Step 3: Get the team member's email
                 const email = getMemberEmail(memberId);
                 if (!email) {
-                    console.log('[GCal Sync] No email for team member', memberId);
+                    // No email (docent/volunteer/etc.) → list in the event description instead of a guest invite.
+                    await addTeamMemberToDescription(getEventCalendarId(prog), gcalEventId, getMemberDescLabel(memberId), getGoogleAccessToken());
                     return;
                 }
 
@@ -6190,7 +6265,11 @@
                 const gcalEventId = prog && prog.fields[FIELDS.EVENTS_DB.calendarEventId];
                 if (!gcalEventId) return;
                 const email = getMemberEmail(memberId);
-                if (!email) return;
+                if (!email) {
+                    // No email → was listed in the description, not as a guest. Remove from the description line.
+                    await removeTeamMemberFromDescription(getEventCalendarId(prog), gcalEventId, getMemberDescLabel(memberId), getGoogleAccessToken());
+                    return;
+                }
 
                 const calId = encodeURIComponent(getEventCalendarId(prog));
                 const getResp = await fetch(
@@ -6282,12 +6361,13 @@
                 if (!gcalEventId) return;
 
                 const email = getMemberEmail(memberId);
+                const token = getGoogleAccessToken();
                 if (!email) {
-                    console.log('[GCal OEC Sync] No email for team member', memberId);
+                    // No email → list in the OEC event description instead of a guest invite.
+                    await addTeamMemberToDescription(GCAL_CONFIG.oecShiftsCalendarId, gcalEventId, getMemberDescLabel(memberId), token);
                     return;
                 }
 
-                const token = getGoogleAccessToken();
                 const result = await addAttendeeToGCalEvent(GCAL_CONFIG.oecShiftsCalendarId, gcalEventId, email, token);
                 if (result === 'synced') {
                     console.log('[GCal OEC Sync] Added attendee', email, 'to OEC GCal event', gcalEventId);
@@ -6303,10 +6383,14 @@
                 const gcalEventId = await resolveOecGCalEventId(shiftId);
                 if (!gcalEventId) return;
                 const email = getMemberEmail(memberId);
-                if (!email) return;
+                const token = getGoogleAccessToken();
+                if (!email) {
+                    // No email → was listed in the description, not as a guest. Remove from the description line.
+                    await removeTeamMemberFromDescription(GCAL_CONFIG.oecShiftsCalendarId, gcalEventId, getMemberDescLabel(memberId), token);
+                    return;
+                }
 
                 const calId = encodeURIComponent(GCAL_CONFIG.oecShiftsCalendarId);
-                const token = getGoogleAccessToken();
                 const getResp = await fetch(
                     `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}`,
                     { headers: { 'Authorization': `Bearer ${token}` } }
@@ -6781,7 +6865,12 @@
                     let synced = 0, skipped = 0, failed = 0;
                     for (const memberId of memberIds) {
                         const email = getMemberEmail(memberId);
-                        if (!email) { skipped++; continue; }
+                        if (!email) {
+                            // No email → list in the event description instead of a guest invite.
+                            await addTeamMemberToDescription(calendarId, gcalEventId, getMemberDescLabel(memberId), token);
+                            synced++;
+                            continue;
+                        }
                         try {
                             const result = await addAttendeeToGCalEvent(calendarId, gcalEventId, email, token);
                             if (result === 'synced') { synced++; console.log('[GCal SyncAll] Event: Added', email, 'to', instanceLabel); }
