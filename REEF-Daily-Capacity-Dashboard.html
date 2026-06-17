@@ -2988,54 +2988,14 @@
         // Save an operational note to a GCal event description (append with timestamp).
         // Returns 'ok', 'no-id', or 'error'.
         async function saveEventNoteToGCal(gcalEventId, calendarId, noteText) {
+            // (calendarId kept for caller compatibility; no longer used.)
             if (!gcalEventId) return 'no-id';
-            const token = getGoogleAccessToken();
-            if (!token) return 'error';
-            try {
-                const calId = encodeURIComponent(calendarId);
-                // Fetch current event to preserve existing description
-                const getResp = await fetch(
-                    `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}`,
-                    { headers: { 'Authorization': `Bearer ${token}` } }
-                );
-                if (!getResp.ok) return 'error';
-                const gcalEvent = await getResp.json();
-                const existing = gcalEvent.description || '';
-                // Build timestamped note prefix
-                const now = new Date();
-                const pad = n => String(n).padStart(2, '0');
-                const month = now.getMonth() + 1;
-                const day = now.getDate();
-                let hours = now.getHours();
-                const minutes = pad(now.getMinutes());
-                const ampm = hours >= 12 ? 'pm' : 'am';
-                hours = hours % 12 || 12;
-                const timestamp = `${month}/${day} ${hours}:${minutes}${ampm}`;
-                const noteEntry = `[Note ${timestamp}] ${noteText.trim()}`;
-                const newDescription = existing ? existing + '\n' + noteEntry : noteEntry;
-                // PATCH only description
-                const patchResp = await fetch(
-                    `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}?sendUpdates=none`,
-                    {
-                        method: 'PATCH',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ description: newDescription }),
-                    }
-                );
-                if (patchResp.ok) {
-                    console.log('[GCal Note] Saved note to event', gcalEventId);
-                    return 'ok';
-                } else {
-                    console.error('[GCal Note] PATCH failed', patchResp.status);
-                    return 'error';
-                }
-            } catch (err) {
-                console.error('[GCal Note] Error saving note:', err);
-                return 'error';
-            }
+            if (!noteText || !noteText.trim()) return 'error';
+            // PROGRAMS: write the operational note to the REEF DB "Dashboard Comments" field
+            // (single-writer model). The REEF DB automation renders it into the GCal description,
+            // so it can't be wiped by a later UPDATE the way a direct description PATCH could.
+            const ok = await updateReefDbDashboardComments(gcalEventId, (cur) => _appendNote(cur, noteText));
+            return ok ? 'ok' : 'error';
         }
 
         // Handler: open inline note input on an event card.
@@ -6121,6 +6081,76 @@
             return `${fullName}${memberType ? ' (' + memberType + ')' : ''}`.trim();
         }
 
+        // ===== DASHBOARD COMMENTS (REEF Database field — single-writer model) =====
+        // For PROGRAMS, the dashboard no longer patches the Google Calendar description directly
+        // (the REEF DB UPDATE automation would overwrite it). Instead it writes operational notes
+        // and the non-email assignee "Team:" listing to the REEF DB "Dashboard Comments" field,
+        // which the GCal Event Description formula renders. The REEF Database is the single writer.
+        const REEFDB_BASE = 'appCK2qlT3WHdhYKd';
+        const REEFDB_EVENTS_TABLE = 'tblxmKRKrel92X6Mv';
+        const REEFDB_DASH_FIELD = 'fldmqvWbVHlurNbJK'; // "Dashboard Comments"
+
+        // Pure string helpers that maintain content inside the Dashboard Comments value.
+        function _teamLineAdd(text, label) {
+            text = text || '';
+            const m = text.match(/^Team:\s*(.*)$/m);
+            const names = m ? m[1].split(',').map(s => s.trim()).filter(Boolean) : [];
+            if (names.includes(label)) return text;
+            names.push(label);
+            const line = 'Team: ' + names.join(', ');
+            return m ? text.replace(/^Team:.*$/m, line) : (text ? line + '\n' + text : line);
+        }
+        function _teamLineRemove(text, label) {
+            text = text || '';
+            const m = text.match(/^Team:\s*(.*)$/m);
+            if (!m) return text;
+            const names = m[1].split(',').map(s => s.trim()).filter(Boolean).filter(n => n !== label);
+            if (names.length) return text.replace(/^Team:.*$/m, 'Team: ' + names.join(', '));
+            return text.replace(/\n?^Team:.*$/m, '').replace(/^\n+/, '').trim();
+        }
+        function _appendNote(text, noteText) {
+            text = text || '';
+            const now = new Date();
+            const pad = n => String(n).padStart(2, '0');
+            let h = now.getHours(); const min = pad(now.getMinutes()); const ap = h >= 12 ? 'pm' : 'am'; h = h % 12 || 12;
+            const ts = `${now.getMonth() + 1}/${now.getDate()} ${h}:${min}${ap}`;
+            const entry = `[Note ${ts}] ${(noteText || '').trim()}`;
+            return text ? text + '\n' + entry : entry;
+        }
+
+        // Find the REEF DB program record by its canonical Calendar Event ID, apply updater() to its
+        // Dashboard Comments value, and write it back. Returns true on success.
+        async function updateReefDbDashboardComments(gcalEventId, updater) {
+            try {
+                if (!gcalEventId || !apiKey) return false;
+                const formula = encodeURIComponent(`{Calendar Event ID}="${gcalEventId}"`);
+                const findResp = await fetch(
+                    `https://api.airtable.com/v0/${REEFDB_BASE}/${REEFDB_EVENTS_TABLE}?filterByFormula=${formula}&maxRecords=1&returnFieldsByFieldId=true`,
+                    { headers: { 'Authorization': `Bearer ${apiKey}` } }
+                );
+                if (!findResp.ok) { console.log('[DashComments] lookup failed', findResp.status); return false; }
+                const data = await findResp.json();
+                const rec = data.records && data.records[0];
+                if (!rec) { console.log('[DashComments] No REEF DB program for event', gcalEventId); return false; }
+                const current = (rec.fields && rec.fields[REEFDB_DASH_FIELD]) || '';
+                const next = updater(current);
+                if (next === current) return true;
+                const patchResp = await fetch(
+                    `https://api.airtable.com/v0/${REEFDB_BASE}/${REEFDB_EVENTS_TABLE}/${rec.id}`,
+                    {
+                        method: 'PATCH',
+                        headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ fields: { [REEFDB_DASH_FIELD]: next } }),
+                    }
+                );
+                if (patchResp.ok) { console.log('[DashComments] Updated Dashboard Comments for', gcalEventId); return true; }
+                console.error('[DashComments] PATCH failed', patchResp.status); return false;
+            } catch (err) { console.error('[DashComments] error', err); return false; }
+        }
+
+        // NOTE: addTeamMemberToDescription / removeTeamMemberFromDescription below are now used ONLY
+        // for OEC shift events (which the dashboard owns outright — no REEF DB automation overwrites
+        // them, so direct description writes are safe there). Program paths use updateReefDbDashboardComments.
         // Maintain a "Team:" line in a GCal event description listing assignees who have NO email
         // (docents, volunteers, etc.), so they still appear on the event even though they can't be
         // added as Google Calendar guests. Idempotent add/remove of a single label.
@@ -6208,8 +6238,9 @@
                 // Step 3: Get the team member's email
                 const email = getMemberEmail(memberId);
                 if (!email) {
-                    // No email (docent/volunteer/etc.) → list in the event description instead of a guest invite.
-                    await addTeamMemberToDescription(getEventCalendarId(prog), gcalEventId, getMemberDescLabel(memberId), getGoogleAccessToken());
+                    // No email (docent/volunteer/etc.) → list in the REEF DB "Dashboard Comments" field
+                    // (single-writer model), not directly on the calendar event.
+                    await updateReefDbDashboardComments(gcalEventId, (cur) => _teamLineAdd(cur, getMemberDescLabel(memberId)));
                     return;
                 }
 
@@ -6266,8 +6297,8 @@
                 if (!gcalEventId) return;
                 const email = getMemberEmail(memberId);
                 if (!email) {
-                    // No email → was listed in the description, not as a guest. Remove from the description line.
-                    await removeTeamMemberFromDescription(getEventCalendarId(prog), gcalEventId, getMemberDescLabel(memberId), getGoogleAccessToken());
+                    // No email → was listed in Dashboard Comments, not as a guest. Remove from the Team line.
+                    await updateReefDbDashboardComments(gcalEventId, (cur) => _teamLineRemove(cur, getMemberDescLabel(memberId)));
                     return;
                 }
 
@@ -6866,8 +6897,8 @@
                     for (const memberId of memberIds) {
                         const email = getMemberEmail(memberId);
                         if (!email) {
-                            // No email → list in the event description instead of a guest invite.
-                            await addTeamMemberToDescription(calendarId, gcalEventId, getMemberDescLabel(memberId), token);
+                            // No email → list in the REEF DB "Dashboard Comments" field (single-writer model).
+                            await updateReefDbDashboardComments(gcalEventId, (cur) => _teamLineAdd(cur, getMemberDescLabel(memberId)));
                             synced++;
                             continue;
                         }
