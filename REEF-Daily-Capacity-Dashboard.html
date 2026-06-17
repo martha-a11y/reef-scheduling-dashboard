@@ -2887,6 +2887,9 @@
                 staffNeeded: 'fldk8fCGP0r6DgdkN',
                 staffStillNeeded: 'fldTtMQcQVrXjPYWq',
                 assignments: 'fldSDmDZEpBV3YDsO',
+                // Phase 2: canonical Google Calendar Event ID, synced from the REEF Database.
+                // REEF Database owns event creation; the dashboard reads this to enrich (never create).
+                calendarEventId: 'fldL8180Gs3eqOCEm',
             },
         };
 
@@ -2970,10 +2973,11 @@
         // Field Survey Trip, Fieldwork, Conference/Trade Show → Travel, Fieldwork and Research calendar.
         // Everything else → Campus 2026.
         function getEventCalendarId(evt) {
-            const eventType = selectVal(
-                evt.fields[FIELDS.EVENTS.eventType] || evt.fields[FIELDS.EVENTS_DB.eventType]
-            ) || '';
-            const t = eventType.toLowerCase();
+            const raw = evt.fields[FIELDS.EVENTS.eventType] || evt.fields[FIELDS.EVENTS_DB.eventType];
+            // Event Type may be a single value (Events table) or an array of values
+            // (synced multi-select Programs table). Normalize both to a lowercased string.
+            const types = Array.isArray(raw) ? raw : [raw];
+            const t = types.map(selectVal).join(' ').toLowerCase();
             const isTravelType = t.includes('field survey') || t.includes('fieldwork') || t.includes('conference');
             if (isTravelType) {
                 return GCAL_CONFIG.travelCalendarId || GCAL_CONFIG.reefCampus2CalendarId;
@@ -5086,8 +5090,8 @@
             // Use the matching Events table ID for assignment creation; if none found, disable + button
             const assignableId = matchingEventId || '';
 
-            // GCal Event ID for programs: look up GCAL_EVENT_MAPPING by EVENTS_DB record ID
-            const storedGcalId = GCAL_EVENT_MAPPING[evt.id] || '';
+            // GCal Event ID for programs: read the canonical Calendar Event ID synced from the REEF Database
+            const storedGcalId = evt.fields[FIELDS.EVENTS_DB.calendarEventId] || '';
             const calId = JSON.stringify(getEventCalendarId(evt));
 
             let html = `<div class="event-cell" data-event-id="${assignableId}" data-day-index="${dayIndex}" data-type="event" onclick="toggleShiftExpand(event, this)">`;
@@ -6100,77 +6104,13 @@
             return member.fields[FIELDS.TEAM_MEMBERS.email] || null;
         }
 
-        // Add attendee to a REEF Campus 2 Google Calendar event (fire-and-forget, no blocking)
-        // Auto-create a Google Calendar event on REEF Campus 2 for an EVENTS_DB program
+        // DISABLED (Phase 2): the dashboard no longer creates program calendar events.
+        // The REEF Database owns program event creation and the canonical Calendar Event ID;
+        // the dashboard enriches the existing event by that ID, or skips if there isn't one yet.
+        // Kept as a no-op stub so any lingering reference cannot create (or duplicate) an event.
         async function autoCreateGCalEvent(eventsDBId) {
-            try {
-                const prog = allData.reefPrograms.find(p => p.id === eventsDBId);
-                if (!prog) {
-                    console.log('[GCal AutoCreate] No EVENTS_DB record found for', eventsDBId);
-                    return null;
-                }
-
-                const eventName = prog.fields[FIELDS.EVENTS_DB.eventName] || 'REEF Campus Event';
-                const startDT = prog.fields[FIELDS.EVENTS_DB.startDateTime];
-                const endDT = prog.fields[FIELDS.EVENTS_DB.endDateTime];
-                if (!startDT) {
-                    console.log('[GCal AutoCreate] No start date for EVENTS_DB record', eventsDBId);
-                    return null;
-                }
-
-                const calId = encodeURIComponent(GCAL_CONFIG.reefCampus2CalendarId);
-                const gcalBody = {
-                    summary: eventName,
-                    start: endDT ? gcalDateTime(startDT) : gcalDate(startDT),
-                    end: endDT ? gcalDateTime(endDT) : gcalDate(startDT),
-                };
-
-                const createResp = await fetch(
-                    `https://www.googleapis.com/calendar/v3/calendars/${calId}/events?sendUpdates=none`,
-                    {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${getGoogleAccessToken()}`,
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(gcalBody),
-                    }
-                );
-                if (!createResp.ok) {
-                    console.log('[GCal AutoCreate] Failed to create GCal event', createResp.status);
-                    return null;
-                }
-                const created = await createResp.json();
-                const newGcalId = created.id;
-                console.log('[GCal AutoCreate] Created GCal event', newGcalId, 'for', eventName);
-
-                // Store in persistent mapping so subsequent adds don't re-create
-                GCAL_EVENT_MAPPING[eventsDBId] = newGcalId;
-                saveGCalMappings();
-
-                // Write GCal event ID back to EVENTS_DB in the REEF Database
-                try {
-                    await fetch(
-                        `https://api.airtable.com/v0/appCK2qlT3WHdhYKd/tblxmKRKrel92X6Mv/${eventsDBId}`,
-                        {
-                            method: 'PATCH',
-                            headers: {
-                                'Authorization': `Bearer ${apiKey}`,
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ fields: { 'fldxo8A2V2rnM2Lcb': newGcalId } }),
-                        }
-                    );
-                    console.log('[GCal AutoCreate] Wrote GCal ID back to EVENTS_DB');
-                } catch (writeErr) {
-                    console.error('[GCal AutoCreate] Failed to write GCal ID to Airtable:', writeErr);
-                }
-
-                return newGcalId;
-            } catch (err) {
-                console.error('[GCal AutoCreate] Error:', err);
-                return null;
-            }
+            console.log('[GCal AutoCreate] Disabled — REEF Database owns program event creation. Skipping for', eventsDBId);
+            return null;
         }
 
         async function syncAttendeeToGCal(eventsTableRecordId, memberId) {
@@ -6182,12 +6122,13 @@
                     return;
                 }
 
-                // Step 2: Look up the GCal event ID, or auto-create if missing
-                let gcalEventId = GCAL_EVENT_MAPPING[eventsDBId];
+                // Step 2: Read the canonical Calendar Event ID from the synced program record.
+                // REEF Database owns program event creation; the dashboard only enriches — never creates.
+                const prog = allData.reefPrograms.find(p => p.id === eventsDBId);
+                const gcalEventId = prog && prog.fields[FIELDS.EVENTS_DB.calendarEventId];
                 if (!gcalEventId) {
-                    console.log('[GCal Sync] No GCal event — auto-creating for EVENTS_DB record', eventsDBId);
-                    gcalEventId = await autoCreateGCalEvent(eventsDBId);
-                    if (!gcalEventId) return;
+                    console.log('[GCal Sync] No canonical Calendar Event ID yet — skipping (not creating)', eventsDBId);
+                    return;
                 }
 
                 // Step 3: Get the team member's email
@@ -6197,8 +6138,8 @@
                     return;
                 }
 
-                // Step 4: Fetch current event to get existing attendees
-                const calId = encodeURIComponent(GCAL_CONFIG.reefCampus2CalendarId);
+                // Step 4: Fetch current event to get existing attendees (route to the event's actual calendar)
+                const calId = encodeURIComponent(getEventCalendarId(prog));
                 const getResp = await fetch(
                     `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}`,
                     { headers: { 'Authorization': `Bearer ${getGoogleAccessToken()}` } }
@@ -6244,12 +6185,14 @@
             try {
                 const eventsDBId = findEventsDBRecordId(eventsTableRecordId);
                 if (!eventsDBId) return;
-                const gcalEventId = GCAL_EVENT_MAPPING[eventsDBId];
+                // Read the canonical Calendar Event ID from the synced program record (no localStorage).
+                const prog = allData.reefPrograms.find(p => p.id === eventsDBId);
+                const gcalEventId = prog && prog.fields[FIELDS.EVENTS_DB.calendarEventId];
                 if (!gcalEventId) return;
                 const email = getMemberEmail(memberId);
                 if (!email) return;
 
-                const calId = encodeURIComponent(GCAL_CONFIG.reefCampus2CalendarId);
+                const calId = encodeURIComponent(getEventCalendarId(prog));
                 const getResp = await fetch(
                     `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${gcalEventId}`,
                     { headers: { 'Authorization': `Bearer ${getGoogleAccessToken()}` } }
@@ -6879,40 +6822,10 @@
                         }
                     }
 
-                    // No match found — auto-create
-                    try {
-                        const calId = encodeURIComponent(calendarId);
-                        const gcalBody = {
-                            summary: eventName,
-                            start: startDT
-                                ? gcalDateTime(startDT)
-                                : gcalDate(dayStr + 'T00:00:00Z'),
-                            end: endDT
-                                ? gcalDateTime(endDT)
-                                : startDT
-                                    ? gcalDateTime(new Date(new Date(startDT).getTime() + 3*3600000).toISOString())
-                                    : gcalDate(dayStr + 'T00:00:00Z'),
-                        };
-                        const createResp = await fetch(
-                            `https://www.googleapis.com/calendar/v3/calendars/${calId}/events?sendUpdates=none`,
-                            {
-                                method: 'POST',
-                                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                                body: JSON.stringify(gcalBody),
-                            }
-                        );
-                        if (createResp.ok) {
-                            const created = await createResp.json();
-                            console.log('[GCal SyncAll] Event: Created GCal event', eventName, created.id);
-                            return created.id;
-                        } else {
-                            console.log('[GCal SyncAll] Event: Failed to create', eventName, createResp.status);
-                            return null;
-                        }
-                    } catch (err) {
-                        console.error('[GCal SyncAll] Event: Error creating', eventName, err);
-                        return null;
-                    }
+                    // Phase 2: do not create program events. If no existing event matches,
+                    // skip — the REEF Database owns program event creation.
+                    console.log('[GCal SyncAll] No matching GCal event found — skipping (not creating)', eventName);
+                    return null;
                 }
 
                 for (const [eventId, memberIds] of Object.entries(evtByEvent)) {
@@ -6964,89 +6877,32 @@
 
                     // Sync to each instance
                     for (const instance of instancesToSync) {
-                        // Try EVENTS_DB mapping first
-                        let gcalEventId = instance.progId ? GCAL_EVENT_MAPPING[instance.progId] : null;
+                        // Read the canonical Calendar Event ID from the synced program record.
+                        // Never create here — the REEF Database owns program event creation.
+                        const instProg = instance.progId ? allData.reefPrograms.find(p => p.id === instance.progId) : null;
+                        const gcalEventId = instProg && instProg.fields[FIELDS.EVENTS_DB.calendarEventId];
 
                         if (!gcalEventId) {
-                            gcalEventId = await findOrCreateGCalEvent(
-                                calendarId, instance.dayStr, instance.name, instance.startDT, instance.endDT
-                            );
-                            if (gcalEventId && instance.progId) {
-                                GCAL_EVENT_MAPPING[instance.progId] = gcalEventId;
-                                saveGCalMappings();
-                            }
-                        }
-
-                        if (!gcalEventId) {
-                            evtFailed += memberIds.length;
+                            console.log('[GCal SyncAll] No canonical Calendar Event ID — skipping (not creating)', instance.name, instance.dayStr);
+                            evtNoMatch += memberIds.length;
                             continue;
                         }
 
+                        // Route to the event's actual calendar (REEF Campus 2026 vs Travel/Fieldwork).
+                        const instCalendarId = getEventCalendarId(instProg);
                         const label = instance.name + ' (' + instance.dayStr + ')';
                         console.log('[GCal SyncAll] Event: Matched', label, 'to GCal', gcalEventId.substring(0, 15));
-                        const result = await syncMembersToGCalInstance(calendarId, gcalEventId, memberIds, label);
+                        const result = await syncMembersToGCalInstance(instCalendarId, gcalEventId, memberIds, label);
                         evtSynced += result.synced;
                         evtSkipped += result.skipped;
                         evtFailed += result.failed;
                     }
                 }
 
-                // Ensure ALL Events/Programs have GCal events (even unassigned ones)
-                let evtCreated = 0;
-                for (const evt of allData.events) {
-                    if (evtByEvent[evt.id]) continue; // already processed above
-                    const evtName = evt.fields[FIELDS.EVENTS.eventName] || '';
-                    if (!evtName) continue; // skip nameless record
-                    const evtStart = evt.fields[FIELDS.EVENTS.startDateTime];
-                    if (!evtStart) continue;
-
-                    const calendarId = GCAL_CONFIG.reefCampus2CalendarId;
-                    const normalName = normalizeEventName(evtName);
-
-                    // Find matching EVENTS_DB instances
-                    const matchingProgs = allData.reefPrograms.filter(p => {
-                        const progName = normalizeEventName(p.fields[FIELDS.EVENTS_DB.eventName] || '');
-                        return normalName && progName && (normalName === progName || normalName.includes(progName) || progName.includes(normalName));
-                    });
-
-                    const instances = [];
-                    if (matchingProgs.length > 0) {
-                        for (const prog of matchingProgs) {
-                            const progStart = prog.fields[FIELDS.EVENTS_DB.startDateTime];
-                            if (!progStart) continue;
-                            instances.push({
-                                dayStr: new Date(progStart).toISOString().split('T')[0],
-                                name: prog.fields[FIELDS.EVENTS_DB.eventName] || evtName,
-                                startDT: progStart,
-                                endDT: prog.fields[FIELDS.EVENTS_DB.endDateTime],
-                                progId: prog.id,
-                            });
-                        }
-                    } else {
-                        instances.push({
-                            dayStr: new Date(evtStart).toISOString().split('T')[0],
-                            name: evtName,
-                            startDT: evtStart,
-                            endDT: evt.fields[FIELDS.EVENTS.endDateTime],
-                            progId: null,
-                        });
-                    }
-
-                    for (const inst of instances) {
-                        let gcalEventId = inst.progId ? GCAL_EVENT_MAPPING[inst.progId] : null;
-                        if (!gcalEventId) {
-                            gcalEventId = await findOrCreateGCalEvent(
-                                calendarId, inst.dayStr, inst.name, inst.startDT, inst.endDT
-                            );
-                            if (gcalEventId && inst.progId) {
-                                GCAL_EVENT_MAPPING[inst.progId] = gcalEventId;
-                                saveGCalMappings();
-                            }
-                        }
-                        if (gcalEventId) evtCreated++;
-                    }
-                }
-                if (evtCreated > 0) console.log(`[GCal SyncAll] Events: Ensured ${evtCreated} GCal events for unassigned events`);
+                // Phase 2: the dashboard no longer creates program calendar events.
+                // The "ensure all programs have GCal events (even unassigned ones)" loop was removed —
+                // the REEF Database owns program event creation and the canonical Calendar Event ID.
+                const evtCreated = 0;
 
                 // --- 3. Report results ---
                 const totalSynced = oecSynced + evtSynced;
