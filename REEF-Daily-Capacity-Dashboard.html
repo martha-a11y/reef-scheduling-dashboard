@@ -7471,7 +7471,12 @@
 
             // Build available staff list with work-day awareness
             // Include campus operational staff, docents/volunteers, AND interns/fellows
-            const allPickerMembers = [...allData.teamMembers, ...(allData.docentVolunteers || []), ...(allData.internsFellows || [])];
+            // De-duplicate by record ID: Interns/Fellows are present in BOTH allData.teamMembers
+            // (Active + REEF Campus + not Docent/Volunteer) AND allData.internsFellows, so a plain
+            // concat would list them twice. This Set guard keeps each person exactly once (first wins).
+            const _pickerSeen = new Set();
+            const allPickerMembers = [...allData.teamMembers, ...(allData.docentVolunteers || []), ...(allData.internsFellows || [])]
+                .filter(m => (m && m.id && !_pickerSeen.has(m.id)) ? (_pickerSeen.add(m.id), true) : false);
             const staff = allPickerMembers
                 .filter(m => !alreadyAssigned.has(m.id))
                 .map(m => {
