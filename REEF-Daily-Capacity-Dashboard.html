@@ -2336,6 +2336,7 @@
         <button class="tab-button active" data-tab="daily-view">Daily View</button>
         <button class="tab-button" data-tab="scheduler-view">Scheduler</button>
         <button class="tab-button" data-tab="12-week-planning">12-Week Planning</button>
+        <button class="tab-button" data-tab="help-view">Help</button>
     </div>
 
     <!-- Main Content -->
@@ -2590,6 +2591,763 @@
     <!-- Toast Container -->
     <div id="toastContainer" class="toast-container"></div>
 
+    <!-- Help / How-To Tab (embedded guide; isolated in an iframe to avoid any CSS/JS collision) -->
+    <div id="helpViewContent" class="tab-content">
+        <iframe id="helpGuideFrame" title="REEF Scheduling Help Guide" style="width:100%; border:0; min-height:80vh; background:#F6F8FB;"></iframe>
+    </div>
+    <script type="text/html" id="helpGuideSrc">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>REEF Scheduling & Event Management Help Guide</title>
+  <style>
+    :root {
+      --reef-blue: #24408E;
+      --reef-yellow: #FFDD00;
+      --reef-light-blue: #EAF2FB;
+      --reef-border: #D8DEE9;
+      --reef-text: #1F2933;
+      --reef-muted: #5B6776;
+      --reef-green: #E7F6EC;
+      --reef-red: #FDECEC;
+      --reef-orange: #FFF4E5;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      color: var(--reef-text);
+      background: #F6F8FB;
+      line-height: 1.55;
+    }
+
+    header {
+      background: linear-gradient(135deg, var(--reef-blue), #172A63);
+      color: white;
+      padding: 28px 36px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      margin: 8px 0 0;
+      color: rgba(255,255,255,0.88);
+      font-size: 15px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      gap: 28px;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+
+    nav {
+      position: sticky;
+      top: 20px;
+      align-self: start;
+      background: white;
+      border: 1px solid var(--reef-border);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(20, 40, 80, 0.06);
+    }
+
+    nav h2 {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--reef-muted);
+      margin: 0 0 10px;
+    }
+
+    nav a {
+      display: block;
+      color: var(--reef-blue);
+      text-decoration: none;
+      padding: 8px 6px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    nav a:hover {
+      background: var(--reef-light-blue);
+    }
+
+    main {
+      min-width: 0;
+    }
+
+    section {
+      background: white;
+      border: 1px solid var(--reef-border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 22px;
+      box-shadow: 0 2px 8px rgba(20, 40, 80, 0.05);
+    }
+
+    h2 {
+      color: var(--reef-blue);
+      margin: 0 0 14px;
+      font-size: 22px;
+    }
+
+    h3 {
+      color: #263B6F;
+      margin: 22px 0 8px;
+      font-size: 17px;
+    }
+
+    p {
+      margin: 8px 0 12px;
+    }
+
+    .updated {
+      display: inline-block;
+      margin-top: 14px;
+      background: rgba(255,255,255,0.16);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 13px;
+    }
+
+    .callout {
+      border-left: 5px solid var(--reef-blue);
+      background: var(--reef-light-blue);
+      padding: 14px 16px;
+      border-radius: 8px;
+      margin: 16px 0;
+    }
+
+    .warning {
+      border-left-color: #C2410C;
+      background: var(--reef-orange);
+    }
+
+    .do-not {
+      border-left-color: #B42318;
+      background: var(--reef-red);
+    }
+
+    .good {
+      border-left-color: #16803C;
+      background: var(--reef-green);
+    }
+
+    .quick-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .card {
+      border: 1px solid var(--reef-border);
+      border-radius: 10px;
+      padding: 16px;
+      background: #FBFCFE;
+    }
+
+    .card h3 {
+      margin-top: 0;
+      color: var(--reef-blue);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0 4px;
+      font-size: 14px;
+    }
+
+    th {
+      background: #F0F4FA;
+      color: var(--reef-blue);
+      text-align: left;
+      padding: 10px;
+      border: 1px solid var(--reef-border);
+    }
+
+    td {
+      padding: 10px;
+      border: 1px solid var(--reef-border);
+      vertical-align: top;
+    }
+
+    ol, ul {
+      padding-left: 22px;
+    }
+
+    li {
+      margin: 6px 0;
+    }
+
+    .tag {
+      display: inline-block;
+      background: #EEF2FF;
+      color: var(--reef-blue);
+      border: 1px solid #D6DDF8;
+      border-radius: 999px;
+      padding: 3px 9px;
+      font-size: 12px;
+      font-weight: 700;
+      margin-right: 5px;
+      margin-bottom: 5px;
+    }
+
+    footer {
+      max-width: 1280px;
+      margin: 0 auto 40px;
+      padding: 0 28px;
+      color: var(--reef-muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+        padding: 18px;
+      }
+
+      nav {
+        position: static;
+      }
+
+      header {
+        padding: 24px 20px;
+      }
+    }
+
+    @media print {
+      nav {
+        display: none;
+      }
+
+      .layout {
+        display: block;
+        padding: 0;
+      }
+
+      section {
+        box-shadow: none;
+        page-break-inside: avoid;
+      }
+
+      header {
+        background: white;
+        color: black;
+        border-bottom: 2px solid #000;
+      }
+
+      header p, .updated {
+        color: black;
+        border: none;
+        background: none;
+        padding: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>REEF Scheduling & Event Management Help Guide</h1>
+    <p>Staff guide for entering events, viewing schedules, assigning coverage, and understanding where changes should be made.</p>
+    <div class="updated">Updated: June 18, 2026</div>
+  </header>
+
+  <div class="layout">
+    <nav aria-label="Guide navigation">
+      <h2>Guide Sections</h2>
+      <a href="#quick-start">Quick Start</a>
+      <a href="#source-of-truth">Source of Truth Rules</a>
+      <a href="#where-to-do-what">Where to Do What</a>
+      <a href="#new-events">Create a New Event</a>
+      <a href="#campus-operations">Campus Operations</a>
+      <a href="#event-types">Event Types</a>
+      <a href="#editing-events">Update an Existing Event</a>
+      <a href="#dashboard">Using the Dashboard</a>
+      <a href="#staffing">Staffing Assignments</a>
+      <a href="#troubleshooting">Troubleshooting</a>
+      <a href="#help">Who to Contact</a>
+    </nav>
+
+    <main>
+      <section id="quick-start">
+        <h2>Quick Start</h2>
+        <p>The REEF scheduling system helps staff see what is happening on campus, who is assigned to OEC shifts, who is out, and what programs or activities are coming up.</p>
+        <div class="quick-grid">
+          <div class="card">
+            <h3>Check Today</h3>
+            <p>Use the Daily View to see today’s coverage, programs, events, and staffing gaps.</p>
+          </div>
+          <div class="card">
+            <h3>View the Week</h3>
+            <p>Use the Scheduler tab to see weekly OEC shifts, campus programs, off-site events, and campus operations.</p>
+          </div>
+          <div class="card">
+            <h3>Plan Ahead</h3>
+            <p>Use the 12-Week Planning tab to identify staffing shortages, PTO overlap, and high-demand weeks.</p>
+          </div>
+          <div class="card">
+            <h3>Enter Events</h3>
+            <p>Use REEF Database forms to submit new events or campus operations items. Do not create events directly in Google Calendar.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="source-of-truth">
+        <h2>Source of Truth Rules</h2>
+        <div class="callout good">
+          <p><strong>REEF Database is the official source of truth for events and campus activities.</strong></p>
+          <p><strong>The Scheduling Dashboard is the official place to manage staffing assignments.</strong></p>
+          <p><strong>Google Calendar is a display tool. Do not edit system-created events directly in Google Calendar.</strong></p>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Information</th>
+              <th>Official Source</th>
+              <th>Staff Rule</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Program/event details</td>
+              <td>REEF Database</td>
+              <td>Create and update the REEF Database record.</td>
+            </tr>
+            <tr>
+              <td>Campus operations items</td>
+              <td>REEF Database</td>
+              <td>Use the Campus Operations submission page.</td>
+            </tr>
+            <tr>
+              <td>OEC shift assignments</td>
+              <td>Scheduling Dashboard</td>
+              <td>Schedulers assign staff in the dashboard.</td>
+            </tr>
+            <tr>
+              <td>PTO and leave</td>
+              <td>Zoho People</td>
+              <td>Request leave in Zoho People.</td>
+            </tr>
+            <tr>
+              <td>Team schedule visibility</td>
+              <td>Google Calendar</td>
+              <td>View only. Do not edit system-created events there.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout do-not">
+          <p><strong>Do not edit Google Calendar directly.</strong> Changes made directly in Google Calendar may be overwritten by REEF Database, dashboard, or sync updates.</p>
+        </div>
+      </section>
+
+      <section id="where-to-do-what">
+        <h2>Where to Do What</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Task</th>
+              <th>Where to Do It</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Submit a new program, public event, field survey trip, tabling event, or major event</td>
+              <td>REEF Database form: Submit a Program or Event</td>
+              <td>Use the simplified event submission page.</td>
+            </tr>
+            <tr>
+              <td>Submit a campus operations item</td>
+              <td>REEF Database form: Submit Campus Operations Item</td>
+              <td>Use for facilities, cleaners, closures, VIP visits, parking impacts, maintenance, and setup days.</td>
+            </tr>
+            <tr>
+              <td>Edit an event after submission</td>
+              <td>REEF Database event record or approved edit interface</td>
+              <td>Do not edit Google Calendar.</td>
+            </tr>
+            <tr>
+              <td>Add day-of operational notes</td>
+              <td>REEF Database event notes or dashboard notes field</td>
+              <td>Use for parking, late arrivals, location changes, setup notes, or weather updates.</td>
+            </tr>
+            <tr>
+              <td>Assign staff to OEC shifts or events</td>
+              <td>Scheduling Dashboard</td>
+              <td>Schedulers only.</td>
+            </tr>
+            <tr>
+              <td>Request PTO or leave</td>
+              <td>Zoho People</td>
+              <td>Leave syncs into scheduling availability.</td>
+            </tr>
+            <tr>
+              <td>View your schedule</td>
+              <td>Google Calendar</td>
+              <td>Use REEF Campus and OEC Shifts calendars for visibility.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="new-events">
+        <h2>Create a New Program or Event</h2>
+        <p>Use the simplified REEF Database form when submitting a program, public event, field survey trip, tabling event, online program, major event, or other outreach activity.</p>
+
+        <h3>Before You Start</h3>
+        <ol>
+          <li>Confirm the event does not already exist.</li>
+          <li>Choose the most accurate Event Type.</li>
+          <li>Enter the correct date and time, or mark the event as all-day if it does not have a specific time.</li>
+          <li>Add clear notes for anything staff need to know before the event.</li>
+        </ol>
+
+        <h3>Recommended Fields</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th>When to Use</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Event Type</td>
+              <td>Required. Choose the best category for the event.</td>
+            </tr>
+            <tr>
+              <td>Other Event Name</td>
+              <td>Use when the formula-generated event name will not be clear enough.</td>
+            </tr>
+            <tr>
+              <td>Status</td>
+              <td>Use to indicate confirmed, tentative, canceled, or other current status.</td>
+            </tr>
+            <tr>
+              <td>Start Date & Time</td>
+              <td>Required unless the event is an all-day placeholder.</td>
+            </tr>
+            <tr>
+              <td>End Date & Time</td>
+              <td>Required for timed events.</td>
+            </tr>
+            <tr>
+              <td>All Day Event</td>
+              <td>Use for tentative holds, placeholder dates, multi-day holds, or events without a specific time.</td>
+            </tr>
+            <tr>
+              <td>Location</td>
+              <td>Choose the best available location.</td>
+            </tr>
+            <tr>
+              <td>Venue Organization</td>
+              <td>Use when the event is hosted at or connected to another organization.</td>
+            </tr>
+            <tr>
+              <td>Address if Other Location</td>
+              <td>Use when the location is not REEF or not already captured by the venue.</td>
+            </tr>
+            <tr>
+              <td>Purpose/Goal of Event</td>
+              <td>Briefly describe why REEF is participating or hosting.</td>
+            </tr>
+            <tr>
+              <td>Parent Event</td>
+              <td>Use when the event is part of a larger multi-part program such as REEF Fest, a derby, or an expedition.</td>
+            </tr>
+            <tr>
+              <td>GAFC</td>
+              <td>Use only for Great Annual Fish Count events.</td>
+            </tr>
+            <tr>
+              <td># Staff/Interns Needed</td>
+              <td>Use if the event needs staffing awareness or assignment.</td>
+            </tr>
+            <tr>
+              <td>All Pre-Event Comments</td>
+              <td>Use for staff-facing details that should be known before the event.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="campus-operations">
+        <h2>Campus Operations Items</h2>
+        <p>Campus Operations is for non-program activities that affect campus scheduling, building use, parking, visitor flow, or staff awareness.</p>
+
+        <h3>Use Campus Operations For</h3>
+        <p>
+          <span class="tag">Campus cleaners</span>
+          <span class="tag">Property maintenance</span>
+          <span class="tag">Facility repairs</span>
+          <span class="tag">Closures</span>
+          <span class="tag">VIP visits</span>
+          <span class="tag">Internal setup days</span>
+          <span class="tag">Parking impacts</span>
+          <span class="tag">Intern arrivals/departures</span>
+          <span class="tag">Team activities</span>
+        </p>
+
+        <h3>Do Not Use Campus Operations For</h3>
+        <p>Do not use Campus Operations for public programs, education events, field survey trips, tabling events, or major public events. Those belong in the Program/Event submission path.</p>
+
+        <h3>Recommended Fields</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th>When to Use</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Title</td>
+              <td>Required. Short description of the activity.</td>
+            </tr>
+            <tr>
+              <td>Activity Type</td>
+              <td>Required. Choose the closest operational category.</td>
+            </tr>
+            <tr>
+              <td>Start Date & Time</td>
+              <td>Required for timed items.</td>
+            </tr>
+            <tr>
+              <td>End Date & Time</td>
+              <td>Required for timed items.</td>
+            </tr>
+            <tr>
+              <td>All Day</td>
+              <td>Use when the activity affects the whole day or does not have a specific time.</td>
+            </tr>
+            <tr>
+              <td>Location / Area Affected</td>
+              <td>Use to identify the part of campus affected.</td>
+            </tr>
+            <tr>
+              <td>Calendar Notes</td>
+              <td>Use for the details staff need to see on the calendar.</td>
+            </tr>
+            <tr>
+              <td>Assigned Team Member(s)</td>
+              <td>Optional. Use only if a specific person is connected to the item.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="event-types">
+        <h2>Event Types</h2>
+        <p>Event Type is more than a label. It helps the system understand what kind of event this is, where it should appear, and whether it affects staffing or operations.</p>
+
+        <div class="callout warning">
+          <p><strong>Choose the closest accurate event type.</strong> Staff do not need to choose the Google Calendar. The system handles that routing automatically.</p>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Event Type</th>
+              <th>Use When</th>
+              <th>Examples</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Ocean Explorers Program</td>
+              <td>A school, youth, college, adult learning, or group education program is being delivered by REEF.</td>
+              <td>Discovery program, expedition, Monroe County program, virtual program, conservation science program.</td>
+            </tr>
+            <tr>
+              <td>Public Program</td>
+              <td>REEF is offering a public-facing program or education activity.</td>
+              <td>Science Saturday, lecture, workshop, public education activity.</td>
+            </tr>
+            <tr>
+              <td>External Event</td>
+              <td>Another organization is hosting or organizing the event and REEF is participating.</td>
+              <td>Tabling event, outside presentation, Coral Palooza, community partner event.</td>
+            </tr>
+            <tr>
+              <td>Field Survey Trip</td>
+              <td>REEF staff or participants are involved in field survey, research, monitoring, or travel-based fieldwork.</td>
+              <td>Survey trip, field monitoring, research travel.</td>
+            </tr>
+            <tr>
+              <td>GAFC</td>
+              <td>The event is part of the Great Annual Fish Count.</td>
+              <td>GAFC event, local GAFC staff-supported activity.</td>
+            </tr>
+            <tr>
+              <td>Annual Signature Event</td>
+              <td>The event is one of REEF’s recurring major organizational events.</td>
+              <td>REEF Fest, Lionfish Derby, REEF by the Sea.</td>
+            </tr>
+            <tr>
+              <td>Room Rental</td>
+              <td>The main purpose is use of REEF facility space by another group.</td>
+              <td>Meeting room rental, facility use.</td>
+            </tr>
+            <tr>
+              <td>Campus Operations</td>
+              <td>The item affects campus operations but is not a public program or outreach event.</td>
+              <td>Maintenance, cleaners, closure, internal setup, visitor logistics.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="editing-events">
+        <h2>Update an Existing Event</h2>
+        <p>If an event changes after it has been submitted, update the REEF Database record. Do not update Google Calendar directly.</p>
+
+        <h3>Common Updates</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Change Needed</th>
+              <th>Where to Update</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Date or time change</td>
+              <td>REEF Database event record</td>
+            </tr>
+            <tr>
+              <td>Location change</td>
+              <td>REEF Database event record</td>
+            </tr>
+            <tr>
+              <td>Cancellation</td>
+              <td>REEF Database status field</td>
+            </tr>
+            <tr>
+              <td>Operational note</td>
+              <td>All Pre-Event Comments or dashboard notes field</td>
+            </tr>
+            <tr>
+              <td>Staffing assignment</td>
+              <td>Scheduling Dashboard</td>
+            </tr>
+            <tr>
+              <td>PTO/leave conflict</td>
+              <td>Zoho People for leave; dashboard for assignment correction</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout">
+          <p>Changes made in REEF Database should sync to the dashboard and Google Calendar. If something does not update, report the issue instead of editing Google Calendar directly.</p>
+        </div>
+      </section>
+
+      <section id="dashboard">
+        <h2>Using the Scheduling Dashboard</h2>
+
+        <h3>Daily View</h3>
+        <p>Use Daily View at the start of the day to check overall staffing status, who is out, what programs or activities are happening, and whether there are coverage gaps.</p>
+
+        <h3>Scheduler</h3>
+        <p>Use Scheduler to see the weekly OEC shifts, campus programs and events, campus operations, and off-site events. Schedulers use this tab to assign staff.</p>
+
+        <h3>12-Week Planning</h3>
+        <p>Use 12-Week Planning to identify upcoming capacity risks, PTO overlap, busy event weeks, and staffing needs before they become urgent.</p>
+      </section>
+
+      <section id="staffing">
+        <h2>Staffing Assignments</h2>
+        <p>Staffing assignments should be managed through the Scheduling Dashboard by authorized schedulers.</p>
+
+        <div class="callout do-not">
+          <p><strong>Do not add or remove staff directly on Google Calendar.</strong> Calendar assignments should come from the scheduling system.</p>
+        </div>
+
+        <h3>Assignment Rules</h3>
+        <ul>
+          <li>OEC shifts are assigned in the Scheduler tab.</li>
+          <li>Program/event staffing should come from the approved scheduling workflow.</li>
+          <li>Leave and PTO should be entered in Zoho People.</li>
+          <li>If a staff assignment looks wrong, notify Martha, Shelby, or Rose.</li>
+        </ul>
+      </section>
+
+      <section id="troubleshooting">
+        <h2>Troubleshooting</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Issue</th>
+              <th>What to Do</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Event looks wrong on Google Calendar</td>
+              <td>Check the REEF Database record. If REEF Database is correct, report the sync issue.</td>
+            </tr>
+            <tr>
+              <td>Event is missing from the dashboard</td>
+              <td>Confirm it was entered in REEF Database and has the correct date, status, and event type.</td>
+            </tr>
+            <tr>
+              <td>Staff assignment looks incorrect</td>
+              <td>Do not fix it in Google Calendar. Notify a scheduler to correct it in the dashboard.</td>
+            </tr>
+            <tr>
+              <td>Dashboard does not look updated</td>
+              <td>Refresh the page. If needed, hard refresh or clear browser cache.</td>
+            </tr>
+            <tr>
+              <td>New event was entered but does not appear on Google Calendar</td>
+              <td>Check whether the event has the right status, date, event type, and required fields. Report if it still does not sync.</td>
+            </tr>
+            <tr>
+              <td>Unsure which event type to choose</td>
+              <td>Choose the closest match and notify your supervisor if clarification is needed.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="help">
+        <h2>Who to Contact</h2>
+        <p>Contact Martha, Shelby, or Rose for questions about event entry, scheduling assignments, dashboard access, incorrect calendar information, or system issues.</p>
+        <div class="callout">
+          <p>When reporting a problem, include the event name, date, what system you were looking at, and what looked incorrect.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer>
+    <p>REEF Environmental Education Foundation. Internal staff guide. This page is intended to be updated as the REEF Database, scheduling dashboard, and Google Calendar sync workflow evolves.</p>
+  </footer>
+</body>
+</html>
+
+    </script>
+
     <!-- Footer -->
     <div class="footer">
         REEF Campus Scheduling & Availability Dashboard | Data synced from Airtable
@@ -2800,6 +3558,7 @@
             document.getElementById('dailyViewContent').classList.remove('active');
             document.getElementById('planningViewContent').classList.remove('active');
             document.getElementById('schedulerViewContent').classList.remove('active');
+            document.getElementById('helpViewContent').classList.remove('active');
 
             if (tabName === 'daily-view') {
                 document.getElementById('dailyViewContent').classList.add('active');
@@ -2810,6 +3569,16 @@
                 setTimeout(() => {
                     if (capacityChart) capacityChart.resize();
                 }, 100);
+            } else if (tabName === 'help-view') {
+                document.getElementById('helpViewContent').classList.add('active');
+                var hf = document.getElementById('helpGuideFrame');
+                if (hf && !hf.getAttribute('data-loaded')) {
+                    hf.srcdoc = document.getElementById('helpGuideSrc').textContent;
+                    hf.setAttribute('data-loaded', '1');
+                    hf.onload = function () {
+                        try { hf.style.height = (hf.contentWindow.document.body.scrollHeight + 40) + 'px'; } catch (e) {}
+                    };
+                }
             }
         }
 
@@ -4784,7 +5553,25 @@
                 });
 
                 // Find people with >1 assignment on this day
-                Object.entries(dayAssignments).forEach(([memberId, assigns]) => {
+                Object.entries(dayAssignments).forEach(([memberId, rawAssigns]) => {
+                    // De-duplicate EVENT entries that refer to the same program. The same
+                    // program can exist in BOTH the native Events table and the synced
+                    // "Programs & Events (from REEF Database)" table, each with its own
+                    // assignment record — which previously double-counted as a phantom
+                    // "conflict" of an event with itself. Collapse events by name (names
+                    // include the date, so this is a reliable identity key). OEC shift
+                    // entries are left intact so genuine duplicate AM/PM shifts still flag.
+                    const _seenEvent = new Set();
+                    const assigns = [];
+                    rawAssigns.forEach(a => {
+                        if (a.type === 'event') {
+                            const key = (a.label || '').trim().toLowerCase();
+                            if (_seenEvent.has(key)) return;
+                            _seenEvent.add(key);
+                        }
+                        assigns.push(a);
+                    });
+
                     if (assigns.length > 1) {
                         // Check if it's AM + PM (which is fine) or actual conflicts
                         const oecSlots = assigns.filter(a => a.type === 'oec').map(a => a.label);
