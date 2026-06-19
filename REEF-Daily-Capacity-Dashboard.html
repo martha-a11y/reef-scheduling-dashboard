@@ -3366,6 +3366,23 @@
   <footer>
     <p>REEF Environmental Education Foundation. Internal staff guide. This page is intended to be updated as the REEF Database, scheduling dashboard, and Google Calendar sync workflow evolves.</p>
   </footer>
+
+  <script>
+    // In-page anchor links inside a srcdoc iframe resolve against the PARENT
+    // page URL, so a bare "#section" click would reload the whole dashboard
+    // inside the iframe (defaulting to the Daily View). Intercept those clicks
+    // and scroll within this guide instead.
+    document.addEventListener('click', function (e) {
+      var link = e.target.closest('a[href^="#"]');
+      if (!link) return;
+      var id = link.getAttribute('href').slice(1);
+      if (!id) return;
+      var target = document.getElementById(id);
+      if (!target) return;
+      e.preventDefault();
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  </script>
 </body>
 </html>
 
