@@ -2999,7 +2999,7 @@
             <tr>
               <td>Request PTO or leave</td>
               <td>Zoho People</td>
-              <td>Leave syncs into scheduling availability.</td>
+              <td>Submit in Zoho People → it shows on the REEF Team Availability calendar → it flows into the dashboard so schedulers see who is unavailable.</td>
             </tr>
             <tr>
               <td>View your schedule</td>
@@ -3018,7 +3018,7 @@
         <ol>
           <li>Confirm the event does not already exist.</li>
           <li>Choose the most accurate Event Type.</li>
-          <li>Enter the correct date and time, or mark the event as all-day if it does not have a specific time.</li>
+          <li>Enter real start and end times. Even for an all-day or multi-day event, check the All-Day box <strong>and</strong> enter actual times (or the real end date) — the End must be after the Start, or the event will not post.</li>
           <li>Add clear notes for anything staff need to know before the event.</li>
         </ol>
 
@@ -3036,24 +3036,20 @@
               <td>Required. Choose the best category for the event.</td>
             </tr>
             <tr>
-              <td>Other Event Name</td>
-              <td>Use when the formula-generated event name will not be clear enough.</td>
-            </tr>
-            <tr>
               <td>Status</td>
-              <td>Use to indicate confirmed, tentative, canceled, or other current status.</td>
+              <td>Use to indicate confirmed, tentative, canceled, or other current status. "Tentative" events still appear on the calendar; only "Canceled/deferred" keeps an event off it.</td>
             </tr>
             <tr>
               <td>Start Date & Time</td>
-              <td>Required unless the event is an all-day placeholder.</td>
+              <td>Required.</td>
             </tr>
             <tr>
               <td>End Date & Time</td>
-              <td>Required for timed events.</td>
+              <td>Required, and must be after the Start time — this applies to all-day events too, or the event will not post.</td>
             </tr>
             <tr>
               <td>All Day Event</td>
-              <td>Use for tentative holds, placeholder dates, multi-day holds, or events without a specific time.</td>
+              <td>Check the box <strong>and</strong> still enter real start/end times (e.g., 9:00 AM–5:00 PM), or the real end date for a multi-day event. If you check the box but leave the times alone, the event posts as a tiny zero-length blip.</td>
             </tr>
             <tr>
               <td>Location</td>
@@ -3161,7 +3157,8 @@
         <p>Event Type is more than a label. It helps the system understand what kind of event this is, where it should appear, and whether it affects staffing or operations.</p>
 
         <div class="callout warning">
-          <p><strong>Choose the closest accurate event type.</strong> Staff do not need to choose the Google Calendar. The system handles that routing automatically.</p>
+          <p><strong>Choose the closest accurate event type.</strong> You do not pick the Google Calendar — the system routes the event automatically based on Event Type.</p>
+          <p>Non-program items that affect campus (cleaners, repairs, closures, setup days) are <strong>not</strong> event types — submit those through the <strong>Campus Operations</strong> form instead (see the Campus Operations section).</p>
         </div>
 
         <table>
@@ -3174,44 +3171,49 @@
           </thead>
           <tbody>
             <tr>
-              <td>Ocean Explorers Program</td>
-              <td>A school, youth, college, adult learning, or group education program is being delivered by REEF.</td>
-              <td>Discovery program, expedition, Monroe County program, virtual program, conservation science program.</td>
+              <td>OXP – Discovery<br>OXP – Expedition<br>OXP – Monroe County<br>OXP – Virtual</td>
+              <td>REEF is delivering an Ocean Explorers Program — a school, youth, college, adult, or group education program. Pick the variant that matches.</td>
+              <td>Discovery program, expedition, Monroe County program, virtual program.</td>
             </tr>
             <tr>
-              <td>Public Program</td>
-              <td>REEF is offering a public-facing program or education activity.</td>
-              <td>Science Saturday, lecture, workshop, public education activity.</td>
+              <td>Fish &amp; Friends<br>Ocean After Hours<br>Ocean Encounters<br>Pennekamp Fish ID<br>Public Online Programs</td>
+              <td>A public-facing REEF program or education activity, in person or online.</td>
+              <td>Fish &amp; Friends night, Ocean After Hours, Pennekamp Fish ID class, online program.</td>
             </tr>
             <tr>
               <td>External Event</td>
               <td>Another organization is hosting or organizing the event and REEF is participating.</td>
-              <td>Tabling event, outside presentation, Coral Palooza, community partner event.</td>
+              <td>Tabling event, outside presentation, community partner event.</td>
             </tr>
             <tr>
-              <td>Field Survey Trip</td>
-              <td>REEF staff or participants are involved in field survey, research, monitoring, or travel-based fieldwork.</td>
+              <td>Conference/Trade Show</td>
+              <td>REEF is attending or exhibiting at a conference or trade show. (Routes to the Travel, Fieldwork &amp; Research calendar.)</td>
+              <td>Conference, trade show, exhibitor booth.</td>
+            </tr>
+            <tr>
+              <td>Field Survey Trip/Fieldwork<br>Fieldwork</td>
+              <td>Field survey, research, monitoring, or travel-based fieldwork. (Routes to the Travel, Fieldwork &amp; Research calendar.)</td>
               <td>Survey trip, field monitoring, research travel.</td>
             </tr>
             <tr>
-              <td>GAFC</td>
-              <td>The event is part of the Great Annual Fish Count.</td>
-              <td>GAFC event, local GAFC staff-supported activity.</td>
+              <td>GAFC<br>GAFC Local</td>
+              <td>Part of the Great Annual Fish Count. Use "GAFC Local" for local, staff-supported activities.</td>
+              <td>GAFC event, local GAFC activity.</td>
             </tr>
             <tr>
               <td>Annual Signature Event</td>
-              <td>The event is one of REEF’s recurring major organizational events.</td>
+              <td>One of REEF’s recurring major organizational events.</td>
               <td>REEF Fest, Lionfish Derby, REEF by the Sea.</td>
             </tr>
             <tr>
-              <td>Room Rental</td>
+              <td>Facility Rental</td>
               <td>The main purpose is use of REEF facility space by another group.</td>
               <td>Meeting room rental, facility use.</td>
             </tr>
             <tr>
-              <td>Campus Operations</td>
-              <td>The item affects campus operations but is not a public program or outreach event.</td>
-              <td>Maintenance, cleaners, closure, internal setup, visitor logistics.</td>
+              <td>Other REEF event</td>
+              <td>A REEF event that doesn’t fit the categories above.</td>
+              <td>Internal meeting, staff event, miscellaneous.</td>
             </tr>
           </tbody>
         </table>
@@ -3288,7 +3290,7 @@
           <li>OEC shifts are assigned in the Scheduler tab.</li>
           <li>Program/event staffing should come from the approved scheduling workflow.</li>
           <li>Leave and PTO should be entered in Zoho People.</li>
-          <li>If a staff assignment looks wrong, notify Martha, Shelby, or Rose.</li>
+          <li>If a staff assignment looks wrong, contact <strong>Martha</strong> (primary); Sirena, Rose, or Shelby can also help.</li>
         </ul>
       </section>
 
@@ -3332,7 +3334,7 @@
 
       <section id="help">
         <h2>Who to Contact</h2>
-        <p>Contact Martha, Shelby, or Rose for questions about event entry, scheduling assignments, dashboard access, incorrect calendar information, or system issues.</p>
+        <p>Contact <strong>Martha</strong> (primary contact) for questions about event entry, scheduling assignments, dashboard access, incorrect calendar information, or system issues. Sirena, Rose, and Shelby can also help.</p>
         <div class="callout">
           <p>When reporting a problem, include the event name, date, what system you were looking at, and what looked incorrect.</p>
         </div>
