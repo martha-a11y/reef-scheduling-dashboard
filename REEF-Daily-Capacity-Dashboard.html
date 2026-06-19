@@ -3613,7 +3613,15 @@
                 document.getElementById('helpViewContent').classList.add('active');
                 var hf = document.getElementById('helpGuideFrame');
                 if (hf && !hf.getAttribute('data-loaded')) {
-                    hf.srcdoc = document.getElementById('helpGuideSrc').textContent;
+                    // Load the guide via a Blob URL (NOT srcdoc). With srcdoc the
+                    // iframe's base URL is inherited from the parent page, so a
+                    // "#section" link would navigate the iframe to the parent
+                    // dashboard URL and reload the whole app (the duplicate Daily
+                    // View bug). A Blob URL gives the iframe its own document base,
+                    // so fragment links resolve within the guide and just scroll.
+                    var guideHtml = document.getElementById('helpGuideSrc').textContent;
+                    var guideBlob = new Blob([guideHtml], { type: 'text/html' });
+                    hf.src = URL.createObjectURL(guideBlob);
                     hf.setAttribute('data-loaded', '1');
                     hf.onload = function () {
                         try { hf.style.height = (hf.contentWindow.document.body.scrollHeight + 40) + 'px'; } catch (e) {}
