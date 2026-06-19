@@ -3014,6 +3014,10 @@
         <h2>Create a New Program or Event</h2>
         <p>Use the simplified REEF Database form when submitting a program, public event, field survey trip, tabling event, online program, major event, or other outreach activity.</p>
 
+        <div class="callout">
+          <p><strong>How the event name is created:</strong> you don't type the title — it's built automatically as <em>Event Type &mdash; Beneficiary Organization(s) &mdash; date</em> (e.g., "OXP - Expedition - Westcoast Connection - 06/29/26"). For a complete name, <strong>select an Event Type</strong> and <strong>fill in Beneficiary Organization(s)</strong> (the group, school, or org). Leave "Other Event Name" blank unless it's a one-off that doesn't fit a type. For a multi-part program, the group does <strong>not</strong> copy from the Parent Event — set Beneficiary Organization(s) on each individual event.</p>
+        </div>
+
         <h3>Before You Start</h3>
         <ol>
           <li>Confirm the event does not already exist.</li>
@@ -3033,7 +3037,11 @@
           <tbody>
             <tr>
               <td>Event Type</td>
-              <td>Required. Choose the best category for the event.</td>
+              <td>Required. Choose the best category — it becomes the first part of the event's auto-generated name.</td>
+            </tr>
+            <tr>
+              <td>Beneficiary Organization(s)</td>
+              <td>The group, school, or organization the event serves. This becomes part of the event's name, so fill it in. It does <strong>not</strong> copy from a Parent Event — set it on each individual event.</td>
             </tr>
             <tr>
               <td>Status</td>
@@ -3069,7 +3077,7 @@
             </tr>
             <tr>
               <td>Parent Event</td>
-              <td>Use when the event is part of a larger multi-part program such as REEF Fest, a derby, or an expedition.</td>
+              <td>Use when the event is part of a larger multi-part program such as REEF Fest, a derby, or an expedition. First create the parent with the <strong>"Create a Parent Event"</strong> form, then select it here (see "Multi-part programs" below).</td>
             </tr>
             <tr>
               <td>GAFC</td>
@@ -3085,6 +3093,15 @@
             </tr>
           </tbody>
         </table>
+
+        <h3>Multi-part programs (Parent Events)</h3>
+        <p>If a program has <strong>multiple components that could have different team members or take place in different locations</strong> — for example a morning Fish ID class followed by an afternoon survey dive, or REEF Fest with many sessions — set it up as a <strong>Parent Event</strong> so each piece can be staffed and scheduled separately.</p>
+        <ol>
+          <li><strong>Create the Parent Event</strong> using the <strong>"Create a Parent Event"</strong> form — just a name (format: "Program or Group Name - MM/DD/YY") and dates. No need to open the data table.</li>
+          <li>Add each component as its own event on the scheduling form. Answer <strong>"Will this activity include multiple scheduled components?" &rarr; Yes</strong>, then choose your Parent Event in the <strong>Parent Event</strong> field.</li>
+          <li>Repeat for each component, assigning the right staff and location to each.</li>
+        </ol>
+        <p>A simple one-session program doesn't need a parent event — just enter it normally.</p>
       </section>
 
       <section id="campus-operations">
@@ -3222,6 +3239,10 @@
       <section id="editing-events">
         <h2>Update an Existing Event</h2>
         <p>If an event changes after it has been submitted, update the REEF Database record. Do not update Google Calendar directly.</p>
+
+        <h3>Fastest way: open the event from its calendar entry</h3>
+        <p>Every event created through the scheduling form now includes an <strong>Airtable link</strong> in its Google Calendar description. Click the event on the <strong>REEF Campus 2026</strong> or <strong>Travel, Fieldwork &amp; Research</strong> calendar, then click that <strong>Airtable link</strong> — it opens the event's record, where you can edit the details directly. Your changes sync back out to the calendar automatically, usually within a couple of minutes. <em>Always edit in the record, never on Google Calendar itself — direct calendar edits get overwritten.</em></p>
+        <p>To <strong>cancel</strong> an event, open its record the same way and set <strong>Status &rarr; "Canceled/deferred."</strong> It drops off Google Calendar within about 15 minutes. Don't delete the record. <em>(Note: only events created after mid-June carry the Airtable link; for older events, open the record from the REEF Database directly.)</em></p>
 
         <h3>Common Updates</h3>
         <table>
