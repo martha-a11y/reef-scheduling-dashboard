@@ -3534,6 +3534,14 @@
             const clearBtn = document.getElementById('gcalClearResyncBtn');
             const status = document.getElementById('gcalStatus');
 
+            // RETIRED 06/22/2026: browser-side Google Calendar sync is off — the server-side
+            // AssignmentRosterSync.gs is now the single writer. Hide the Connect/Sync/Clear
+            // buttons and do nothing else.
+            if (!DASHBOARD_GCAL_SYNC_ENABLED) {
+                [btn, syncBtn, clearBtn, status].forEach(el => { if (el) el.style.display = 'none'; });
+                return;
+            }
+
             // Always attach Sync All click handler (regardless of auth state)
             if (syncBtn) {
                 syncBtn.addEventListener('click', () => syncAllToGCal());
@@ -3713,6 +3721,14 @@
         };
 
         // ===== GOOGLE CALENDAR SYNC CONFIG =====
+        // RETIRED 06/22/2026: the dashboard no longer writes to Google Calendar from the browser.
+        // The server-side Apps Script "AssignmentRosterSync.gs" (OvernightHealthCheck project) is now
+        // the single writer for staff rosters + calendar guests — it runs on a timer as martha@reef.org,
+        // so it never depends on anyone being logged in, and it removes de-assigned guests (the old
+        // browser sync was add-only and login-dependent, which caused stale/duplicate guests).
+        // To temporarily re-enable the old browser sync, set this flag back to true.
+        const DASHBOARD_GCAL_SYNC_ENABLED = false;
+
         const GCAL_CONFIG = {
             reefCampus2CalendarId: 'c_9f80e975e8a470d96d1f14286720949b779c1b1e5d62aeb3b13b5fcb7168c105@group.calendar.google.com',
             oecShiftsCalendarId: 'c_c26c00c881e3e199fd76dde88a6640709d12de9099573a8e104b771553e8a4d2@group.calendar.google.com',
@@ -7348,6 +7364,10 @@
         // Deletes ALL events from the OEC Shifts calendar, clears mappings, then runs a fresh sync.
         // Use this to clean up after timezone bugs, duplicates, or other sync issues.
         async function clearAndResyncOEC() {
+            if (!DASHBOARD_GCAL_SYNC_ENABLED) {
+                showToast('Calendar sync now runs automatically on the server — no manual resync needed.');
+                return;
+            }
             const token = getGoogleAccessToken();
             if (!token) {
                 showToast('Connect Google Calendar first', 'error');
@@ -7432,6 +7452,10 @@
         }
 
         async function syncAllToGCal() {
+            if (!DASHBOARD_GCAL_SYNC_ENABLED) {
+                showToast('Calendar sync now runs automatically on the server — no manual sync needed.');
+                return;
+            }
             const token = getGoogleAccessToken();
             if (!token) {
                 showToast('Connect Google Calendar first', 'error');
@@ -8377,12 +8401,12 @@
                         try {
                             if (shiftId) {
                                 await createOECAssignment(shiftId, person.id, selectedRole);
-                                // Sync new attendee to OEC Shifts Google Calendar
-                                await syncOecAttendeeToGCal(shiftId, person.id);
+                                // Google Calendar sync is now server-side (AssignmentRosterSync.gs).
+                                if (DASHBOARD_GCAL_SYNC_ENABLED) await syncOecAttendeeToGCal(shiftId, person.id);
                             } else {
                                 await createEventAssignment(eventId, person.id, selectedRole);
-                                // Sync new attendee to REEF Campus 2 Google Calendar
-                                await syncAttendeeToGCal(eventId, person.id);
+                                // Google Calendar sync is now server-side (AssignmentRosterSync.gs).
+                                if (DASHBOARD_GCAL_SYNC_ENABLED) await syncAttendeeToGCal(eventId, person.id);
                             }
                             showToast(`${person.firstName} assigned as ${selectedRole}`);
                             await fetchAllData();
@@ -8451,8 +8475,8 @@
                                 ? (typeof evtLink[0] === 'object' ? evtLink[0].id : evtLink[0]) : null;
                             const memId = Array.isArray(memLink) && memLink.length > 0
                                 ? (typeof memLink[0] === 'object' ? memLink[0].id : memLink[0]) : null;
-                            if (evtId && memId) {
-                                // Remove attendee from REEF Campus 2 Google Calendar
+                            if (evtId && memId && DASHBOARD_GCAL_SYNC_ENABLED) {
+                                // Guest removal is now server-side (AssignmentRosterSync.gs).
                                 await removeAttendeeFromGCal(evtId, memId);
                             }
                         }
@@ -8466,8 +8490,8 @@
                                 ? (typeof shiftLink[0] === 'object' ? shiftLink[0].id : shiftLink[0]) : null;
                             const memId = Array.isArray(memLink) && memLink.length > 0
                                 ? (typeof memLink[0] === 'object' ? memLink[0].id : memLink[0]) : null;
-                            if (sftId && memId) {
-                                // Remove attendee from OEC Shifts Google Calendar
+                            if (sftId && memId && DASHBOARD_GCAL_SYNC_ENABLED) {
+                                // Guest removal is now server-side (AssignmentRosterSync.gs).
                                 await removeOecAttendeeFromGCal(sftId, memId);
                             }
                         }
