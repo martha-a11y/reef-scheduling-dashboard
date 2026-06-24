@@ -2867,7 +2867,7 @@
   <header>
     <h1>REEF Scheduling & Event Management Help Guide</h1>
     <p>Staff guide for entering events, viewing schedules, assigning coverage, and understanding where changes should be made.</p>
-    <div class="updated">Updated: June 19, 2026</div>
+    <div class="updated">Updated: June 24, 2026</div>
   </header>
 
   <div class="layout">
@@ -2882,6 +2882,7 @@
       <a href="#editing-events">Update an Existing Event</a>
       <a href="#dashboard">Using the Dashboard</a>
       <a href="#staffing">Staffing Assignments</a>
+      <a href="#staffing-flow">How Assignments Sync</a>
       <a href="#troubleshooting">Troubleshooting</a>
       <a href="#help">Who to Contact</a>
     </nav>
@@ -3307,6 +3308,163 @@
         <div class="callout do-not">
           <p><strong>Do not add or remove staff directly on Google Calendar.</strong> Calendar assignments should come from the scheduling system.</p>
         </div>
+
+        <h3 id="staffing-flow">How an Assignment Reaches the Calendar</h3>
+        <p>Make the assignment once, in the Scheduling Dashboard (or directly in the scheduling base in Airtable &mdash; same table). A server-side sync then keeps everything else in step automatically, about every 15 minutes. You never edit Google Calendar by hand.</p>
+        <div class="callout good">
+          <p><strong>As of June 24, 2026, the calendar invite list now matches the assignments too.</strong> When you assign or remove a <strong>@reef.org</strong> team member on an upcoming event, the sync adds or removes them as a Google Calendar guest automatically &mdash; with no notification emails. External partners, room resources, and non-@reef.org addresses are never touched. Both the calendar <em>description</em> ("Staff Assigned") and the <em>guest list</em> now reflect the roster.</p>
+        </div>
+        <div style="overflow-x:auto;border:1px solid var(--reef-border);border-radius:10px;background:#fff;margin:14px 0;">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 940" style="width:100%;height:auto;display:block" font-family="'Segoe UI','Roboto','Helvetica Neue',Arial,sans-serif">
+  <defs>
+    <marker id="afd-arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#24408E"/>
+    </marker>
+    <marker id="afd-arrowGreen" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#00847B"/>
+    </marker>
+    <marker id="afd-arrowRed" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#AD1D22"/>
+    </marker>
+  </defs>
+
+  <style>
+    .afd-title { fill:#ffffff; font-size:22px; font-weight:700; }
+    .afd-subtitle { fill:#cdd6ef; font-size:13px; }
+    .afd-box { rx:10; ry:10; stroke-width:2; }
+    .afd-boxlabel { font-size:13.5px; font-weight:700; }
+    .afd-boxsub { font-size:11px; }
+    .afd-lane { fill:#8a94a6; font-size:12px; font-weight:700; letter-spacing:1px; }
+    .afd-edge { fill:#24408E; font-size:11px; font-weight:600; }
+    .afd-edgeG { fill:#00847B; font-size:11px; font-weight:600; }
+    .afd-note { fill:#33415c; font-size:11.5px; }
+    .afd-noteH { fill:#24408E; font-size:12.5px; font-weight:700; }
+    .afd-red { fill:#AD1D22; font-size:11.5px; font-weight:600; }
+  </style>
+
+  <!-- Header -->
+  <rect x="0" y="0" width="1160" height="64" fill="#24408E"/>
+  <text x="28" y="30" class="afd-title">REEF Scheduling — Assignment Data Flow</text>
+  <text x="28" y="50" class="afd-subtitle">Current state as of June 24, 2026 · Reef Environmental Education Foundation · single server-side writer model · guest-list sync LIVE</text>
+
+  <!-- ===================== LANE A: Event creation ===================== -->
+  <text x="28" y="92" class="afd-lane">1 · EVENT CREATION → CALENDAR</text>
+
+  <rect x="28"  y="104" width="200" height="62" class="afd-box" fill="#eef1f9" stroke="#24408E"/>
+  <text x="128" y="130" text-anchor="middle" class="afd-boxlabel" fill="#24408E">Form / direct entry</text>
+  <text x="128" y="148" text-anchor="middle" class="afd-boxsub" fill="#33415c">new event submitted</text>
+
+  <rect x="288" y="104" width="216" height="62" class="afd-box" fill="#24408E" stroke="#24408E"/>
+  <text x="396" y="128" text-anchor="middle" class="afd-boxlabel" fill="#ffffff">REEF Database</text>
+  <text x="396" y="146" text-anchor="middle" class="afd-boxsub" fill="#cdd6ef">canonical event owner</text>
+  <text x="396" y="160" text-anchor="middle" class="afd-boxsub" fill="#cdd6ef">appCK2qlT3WHdhYKd</text>
+
+  <rect x="564" y="104" width="226" height="62" class="afd-box" fill="#eef1f9" stroke="#24408E"/>
+  <text x="677" y="128" text-anchor="middle" class="afd-boxlabel" fill="#24408E">Airtable automation</text>
+  <text x="677" y="146" text-anchor="middle" class="afd-boxsub" fill="#33415c">"Valid date range – create</text>
+  <text x="677" y="160" text-anchor="middle" class="afd-boxsub" fill="#33415c">new google calendar"</text>
+
+  <rect x="850" y="104" width="282" height="62" class="afd-box" fill="#005AA3" stroke="#005AA3"/>
+  <text x="991" y="128" text-anchor="middle" class="afd-boxlabel" fill="#ffffff">Google Calendar event</text>
+  <text x="991" y="146" text-anchor="middle" class="afd-boxsub" fill="#d7e8f5">REEF Campus 2026</text>
+  <text x="991" y="160" text-anchor="middle" class="afd-boxsub" fill="#d7e8f5">desc. at creation: "None assigned yet"</text>
+
+  <line x1="228" y1="135" x2="284" y2="135" stroke="#24408E" stroke-width="2" marker-end="url(#afd-arrow)"/>
+  <line x1="504" y1="135" x2="560" y2="135" stroke="#24408E" stroke-width="2" marker-end="url(#afd-arrow)"/>
+  <text x="532" y="128" text-anchor="middle" class="afd-edge">creates</text>
+  <line x1="790" y1="135" x2="846" y2="135" stroke="#24408E" stroke-width="2" marker-end="url(#afd-arrow)"/>
+
+  <!-- ===================== LANE B: Event reaches dashboard ===================== -->
+  <text x="28" y="216" class="afd-lane">2 · EVENT REACHES THE DASHBOARD (via Airtable, not the calendar)</text>
+
+  <!-- sync down from REEF DB -->
+  <line x1="396" y1="166" x2="396" y2="232" stroke="#00847B" stroke-width="2" marker-end="url(#afd-arrowGreen)"/>
+  <text x="404" y="200" class="afd-edgeG">syncs to</text>
+
+  <rect x="288" y="232" width="266" height="64" class="afd-box" fill="#e6f4f1" stroke="#00847B"/>
+  <text x="421" y="256" text-anchor="middle" class="afd-boxlabel" fill="#00847B">Scheduling base</text>
+  <text x="421" y="274" text-anchor="middle" class="afd-boxsub" fill="#33415c">Events + Events_DB (canonical cal ID)</text>
+  <text x="421" y="288" text-anchor="middle" class="afd-boxsub" fill="#33415c">appyfKtt8MHPcti7L</text>
+
+  <rect x="614" y="232" width="226" height="64" class="afd-box" fill="#e6f4f1" stroke="#00847B"/>
+  <text x="727" y="258" text-anchor="middle" class="afd-boxlabel" fill="#00847B">Scheduling Dashboard</text>
+  <text x="727" y="276" text-anchor="middle" class="afd-boxsub" fill="#33415c">the GitHub HTML app</text>
+
+  <line x1="554" y1="264" x2="610" y2="264" stroke="#00847B" stroke-width="2" marker-end="url(#afd-arrowGreen)"/>
+  <text x="582" y="257" text-anchor="middle" class="afd-edgeG">reads</text>
+
+  <rect x="868" y="232" width="264" height="64" rx="8" fill="#fff7d6" stroke="#caa700" stroke-width="1.5"/>
+  <text x="884" y="256" class="afd-noteH" fill="#7a5c00">Dashboard reads events from</text>
+  <text x="884" y="274" class="afd-noteH" fill="#7a5c00">Airtable — NOT from Google</text>
+  <text x="884" y="288" class="afd-note" fill="#7a5c00">Calendar. The calendar is an output only.</text>
+
+  <!-- ===================== LANE C: Assignment (source of truth) ===================== -->
+  <text x="28" y="346" class="afd-lane">3 · TEAM MEMBERS ASSIGNED</text>
+
+  <rect x="614" y="358" width="226" height="64" class="afd-box" fill="#fff3cd" stroke="#AD1D22" stroke-width="2.5"/>
+  <text x="727" y="380" text-anchor="middle" class="afd-boxlabel" fill="#AD1D22">★ Event Assignments</text>
+  <text x="727" y="397" text-anchor="middle" class="afd-boxsub" fill="#33415c">scheduling base · tbl4Jc4aVMrhKYBeA</text>
+  <text x="727" y="411" text-anchor="middle" class="afd-boxsub" fill="#AD1D22" font-weight="700">SINGLE SOURCE OF TRUTH</text>
+
+  <line x1="727" y1="296" x2="727" y2="354" stroke="#00847B" stroke-width="2" marker-end="url(#afd-arrowGreen)"/>
+  <text x="735" y="328" class="afd-edgeG">assigns team members</text>
+
+  <!-- direct airtable edit into the same table -->
+  <rect x="288" y="358" width="266" height="64" class="afd-box" fill="#e6f4f1" stroke="#00847B" stroke-dasharray="5 4"/>
+  <text x="421" y="384" text-anchor="middle" class="afd-boxlabel" fill="#00847B">Direct Airtable edit</text>
+  <text x="421" y="402" text-anchor="middle" class="afd-boxsub" fill="#33415c">(same table — a second front door)</text>
+  <line x1="554" y1="390" x2="610" y2="390" stroke="#00847B" stroke-width="2" marker-end="url(#afd-arrowGreen)"/>
+
+  <!-- ===================== LANE D: server-side single writer ===================== -->
+  <text x="28" y="472" class="afd-lane">4 · SERVER-SIDE SYNC — THE SINGLE WRITER (every 15 min, runs as martha@reef.org)</text>
+
+  <rect x="288" y="484" width="252" height="70" class="afd-box" fill="#24408E" stroke="#24408E"/>
+  <text x="414" y="508" text-anchor="middle" class="afd-boxlabel" fill="#ffffff">AssignmentRosterSync.gs</text>
+  <text x="414" y="524" text-anchor="middle" class="afd-boxsub" fill="#cdd6ef">v1.2 · Apps Script · every 15 min</text>
+  <text x="414" y="538" text-anchor="middle" class="afd-boxsub" fill="#cdd6ef">writes roster + description + guests</text>
+
+  <line x1="727" y1="422" x2="727" y2="452" stroke="#24408E" stroke-width="2"/>
+  <line x1="727" y1="452" x2="416" y2="452" stroke="#24408E" stroke-width="2"/>
+  <line x1="416" y1="452" x2="416" y2="480" stroke="#24408E" stroke-width="2" marker-end="url(#afd-arrow)"/>
+  <text x="560" y="446" text-anchor="middle" class="afd-edge">reads assignments</text>
+
+  <rect x="600" y="484" width="232" height="70" class="afd-box" fill="#eef1f9" stroke="#24408E"/>
+  <text x="716" y="508" text-anchor="middle" class="afd-boxlabel" fill="#24408E">REEF DB "Staff Assigned"</text>
+  <text x="716" y="526" text-anchor="middle" class="afd-boxsub" fill="#33415c">text field → description formula</text>
+  <text x="716" y="540" text-anchor="middle" class="afd-boxsub" fill="#AD1D22">script-owned (manual edits overwritten)</text>
+
+  <line x1="540" y1="519" x2="596" y2="519" stroke="#24408E" stroke-width="2" marker-end="url(#afd-arrow)"/>
+  <text x="568" y="512" text-anchor="middle" class="afd-edge">writes</text>
+
+  <rect x="892" y="484" width="240" height="70" class="afd-box" fill="#005AA3" stroke="#005AA3"/>
+  <text x="1012" y="508" text-anchor="middle" class="afd-boxlabel" fill="#ffffff">Google Calendar</text>
+  <text x="1012" y="526" text-anchor="middle" class="afd-boxsub" fill="#d7e8f5">description = roster (v1.2)</text>
+  <text x="1012" y="540" text-anchor="middle" class="afd-boxsub" fill="#ffffff" font-weight="700">guest reconcile: ON (06/24)</text>
+
+  <line x1="832" y1="519" x2="888" y2="519" stroke="#24408E" stroke-width="2" marker-end="url(#afd-arrow)"/>
+  <text x="860" y="512" text-anchor="middle" class="afd-edge">pushes</text>
+
+  <!-- ===================== Retired path ===================== -->
+  <rect x="288" y="592" width="844" height="56" rx="8" fill="#fbe9ea" stroke="#AD1D22" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <text x="308" y="616" class="afd-red" font-size="13px">✕ RETIRED 6/22/2026 — dashboard browser-side push to Google Calendar</text>
+  <text x="308" y="636" class="afd-note" fill="#7a1d20">Dashboard code now reads DASHBOARD_GCAL_SYNC_ENABLED = false. It was add-only and login-dependent (caused stale/duplicate guests). The dashboard now writes ONLY to Airtable.</text>
+
+  <!-- ===================== Notes panel ===================== -->
+  <rect x="28" y="676" width="1104" height="232" rx="10" fill="#f7fafc" stroke="#cdd6ef" stroke-width="1.5"/>
+  <text x="48" y="704" class="afd-noteH" font-size="14px">How to read this — answers to the common questions</text>
+
+  <text x="48"  y="730" class="afd-note"><tspan class="afd-noteH">Where assignments live:</tspan> the Event Assignments table (scheduling base) is the one source of truth. The dashboard and a direct Airtable edit are two front doors to the same table — no conflict; last write wins at the row level.</text>
+  <text x="48"  y="754" class="afd-note"><tspan class="afd-noteH">"Two methods" myth:</tspan> there is really one path. The REEF DB "Staff Assigned" text field is owned by the script — typing names there directly is overwritten on the next 15-minute run. The scheduling base always wins.</text>
+  <text x="48"  y="778" class="afd-note"><tspan class="afd-noteH">At event creation:</tspan> normally no one is assigned yet, so the calendar reads "None assigned yet — assign in Scheduling Dashboard." Assignments are made later in the dashboard.</text>
+  <text x="48"  y="802" class="afd-note"><tspan class="afd-noteH">Description AND guests:</tspan> assigned staff reach the calendar DESCRIPTION and (live 06/24) are now reconciled as calendar GUESTS too — @reef.org only, upcoming events, add + remove, no invite emails. Externals, room resources and non-@reef.org addresses are never touched.</text>
+  <text x="48"  y="826" class="afd-note"><tspan class="afd-noteH">Calendar is output-only:</tspan> Google Calendar never feeds the dashboard or Airtable. Data flows one way — Airtable → Calendar.</text>
+  <text x="48"  y="850" class="afd-note"><tspan class="afd-red">Known risk (P3):</tspan> two event tables (scheduling Events vs. canonical REEF DB events) with mismatched names/IDs can stop an assignment from reaching the right calendar event (the Fishinar name-match problem). This is about event identity, not assignment conflict.</text>
+  <text x="48"  y="888" class="afd-note" fill="#8a94a6" font-size="10.5px">Reef Environmental Education Foundation · www.REEF.org · companion files: 28 Deploy Guide, 34 Pre-Launch Validation, 35 Guest-List Sync Deploy Guide, AssignmentRosterSync.gs (v1.2)</text>
+</svg>
+
+        </div>
+        <p style="font-size:13px;color:var(--reef-muted);">Read it left to right: an event is created in REEF Database &rarr; it syncs into the scheduling base, which feeds the dashboard &rarr; team members are assigned (the scheduling base is the single source of truth) &rarr; the server-side sync writes the roster and reconciles guests onto Google Calendar. The calendar is output-only &mdash; it never feeds data back.</p>
+
 
         <h3>Assignment Rules</h3>
         <ul>
