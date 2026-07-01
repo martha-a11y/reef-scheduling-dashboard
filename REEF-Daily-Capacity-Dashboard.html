@@ -6110,6 +6110,19 @@
                 if (fuzzyCands.length === 1) return fuzzyCands[0].id;
             }
 
+            // TIER 4 — ADDED 2026-07-01 (post-MATCHFIX regression fix): name-only match,
+            // ignoring date entirely, for multi-day/rescheduled onsite programs whose
+            // EVENTS_DB date doesn't line up exactly with the Events table's start
+            // datetime (this is why the "+" assign button disappeared for onsite
+            // Programs & Events after the same-day hardening above — those programs
+            // used to match via the old unguarded name-only fallback, which this tier
+            // replaces safely). Still routed through fuzzyEq (blocks empty names and
+            // sub-6-character overlaps) and still requires an UNAMBIGUOUS single
+            // candidate, so this cannot reintroduce the original "magnet" bug where a
+            // blank-named event matched everything.
+            const nameOnlyCands = allData.events.filter((evt) => fuzzyEq(evtNameOf(evt)));
+            if (nameOnlyCands.length === 1) return nameOnlyCands[0].id;
+
             // No confident, unambiguous match — return null so the card shows "No link"
             // rather than dumping the assignment onto an arbitrary (or blank) record.
             return null;
