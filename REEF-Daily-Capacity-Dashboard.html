@@ -2868,7 +2868,7 @@
   <header>
     <h1>REEF Scheduling & Event Management Help Guide</h1>
     <p>Staff guide for entering events, viewing schedules, assigning coverage, and understanding where changes should be made.</p>
-    <div class="updated">Updated: June 24, 2026</div>
+    <div class="updated">Updated: July 1, 2026</div>
   </header>
 
   <div class="layout">
@@ -2884,6 +2884,7 @@
       <a href="#dashboard">Using the Dashboard</a>
       <a href="#staffing">Staffing Assignments</a>
       <a href="#staffing-flow">How Assignments Sync</a>
+      <a href="#making-edits">Making Edits Safely</a>
       <a href="#troubleshooting">Troubleshooting</a>
       <a href="#help">Who to Contact</a>
     </nav>
@@ -3474,6 +3475,52 @@
           <li>Leave and PTO should be entered in Zoho People.</li>
           <li>If a staff assignment looks wrong, contact <strong>Martha</strong>.</li>
         </ul>
+      </section>
+
+      <section id="making-edits">
+        <h2>Making Edits Safely</h2>
+        <p>As the team grows, more people are editing Airtable. The single most useful habit is telling apart two kinds of changes: things that only affect what you <em>see</em>, and things that change what the system <em>stores or computes</em>. The first kind is safe to experiment with. The second kind can ripple into the scheduling dashboard and Google Calendar sync, so it gets flagged first.</p>
+
+        <div class="callout good">
+          <p><strong>Rule of thumb:</strong> If your change only affects what you <em>see</em>, go for it. If it changes what the system <em>stores or computes</em>, flag it with Martha first.</p>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Change type</th>
+              <th>Examples</th>
+              <th>Rule</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>View layer — safe to edit</strong></td>
+              <td>Interface pages and dashboards, filters, sorts, grouping, hiding/showing fields, chart setup.</td>
+              <td>Edit freely. These affect only how data is displayed, not the data itself or any downstream system.</td>
+            </tr>
+            <tr>
+              <td><strong>Logic layer — flag first</strong></td>
+              <td>Formulas (especially <strong>Event Name</strong>), field types, automations, linked-record fields, and any primary field.</td>
+              <td>Loop in Martha before changing. These can feed the calendar titles and the dashboard’s event matching, so a change here can break staffing sync.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Before you edit</h3>
+        <ul>
+          <li><strong>Back it up.</strong> Interface pages have no undo history — <em>duplicate the page first</em> (rename the copy something like “Events Summary (backup)” and hide it from the left nav), then edit the original. For a formula, copy the old formula text into the field description or a doc before overwriting it.</li>
+          <li><strong>Change one thing at a time,</strong> then check it on two or three real records before assuming it worked.</li>
+          <li><strong>Keep a quick note</strong> of what you changed and when, so if something breaks later we’re not guessing.</li>
+        </ul>
+
+        <div class="callout warning">
+          <p><strong>Event Name is load-bearing — don’t change the name formula yet.</strong> The Event Name field generates the Google Calendar event titles <em>and</em> is how the scheduling dashboard matches events to staff assignments. It’s being migrated to a stable ID; until that’s done, changing the name formula can break the calendar sync and staffing. If you want the title to pull from different fields, send Martha the exact change you want so it can be deployed across the whole system at once, not just in Airtable.</p>
+        </div>
+
+        <div class="callout do-not">
+          <p><strong>Don’t make logic-layer changes silently.</strong> A formula, field-type, automation, or primary-field change that isn’t coordinated can drift out of sync with the dashboard and calendar and surface as a hard-to-trace bug weeks later.</p>
+        </div>
       </section>
 
       <section id="troubleshooting">
