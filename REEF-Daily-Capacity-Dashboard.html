@@ -6006,25 +6006,65 @@
         // Find the matching Events table record ID for an EVENTS_DB program
         // Event Assignments link to the Events and Programs table, not EVENTS_DB
         function findMatchingEventsRecordId(prog) {
+            // HARDENED 2026-07-01: the old matcher used naive substring matching
+            // (evtName.includes(progName) || progName.includes(evtName)) with NO guard
+            // against empty names. Because "anyString".includes("") === true, a single
+            // blank-named event record in the Events table became a catch-all "magnet":
+            // every unstaffed program resolved to it, so adding one person appeared to add
+            // them to ALL unstaffed events (and removing removed them from all). The old
+            // matcher also collapsed legitimate same-day AM/PM sessions onto the FIRST
+            // record, so afternoon-session staffing silently wrote to the morning record.
+            // This version: (1) never matches empty names, (2) matches on exact start
+            // datetime first to separate same-day sessions, (3) only accepts a looser
+            // match when it is UNAMBIGUOUS, and (4) returns null rather than guessing.
             const progName = normalizeEventName(prog.fields[FIELDS.EVENTS_DB.eventName]);
+            if (!progName) return null; // never match an unnamed program
             const progStart = prog.fields[FIELDS.EVENTS_DB.startDateTime];
+            const progStartMs = progStart ? new Date(progStart).getTime() : NaN;
             const progStartDay = progStart ? new Date(progStart).toDateString() : '';
-            for (const evt of allData.events) {
-                const evtName = normalizeEventName(evt.fields[FIELDS.EVENTS.eventName]);
-                const evtStart = evt.fields[FIELDS.EVENTS.startDateTime];
-                const evtStartDay = evtStart ? new Date(evtStart).toDateString() : '';
-                if ((evtName === progName || evtName.includes(progName) || progName.includes(evtName))
-                    && evtStartDay === progStartDay) {
-                    return evt.id;
+
+            const evtNameOf = (evt) => normalizeEventName(evt.fields[FIELDS.EVENTS.eventName]);
+            const evtDayOf = (evt) => {
+                const s = evt.fields[FIELDS.EVENTS.startDateTime];
+                return s ? new Date(s).toDateString() : '';
+            };
+            // Fuzzy match that is safe against empty strings and trivially short overlaps.
+            const fuzzyEq = (evtName) => {
+                if (!evtName || !progName) return false;         // guard the .includes("") bug
+                if (evtName === progName) return true;
+                const shorter = evtName.length <= progName.length ? evtName : progName;
+                if (shorter.length < 6) return false;            // too short to be reliable
+                return evtName.includes(progName) || progName.includes(evtName);
+            };
+
+            // TIER 1 — exact name + exact start datetime. Distinguishes AM/PM sessions that
+            // share a name on the same day (e.g. two "Westcoast Connection - 06/30/26" blocks).
+            if (!isNaN(progStartMs)) {
+                for (const evt of allData.events) {
+                    const evtStart = evt.fields[FIELDS.EVENTS.startDateTime];
+                    const evtMs = evtStart ? new Date(evtStart).getTime() : NaN;
+                    if (evtNameOf(evt) === progName && evtMs === progStartMs) return evt.id;
                 }
             }
-            // Fallback: try name-only match (for multi-day programs where dates may differ)
-            for (const evt of allData.events) {
-                const evtName = normalizeEventName(evt.fields[FIELDS.EVENTS.eventName]);
-                if (evtName === progName || evtName.includes(progName) || progName.includes(evtName)) {
-                    return evt.id;
-                }
+
+            // TIER 2 — exact name + same calendar day, but only if EXACTLY ONE candidate.
+            if (progStartDay) {
+                const dayCands = allData.events.filter(
+                    (evt) => evtNameOf(evt) === progName && evtDayOf(evt) === progStartDay
+                );
+                if (dayCands.length === 1) return dayCands[0].id;
             }
+
+            // TIER 3 — safe fuzzy name + same day, but only if EXACTLY ONE candidate.
+            if (progStartDay) {
+                const fuzzyCands = allData.events.filter(
+                    (evt) => fuzzyEq(evtNameOf(evt)) && evtDayOf(evt) === progStartDay
+                );
+                if (fuzzyCands.length === 1) return fuzzyCands[0].id;
+            }
+
+            // No confident, unambiguous match — return null so the card shows "No link"
+            // rather than dumping the assignment onto an arbitrary (or blank) record.
             return null;
         }
 
